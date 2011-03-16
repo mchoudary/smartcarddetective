@@ -1,0 +1,37 @@
+The files provided along with this README are part of the Smart Card Detective (SCD).
+The SCD is meant to provide an open framework for EMV research, enabling users to
+analyze transactions. The software is given under the GPL v3 license (see file
+gpl-3.0.txt). The rights of this code or its license can be modified in future
+versions.
+
+REQUIREMENTS
+In order to compile this project you need the avr-libc and avr-gcc tools.
+Please use avr-libc version 1.7.0 or higher as the previous versions have problems
+with the malloc functions.
+See http://www.nongnu.org/avr-libc/ for more information.
+
+BUILD
+Compile the project using the command "make all"
+
+DEBUG/PROGRAM
+I recommend using an AVR Dragon for programming and debugging of your chip. Use
+avrdude to program your chip. If you don't have a hardware platform look at
+my website for the hardware files. Get in touch with me if you want to order
+a SCD device.
+
+Use "make program" to program the SCD using avrdude.
+
+Use "make avarice" to debug the application using the SCD and AVR Dragon.
+
+Use "make debug" to connect avr-gdb to avarice (once avarice is running).
+
+DOCUMENTATION
+You can find the documentation in HTML format for the source code in the doc/ folder.
+Point your browser to the doc/html/index.html file.
+
+Also, check the forum of the Smart Card Detective at:
+http://www.smartcarddetective.com/
+
+Copyright (C) Omar Choudary (osc22@cam.ac.uk)
+http://cl.cam.ac.uk/~osc22/scd/
+
