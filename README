@@ -4,6 +4,10 @@ analyze transactions. The software is given under the GPL v3 license (see file
 gpl-3.0.txt). The rights of this code or its license can be modified in future
 versions.
 
+VERSION
+Current version of the software is 2.3.
+Last updated: March 16 2011.
+
 REQUIREMENTS
 In order to compile this project you need the avr-libc and avr-gcc tools.
 Please use avr-libc version 1.7.0 or higher as the previous versions have problems
