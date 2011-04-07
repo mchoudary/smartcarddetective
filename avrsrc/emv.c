@@ -137,6 +137,10 @@ EMVCommandHeader* MakeCommandHeaderC(EMV_CMD command)
          cmd->ins = 0x88;
       break;
 
+      case CMD_PIN_CHANGE_UNBLOCK:
+         cmd->cla = 0x8C;
+         cmd->ins = 0x24;
+      break;
    }
 
    return cmd;

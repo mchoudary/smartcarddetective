@@ -84,7 +84,7 @@ void PowerDownICC();
 void LoopICCETU(uint8_t nEtus);
 
 /// Loops for max_cycles or until the I/O line from ICC becomes low
-uint8_t WaitForICCData(uint16_t max_cycles);
+uint8_t WaitForICCData(uint32_t max_cycles);
 
 /// Receives a byte from the ICC without parity checking
 uint8_t GetByteICCNoParity(uint8_t inverse_convention, uint8_t *r_byte);

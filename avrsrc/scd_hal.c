@@ -33,18 +33,50 @@
 #include "scd_hal.h"
 #include "utils.h"
 
-#define simulation 0			// Set this to 1 for simulation, 0 otherwise
-#define DEBUG 1					// Set this to 1 to enable debug code
-#define F_CPU 16000000UL  		// Change this to the correct frequency
+#define DEBUG 1					    // Set this to 1 to enable debug code
+#define F_CPU 16000000UL  		    // Change this to the correct frequency (generally CLK = CLK_IO)
+#define ICC_CLK_MODE 1              // Set to:
+                                    // 0 for ICC_CLK = 4 MHz
+                                    // 1 for ICC_CLK = 2 MHz
+                                    // 2 for ICC_CLK = 1 MHz
+                                    // 3 for ICC_CLK = 800 KHz
+                                    // 4 for ICC_CLK = 500 KHz
 #define ETU_TERMINAL 372
-#define ETU_ICC 1488			// 372 * 4 because F_T1 = 4 * F_T0
 #define ETU_HALF(X) ((unsigned int) ((X)/2))
 #define ETU_LESS_THAN_HALF(X) ((unsigned int) ((X)*0.46))
 #define ETU_EXTENDED(X) ((unsigned int) ((X)*1.075))
-#define ICC_VCC_DELAY_US 50
-#define PULL_UP_HIZ_ICC	1		// Set to 1 to enable pull-ups when setting
-								// the I/O-ICC line to Hi-Z
+#define ICC_VCC_DELAY_US 50   
+#define PULL_UP_HIZ_ICC	1		    // Set to 1 to enable pull-ups when setting
+								    // the I/O-ICC line to Hi-Z
+                                
 
+/* Hardcoded values for ICC clock - selected based on ICC_CLK_MODE above */
+#if (ICC_CLK_MODE == 0)
+#define ICC_CLK_OCR0A 1             // F_TIMER0 = CLK_IO / 4
+#define ICC_CLK_TCCR1B 0x09         // F_TIMER1 = CLK_IO
+#define ETU_ICC 1488                // 372 * 4
+#define ICC_RST_WAIT 50000          // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
+#elif (ICC_CLK_MODE == 1)
+#define ICC_CLK_OCR0A 3             // F_TIMER0 = CLK_IO / 8
+#define ICC_CLK_TCCR1B 0x0A         // F_TIMER1 = CLK_IO / 8
+#define ETU_ICC 372                 // 372 * 1
+#define ICC_RST_WAIT 100000         // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
+#elif (ICC_CLK_MODE == 2)
+#define ICC_CLK_OCR0A 7             // F_TIMER0 = CLK_IO / 16
+#define ICC_CLK_TCCR1B 0x0A         // F_TIMER1 = CLK_IO / 8
+#define ETU_ICC 744                 // 372 * 2
+#define ICC_RST_WAIT 200000         // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
+#elif (ICC_CLK_MODE == 3)
+#define ICC_CLK_OCR0A 9             // F_TIMER0 = CLK_IO / 20
+#define ICC_CLK_TCCR1B 0x0A         // F_TIMER1 = CLK_IO / 8
+#define ETU_ICC 930                 // 372 * 2.5
+#define ICC_RST_WAIT 250000         // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
+#elif (ICC_CLK_MODE == 4)
+#define ICC_CLK_OCR0A 15            // F_TIMER0 = CLK_IO / 32
+#define ICC_CLK_TCCR1B 0x0A         // F_TIMER1 = CLK_IO / 8
+#define ETU_ICC 1488                // 372 * 4
+#define ICC_RST_WAIT 400000         // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
+#endif
 
 /* SCD to Terminal functions */
 
@@ -160,11 +192,7 @@ void StartCounterTerminal()
 	// even if TCCR3A = 0
 
 	Write16bitRegister(&OCR3A, ETU_TERMINAL);
-#if simulation
-	TCCR3B = 0x0A;						// CTC, timer from CLK_CPU/8
-#else
 	TCCR3B = 0x0F;						// CTC, timer external source
-#endif
 }
 
 /**
@@ -628,10 +656,10 @@ void LoopICCETU(uint8_t nEtus)
  * the I/O line to become low. Loops forever if this is 0
  * @return 0 if the I/O line is 0, non-zero otherwise
  */
-uint8_t WaitForICCData(uint16_t max_cycles)
+uint8_t WaitForICCData(uint32_t max_cycles)
 {
 	uint8_t result = 0;
-	uint16_t c = 0;
+	uint32_t c = 0;
 	volatile uint8_t bit;
 
 	do{
@@ -1094,9 +1122,8 @@ uint8_t ResetICC(uint8_t warm, uint8_t *inverse_convention, uint8_t *proto,
 	// Set RST to high
 	PORTD |= _BV(PD4);		
 	
-	// Wait for ATR from ICC for a maximum of 42000 clock cycles + 40 ms
-	// this number is based on the assembler of this function
-	if(WaitForICCData(50000))	
+	// Wait for ATR from ICC for a maximum of 42000 ICC clock cycles + 40 ms
+	if(WaitForICCData(ICC_RST_WAIT))	
 	{		
 		if(warm == 0) 
 			return ResetICC(1, inverse_convention, proto, TC1, TA3, TB3);						
@@ -1163,18 +1190,14 @@ uint8_t ActivateICC(uint8_t warm)
 		// I use the Timer 0 (8-bit) to give the clock to the ICC
 		// and the Timer 1 (16-bit) to count the number of clocks
 		// in order to provide the correct ETU reference		
-		TCCR0A = 0x42;						// toggle OC0A (PB7) on compare match,
-											// CTC mode
-		OCR0A = 1;							// set frequency = CLK_IO / 4;
-											// For CLK_IO = 16 Mhz => 4 Mhz
-											// For CLK_IO = 8 Mhz => 2 Mhz
+		TCCR0A = 0x42;						// toggle OC0A (PB7) on compare match, CTC mode
+		OCR0A = ICC_CLK_OCR0A;			    // set F_TIMER0 = CLK_IO / (2 * (ICC_CLK_OCR0A + 1));
 		TCNT0 = 0;
 		TCCR0B = 0x01;						// Start timer 0, CLK = CLK_IO
+
 		TCCR1A = 0x30;						// set OC1B (PB6) to 1 on compare match
-		Write16bitRegister(&OCR1A, ETU_ICC);// ETU is dependent on frequency
-											// of Timer 1 which is twice as the
-											// frequency of Timer 0 (see above)
-		TCCR1B = 0x09;						// Start timer 1, CTC, CLK = CLK_IO
+		Write16bitRegister(&OCR1A, ETU_ICC);// ETU = 372 * (F_TIMER1 / F_TIMER0)
+		TCCR1B = ICC_CLK_TCCR1B;		    // Start timer 1, CTC, CLK based on TCCR1B
 		TCCR1C = 0x40;						// Force compare match on OC1B so that
 											// we get the I/O line to high	
 	}
