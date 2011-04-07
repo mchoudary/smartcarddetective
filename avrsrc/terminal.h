@@ -139,7 +139,8 @@ RAPDU* TerminalSendT0Command(CAPDU* cmd, uint8_t inverse_convention,
    uint8_t TC1);
 
 /// Starts the application selection process
-FCITemplate* ApplicationSelection(uint8_t convention, uint8_t TC1);
+FCITemplate* ApplicationSelection(uint8_t convention, uint8_t TC1,
+        const ByteArray *aid, uint8_t autoselect);
 
 /// Initialize a transaction by sending GET PROCESSING OPTS command
 APPINFO* InitializeTransaction(uint8_t convention, uint8_t TC1,
@@ -150,11 +151,12 @@ RECORD* GetTransactionData(uint8_t convention, uint8_t TC1,
       const APPINFO* appInfo, ByteArray *offlineAuthData);
 
 /// Selects application based on AID list
-FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1);
+FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1,
+        const ByteArray *aid);
 
 /// Selects application based on PSE
 FCITemplate* SelectFromPSE(uint8_t convention, uint8_t TC1,
-      uint8_t sfiPSE);
+      uint8_t sfiPSE, uint8_t autoselect);
 
 /// Checks if the specified PIN is accepted by the card
 uint8_t VerifyPlaintextPIN(uint8_t convention, uint8_t TC1,
@@ -181,7 +183,7 @@ ByteArray* GetDataObject(uint8_t convention, uint8_t TC1,
       CARD_PDO pdo);
 
 /// Returns a TLV from a RECORD based on its tag
-const TLV* GetTLVFromRECORD(RECORD *rec, uint8_t tag1, uint8_t tag2);
+TLV* GetTLVFromRECORD(RECORD *rec, uint8_t tag1, uint8_t tag2);
 
 /// Get the position of the Authorized Amount value inside CDOL1 if exists
 uint8_t AmountPositionInCDOLRecord(const RECORD *record);

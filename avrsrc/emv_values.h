@@ -28,6 +28,8 @@
  * Enum defining the different values for byte 1 of tag
  */
 typedef enum {
+   EMV_TAG1_CDOL_1 = 0x8C,
+   EMV_TAG1_CDOL_2 = 0x8D,
    EMV_TAG1_CA_PK_INDEX = 0x8F,
    EMV_TAG1_ISSUER_PK_CERT = 0x90,
    EMV_TAG1_ISSUER_PK_REMINDER = 0x92,
@@ -40,6 +42,8 @@ typedef enum {
  * Enum defining the different values for byte 2 of tag
  */
 typedef enum {
+   EMV_TAG2_CDOL_1 = 0,
+   EMV_TAG2_CDOL_2 = 0,
    EMV_TAG2_CA_PK_INDEX = 0,
    EMV_TAG2_ISSUER_PK_CERT = 0,
    EMV_TAG2_ISSUER_PK_REMINDER = 0,

@@ -30,6 +30,7 @@
 #include "terminal.h"
 #include "emv_values.h"
 #include "scd_values.h"
+#include "scd_io.h"
 
 /// Set this to 1 to enable debug code
 #define DEBUG 0
@@ -191,11 +192,15 @@ static RAPDU* TerminalSendT0CommandR(CAPDU *tmpCommand, RAPDU *tmpResponse,
  *
  * @param convention parameter from ATR
  * @param TC1 parameter from ATR
+ * @param aid the AID of the desired application; pass NULL to use existing list
+ * @param autoselect just used for the case of PSE selection: use zero to enable
+ * user selection, non-zero to automatically select the first available application
  * @return the FCI Template resulted from application
  * selection or NULL if there is an error. The caller is responsible
  * for eliberating the memory used by the FCI Template.
  */
-FCITemplate* ApplicationSelection(uint8_t convention, uint8_t TC1)
+FCITemplate* ApplicationSelection(uint8_t convention, uint8_t TC1,
+        const ByteArray *aid, uint8_t autoselect)
 {
    CAPDU* command;
    RAPDU* response;
@@ -213,13 +218,13 @@ FCITemplate* ApplicationSelection(uint8_t convention, uint8_t TC1)
    {
       sfi = GetSFIFromSELECT(response);
       FreeRAPDU(response);
-      return SelectFromPSE(convention, TC1, sfi);
+      return SelectFromPSE(convention, TC1, sfi, autoselect);
    }
    else if((response->repStatus->sw1 == 0x6A && response->repStatus->sw2 == 0x82) ||
          (response->repStatus->sw1 == 0x62 && response->repStatus->sw2 == 0x83))
    {
       FreeRAPDU(response);
-      return SelectFromAID(convention, TC1);
+      return SelectFromAID(convention, TC1, aid);
    }
 
    FreeRAPDU(response);
@@ -391,17 +396,38 @@ RECORD* GetTransactionData(uint8_t convention, uint8_t TC1, const APPINFO* appIn
  *
  * @param convention parameter from ATR
  * @param TC1 parameter from ATR
+ * @param aid if given will be used as Application ID (AID), else
+ * use predefined list. This parameter remains untouched
  * @return the FCI Template resulted from application
  * selection or NULL if there is an error. The caller is responsible
  * for eliberating the memory used by the FCI Template.
  * @sa ApplicationSelection
  */
-FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1)
+FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1, const ByteArray *aid)
 {
    CAPDU* command;
    RAPDU* response;
    volatile uint8_t i = 0;
    FCITemplate* fci = NULL;
+
+   if(aid != NULL && aid->len == nAIDLen)
+   {
+      command = MakeCommandC(CMD_SELECT, aid->bytes, nAIDLen);
+      if(command == NULL) return NULL;
+      response = TerminalSendT0Command(command, convention, TC1);
+      FreeCAPDU(command);
+      if(response == NULL) return NULL;
+
+      if(response->repStatus->sw1 == 0x90 && response->repStatus->sw2 == 0)
+      {
+         fci = ParseFCI(response->repData, response->lenData);
+         FreeRAPDU(response);
+         return fci;
+      }
+
+      FreeRAPDU(response);
+      return NULL;
+   }
 
    while(i < nAIDEntries)
    {
@@ -438,20 +464,23 @@ FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1)
  * @param TC1 parameter from ATR
  * @param sfiPSE the SFI of the PSE as returned from an initial
  * SELECT command
+ * @param autoselect if non-zero the first application will be used,
+ * else the user will select from a menu (LCD needed).
  * @return the FCI Template resulted from application
  * selection or NULL if there is an error. The caller is responsible
  * for eliberating the memory used by the FCI Template.
  * @sa ApplicationSelection
  */
 FCITemplate* SelectFromPSE(uint8_t convention, uint8_t TC1,
-      uint8_t sfiPSE)
+      uint8_t sfiPSE, uint8_t autoselect)
 {
    FCITemplate* fci = NULL;
    CAPDU* command = NULL;
    RAPDU* response = NULL;
    RECORDList* rlist = NULL;
    TLV* adfName = NULL;
-   uint8_t more, status;
+   uint8_t more, status, k, i;
+   volatile uint8_t tmp;
 
    // Get the application list
    rlist = (RECORDList*)malloc(sizeof(RECORDList));
@@ -482,10 +511,37 @@ FCITemplate* SelectFromPSE(uint8_t convention, uint8_t TC1,
    }
    FreeCAPDU(command);
    command = NULL;
+   if(rlist->count == 0) goto clean;
+
+   k = 0;
+   if(autoselect == 0)
+   {
+       while(1)
+       {
+           adfName = rlist->objects[k]->objects[0];
+           fprintf(stderr, "%d:", k + 1);
+           for(i = 0; i < adfName->len && i < 7; i++)
+               fprintf(stderr, "%02X", adfName->value[i]);
+
+           do{
+               tmp = GetButton();
+           }while((tmp == 0));
+
+           if((tmp & BUTTON_C))
+           {
+               k++;
+               if(k == rlist->count) k = 0;
+           }
+           else
+           {
+               break;
+           }
+       }
+   }
 
    // select application, either by means of user or automatically
    // as here; modify as needed
-   adfName = rlist->objects[0]->objects[0];
+   adfName = rlist->objects[k]->objects[0];
    command = MakeCommandC(CMD_SELECT, adfName->value, adfName->len);
    if(command == NULL) goto clean;
    response = TerminalSendT0Command(command, convention, TC1);
@@ -1274,7 +1330,7 @@ uint8_t AddRECORD(RECORD *dest, const RECORD *src)
  * or NULL if the TLV cannot be found or some error occurs
  *
  */
-const TLV* GetTLVFromRECORD(RECORD *rec, uint8_t tag1, uint8_t tag2)
+TLV* GetTLVFromRECORD(RECORD *rec, uint8_t tag1, uint8_t tag2)
 {
    TLV *tlv;
    uint8_t i;

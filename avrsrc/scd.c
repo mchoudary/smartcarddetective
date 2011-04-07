@@ -260,7 +260,7 @@ uint8_t TestDDA(uint8_t convention, uint8_t TC1)
 
    // Select application
    //fci = ApplicationSelection(convention, TC1); // to use PSE first
-   fci = SelectFromAID(convention, TC1);
+   fci = SelectFromAID(convention, TC1, NULL);
    if(fci == NULL)
    {
       fprintf(stderr, "%s\n", strError);
@@ -378,7 +378,7 @@ uint8_t Terminal1()
 
    // Select application
    //fci = ApplicationSelection(convention, TC1); // to use PSE first
-   fci = SelectFromAID(convention, TC1);
+   fci = SelectFromAID(convention, TC1, NULL);
    if(fci == NULL)
    {
       fprintf(stderr, "%s\n", strError);
