@@ -11,8 +11,19 @@ Last updated: 19 April 2011.
 REQUIREMENTS
 In order to compile this project you need the avr-libc and avr-gcc tools.
 Please use avr-libc version 1.7.0 or higher as the previous versions have problems
-with the malloc functions.
-See http://www.nongnu.org/avr-libc/ for more information.
+with the malloc functions. See http://www.nongnu.org/avr-libc/ for more information.
+
+I recommend using my script (for any linux distribution) to install all the
+necessary tools and the correct versions:
+http://www.cl.cam.ac.uk/~osc22/files/install_avr_tools.sh
+(please see the comments at the start of the script for additional requirements)
+
+Alternatively you can use your distro installation of avr tools but make sure
+you are using the required avr-libc version (1.7.0).
+
+On Windows you can try using WinAVR and/or AVR Studio. However if you want to
+build and debug the project I highly recommend working under Unix.
+
 
 BUILD
 Compile the project using the command "make all"
