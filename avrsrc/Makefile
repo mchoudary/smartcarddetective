@@ -111,6 +111,7 @@ EEPTARGET = $(PROJECTNAME).eep
 LSSTARGET = $(PROJECTNAME).lss
 SIZETARGET = $(PROJECTNAME).size
 ALLTARGETS = $(TARGET) $(HEXTARGET) $(EEPTARGET) $(LSSTARGET) $(SIZETARGET) $(HEXDFUTARGET)
+CLEANTARGETS = $(TARGET) $(EEPTARGET) $(LSSTARGET) $(SIZETARGET)
 
 # All project source files (C, C++, ASM)
 PRJSRC = scd.c emv.c scd_hal.c scd_io.c utils.c terminal.c scd_hal.S scd.S
@@ -159,7 +160,7 @@ $(HEXDFUTARGET): ${HEXTARGET}
 
 # Clean target
 clean:
-	-rm -rf $(OBJECTS) $(ALLTARGETS) $(MAPFILE) $(DEPFOLDER) $(GDBCONF)
+	-rm -rf $(OBJECTS) $(CLEANTARGETS) $(MAPFILE) $(DEPFOLDER) $(GDBCONF)
 
 # Program the device via JTAG
 program-dragon: $(HEXTARGET)
