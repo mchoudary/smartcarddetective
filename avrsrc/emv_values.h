@@ -21,6 +21,10 @@
  *
  */
 
+#ifndef _EMV_VALUES_H_
+#define _EMV_VALUES_H_
+
+
 // -------------------------------------------------------------------
 // Structures definining the different values used by EMV
 
@@ -65,3 +69,4 @@ typedef enum {
    SW1_WRONG_LENGTH = 0x6C
 }APDU_RESPONSE;
 
+#endif // _EMV_VALUES_H_

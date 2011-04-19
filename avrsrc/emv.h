@@ -22,6 +22,9 @@
  *
  */
 
+#ifndef _EMV_H_
+#define _EMV_H_
+
 //------------------------------------------------------------------------
 // Constant values used in EMV
 #define EMV_MORE_TAGS_MASK 0x1F
@@ -210,4 +213,5 @@ RAPDU* CopyRAPDU(RAPDU* resp);
 /// Eliberates the memory used by a CRP
 void FreeCRP(CRP* data);
 
+#endif // _EMV_H_
 

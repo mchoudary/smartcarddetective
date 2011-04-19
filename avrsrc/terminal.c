@@ -51,8 +51,8 @@ static const uint8_t bAIDList[42] = {
    0xA0, 0, 0, 0, 0x03, 0x10, 0x10, // Connect Debit VISA
    0xA0, 0, 0, 0, 0x04, 0x10, 0x10, // Connect Debit MasterCard
    0xA0, 0, 0, 0, 0x29, 0x10, 0x10, // Link ATM
-   0xA0, 0, 0, 0, 0x03, 0x80, 0x02, // CAP
-   0xA0, 0, 0, 0, 0x04, 0x80, 0x02, // CAP
+   0xA0, 0, 0, 0, 0x03, 0x80, 0x02, // CAP VISA
+   0xA0, 0, 0, 0, 0x04, 0x80, 0x02, // CAP MasterCard
    0xA0, 0, 0, 0x02, 0x44, 0, 0x10  // Other App
 };
 
@@ -118,6 +118,7 @@ static RAPDU* TerminalSendT0CommandR(CAPDU *tmpCommand, RAPDU *tmpResponse,
       return NULL;
    }
    tmp = ReceiveT0Response(inverse_convention, tmpCommand->cmdHeader);
+
    if(tmp == NULL || tmp->repStatus == NULL)
    {
       FreeRAPDU(tmpResponse);
@@ -522,6 +523,7 @@ FCITemplate* SelectFromPSE(uint8_t convention, uint8_t TC1,
            fprintf(stderr, "%d:", k + 1);
            for(i = 0; i < adfName->len && i < 7; i++)
                fprintf(stderr, "%02X", adfName->value[i]);
+           _delay_ms(200);
 
            do{
                tmp = GetButton();
@@ -532,7 +534,7 @@ FCITemplate* SelectFromPSE(uint8_t convention, uint8_t TC1,
                k++;
                if(k == rlist->count) k = 0;
            }
-           else
+           else 
            {
                break;
            }
@@ -600,7 +602,7 @@ uint8_t VerifyPlaintextPIN(uint8_t convention, uint8_t TC1,
 /**
  * This function sends a GENERATE AC command to the card
  * with the specified amount and request (ARQC, AAC or TC)
- * Eny of the amount parameters can be sent as NULL in which
+ * Any of the amount parameters can be sent as NULL in which
  * case that field will be filled with zeros
  *
  * @param convention parameter from ATR
@@ -695,6 +697,26 @@ RAPDU* SendGenerateAC(uint8_t convention, uint8_t TC1, AC_REQ_TYPE acType,
             j++;
          }
       }
+      else if(tlv->tag1 == 0x8A)
+      {
+         for(j = 0; j < tlv->len && j < sizeof(params->arc); j++)
+            data[i++] = params->arc[j];
+         while(j < tlv->len)
+         {
+            data[i++] = 0;
+            j++;
+         }
+      }
+      else if(tlv->tag1 == 0x91)
+      {
+         for(j = 0; j < tlv->len && j < sizeof(params->IssuerAuthData); j++)
+            data[i++] = params->IssuerAuthData[j];
+         while(j < tlv->len)
+         {
+            data[i++] = 0;
+            j++;
+         }
+      }
       else if(tlv->tag1 == 0x9A)
       {
          for(j = 0; j < tlv->len && j < sizeof(params->transactionDate); j++)
@@ -767,6 +789,7 @@ RAPDU* SendGenerateAC(uint8_t convention, uint8_t TC1, AC_REQ_TYPE acType,
    if(command == NULL) return NULL;
    command->cmdHeader->p1 = (uint8_t)acType;
    response = TerminalSendT0Command(command, convention, TC1);
+
    FreeCAPDU(command);
    return response;
 }

@@ -22,6 +22,9 @@
  *
  */
 
+#ifndef _SCD_H_
+#define _SCD_H_
+
 //------------------------------------------------------------
 
 /// This is a magic value that may be used in detecting a warm reset
@@ -73,11 +76,13 @@
 #define APP_ERASE_EEPROM 0x06
 
 /// Terminal application
-#define APP_TERMINAL_1 0x07
+#define APP_TERMINAL 0x07
+
+/// USB Virtual Serial Port
+#define APP_VIRTUAL_SERIAL_PORT 0x08
 
 /// Number of existing applications
-#define APPLICATION_COUNT 7
-
+#define APPLICATION_COUNT 8
 
 /// Application Names
 static char* appStrings[] = {
@@ -87,7 +92,8 @@ static char* appStrings[] = {
 		"Filter  amount",
 		"Filter  and Log",
 		"Erase   EEPROM",
-		"Terminal1"
+		"Terminal",
+        "Virtual Serial",
 		};
 
 
@@ -102,18 +108,6 @@ void InitSCD();
 
 /// Show menu and select application
 uint8_t SelectApplication();
-
-/// Tests the SCD-Terminal communication
-void TestSCDTerminal();
-
-/// Tests the SCD-ICC communication
-void TestSCDICC();
-
-/// Simple application to switch some LEDs on and off
-void SwitchLeds();
-
-/// Tests the hardware (LEDs, LCD and buttons)
-void TestHardware();
 
 /// Forward commands between terminal and ICC through the ICC
 uint8_t ForwardData();
@@ -133,12 +127,26 @@ uint8_t ForwardAndChangePIN();
 /// Filter Generate AC command and log transaction
 uint8_t FilterAndLog();
 
-/// Run the terminal application Terminal1
-uint8_t Terminal1();
+/// Run the terminal application
+uint8_t Terminal();
 
-/// Puts the SCD to sleep until receives clock from terminal
-void SleepUntilTerminalClock();
+/// Virtual Serial Port (send/receive command strings)
+uint8_t VirtualSerial();
 
-/// Puts the SCD to sleep until card is inserted or removed
-void SleepUntilCardInserted();
+/// Process the serial data
+uint8_t* ProcessSerialData(const uint8_t* data, uint8_t len, uint8_t *replen);
 
+/** Self Test methods **/
+/// Tests the SCD-Terminal communication
+void TestSCDTerminal();
+
+/// Tests the SCD-ICC communication
+void TestSCDICC();
+
+/// Simple application to switch some LEDs on and off
+void SwitchLeds();
+
+/// Tests the hardware (LEDs, LCD and buttons)
+void TestHardware();
+
+#endif // _SCD_H_

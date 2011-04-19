@@ -3,11 +3,11 @@
  *
  *	This file implements the main application of the Smart Card Detective
  *
- *  It uses the functions defined in halSCD.h and EMV.h to communicate
- *  with the ICC and Terminal and the functions from scdIO.h to
+ *  It uses the functions defined in scd_hal.h and emv.h to communicate
+ *  with the ICC and Terminal and the functions from scd_io.h to
  *  communicate with the LCD, buttons and LEDs 
  *
- *  Copyright (C) 2010 Omar Choudary (osc22@cam.ac.uk)
+ *  Copyright (C) 2011 Omar Choudary (osc22@cam.ac.uk)
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -50,16 +50,16 @@
 #include "terminal.h"
 #include "emv_values.h"
 #include "scd_values.h"
+#include "VirtualSerial.h"
 
 /// Set this to 1 to enable LCD functionality
 #define LCD_ENABLED 1			
 
 /// Set this to 1 to enable debug mode
-#define DEBUG 0
+#define DEBUG 1
 
 /// Set this to 1 to enable card presence interrupt
 #define ICC_PRES_INT_ENABLE 1 		
-
 
 // If there are any assembler routines, they can be used
 // by declaring them as below
@@ -73,29 +73,26 @@
 #if LCD_ENABLED
 static char* strATRSent = "ATR Sent";
 static char* strDone = "All     Done";
-static char* strError = "Error Ocurred";
-static char* strDataSent = "Data Sent";
+static char* strError = "Error   Ocurred";
+static char* strDataSent = "Data    Sent";
 static char* strScroll = "BC to   scroll";
 static char* strSelect = "BD to   select";
 static char* strAvailable = "Avail.  apps:";
 static char* strDecide = "BA = yesBD = no";
 static char* strCardInserted = "Card    inserted";
 static char* strBadProtocol = "Only T=0support";
-static char* strPINOK = "PIN     OK";
-static char* strPINBAD = "PIN     BAD";
+static char* strPINOK = "PIN OK";
+static char* strPINBAD = "PIN BAD";
 static char* strPINTryExceeded = "PIN try exceeded";
-static char* strPowerUp = "Power Up";
-static char* strPowerDown = "Power Down";
 #endif
 
 /* Global variables */
 uint8_t warmResetByte;
-CRP* transactionData[MAX_EXCHANGES]; 	// used by ForwardData()
-uint8_t nTransactions;		        // used by ForwardData()
-uint8_t lcdAvailable;			// non-zero if LCD is working
-uint8_t nCounter;			// number of transactions
-uint8_t selected;			// ID of application selected
-
+CRP* transactionData[MAX_EXCHANGES]; 	// used to log data
+uint8_t nTransactions;		            // used to log data
+uint8_t lcdAvailable;			        // non-zero if LCD is working
+uint8_t nCounter;			            // number of transactions
+uint8_t selected;			            // ID of application selected
 
 // Use the LCD as stderr (see main)
 FILE lcd_str = FDEV_SETUP_STREAM(LcdPutchar, NULL, _FDEV_SETUP_WRITE);
@@ -143,6 +140,7 @@ int main(void)
        cli();
        selected = eeprom_read_byte((uint8_t*)EEPROM_APPLICATION);
        SREG = sreg;
+
    }
 
    // run the selected application
@@ -168,14 +166,17 @@ int main(void)
          FilterAndLog();
        break;
 
-       case APP_TERMINAL_1:
-         Terminal1();
+       case APP_TERMINAL:
+         Terminal();
        break;
 
+       case APP_VIRTUAL_SERIAL_PORT:
+         VirtualSerial();
+
        default:
-         selected = APP_TERMINAL_1;
+         selected = APP_TERMINAL;
          eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);
-         Terminal1();
+         Terminal();
    }
 
    // if needed disable wdt to avoid restart
@@ -242,6 +243,71 @@ uint8_t SelectApplication()
 	return 0;
 }
 
+/**
+ * Virtual Serial Port application
+ */
+uint8_t VirtualSerial()
+{
+    uint8_t len, replen;
+    char buf[255];
+    char *response = NULL;
+
+    InitLCD();
+    fprintf(stderr, "\n");
+
+    fprintf(stderr, "Set up  serial\n");
+     _delay_ms(500);
+    SetupHardware();
+
+    LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
+    sei();
+    fprintf(stderr, "VS Ready\n");
+
+    for (;;)
+    {
+        memset(buf, 0, 255);
+        if(GetHostData(buf, 255, &len))
+            continue;
+
+        response = (char*)ProcessSerialData((uint8_t*)buf, len, &replen);
+
+        if(response != NULL)
+        {
+            SendHostData(response, replen);
+            free(response);
+            response = NULL;
+        }
+    }
+}
+
+/**
+ * This method handles the data received from the serial or virtual serial port.
+ *
+ * The SCD should make any necessary processing and then return a response
+ * data.
+ *
+ * @param data the data to be processed by the SCD, as sent by the serial host
+ * @param len the length of data
+ * @param replen the size of the response after processing
+ * @return the response of this method if success, NULL if any error occurs
+ */
+uint8_t* ProcessSerialData(const uint8_t* data, uint8_t len, uint8_t *replen)
+{
+    uint8_t *buf;
+
+    fprintf(stderr, "%s\n", data);
+    _delay_ms(500);
+
+    buf = (uint8_t*)malloc(len);
+    if(buf == NULL)
+        return NULL;
+    memcpy(buf, data, len + 2);
+    buf[len] = '\r';
+    buf[len+1] = '\n';
+    *replen = len + 2;
+
+    return buf;
+}
 
 /**
  * Test function to make multiple DDA transactions
@@ -301,9 +367,8 @@ uint8_t TestDDA(uint8_t convention, uint8_t TC1)
       status = 1;
       goto endtdata;
    }
-   FreeRAPDU(response);
 
-endddata:
+   FreeRAPDU(response);
    FreeByteArray(ddata);
 endtdata:
    FreeRECORD(tData);
@@ -321,7 +386,6 @@ endtransaction:
    return status;
 }
 
-
 /**
  * This method implements a terminal application with the basic steps
  * of an EMV transaction. This includes selection by AID, DDA signature,
@@ -329,7 +393,7 @@ endtransaction:
  *
  * @return 0 if successful, non-zero otherwise
  */
-uint8_t Terminal1()
+uint8_t Terminal()
 {
    uint8_t convention, proto, TC1, TA3, TB3;
    uint8_t tmp;
@@ -364,8 +428,11 @@ uint8_t Terminal1()
    else
       return RET_ERROR;
 
+#if DEBUG
+#else
    // at this point the card should be inserted
    wdt_enable(WDTO_4S);
+#endif
 
    // Initialize card
    if(ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3)) return RET_ERROR;
@@ -503,6 +570,7 @@ endtransaction:
    return 0;
 }
 
+
 /**
  * This function initiates the communication between ICC and
  * terminal and then forwards the commands and responses
@@ -531,10 +599,10 @@ uint8_t FilterGenerateAC()
 	RECORD *record;
 	CRP *crp;
 
-        SleepUntilTerminalClock();	
-        // enable watchdog timer in case the application hangs.
-        // wdr (watchdog reset) should be called to avoid reset
-        wdt_enable(WDTO_4S);
+    SleepUntilTerminalClock();	
+    // enable watchdog timer in case the application hangs.
+    // wdr (watchdog reset) should be called to avoid reset
+    wdt_enable(WDTO_4S);
 	
 	if(InitSCDTransaction(t_inverse, t_TC1, &cInverse, 
 		&cProto, &cTC1, &cTA3, &cTB3))
@@ -798,10 +866,10 @@ uint8_t StorePIN()
 	uint8_t tmp, len;
 	CRP *crp;		
 
-        SleepUntilTerminalClock();	
-        // enable watchdog timer in case the application hangs.
-        // wdr (watchdog reset) should be called to avoid reset
-        wdt_enable(WDTO_4S);
+    SleepUntilTerminalClock();	
+    // enable watchdog timer in case the application hangs.
+    // wdr (watchdog reset) should be called to avoid reset
+    wdt_enable(WDTO_4S);
 	
 	if(InitSCDTransaction(t_inverse, t_TC1, &cInverse, 
 		&cProto, &cTC1, &cTA3, &cTB3))
@@ -903,10 +971,10 @@ uint8_t ForwardAndChangePIN()
 	uint8_t sreg, len;
 	uint8_t *pin;
 
-        SleepUntilTerminalClock();	
-        // enable watchdog timer in case the application hangs.
-        // wdr (watchdog reset) should be called to avoid reset
-        wdt_enable(WDTO_4S);
+    SleepUntilTerminalClock();	
+    // enable watchdog timer in case the application hangs.
+    // wdr (watchdog reset) should be called to avoid reset
+    wdt_enable(WDTO_4S);
 
 	// read EEPROM PIN data
 	sreg = SREG;
@@ -1045,10 +1113,10 @@ uint8_t FilterAndLog()
 	RECORD *record;
 	CRP *crp;
 
-        SleepUntilTerminalClock();	
-        // enable watchdog timer in case the application hangs.
-        // wdr (watchdog reset) should be called to avoid reset
-        wdt_enable(WDTO_4S);
+    SleepUntilTerminalClock();	
+    // enable watchdog timer in case the application hangs.
+    // wdr (watchdog reset) should be called to avoid reset
+    wdt_enable(WDTO_4S);
 	
 	if(InitSCDTransaction(t_inverse, t_TC1, &cInverse, 
 		&cProto, &cTC1, &cTA3, &cTB3))
@@ -1325,6 +1393,7 @@ uint8_t FilterAndLog()
 	return 0;
 }
 
+
 /**
  * This function initiates the communication between ICC and
  * terminal and then forwards the commands and responses
@@ -1343,10 +1412,10 @@ uint8_t ForwardData()
 	uint8_t t_inverse = 0, t_TC1 = 0;
 	uint8_t cInverse, cProto, cTC1, cTA3, cTB3;
 
-        SleepUntilTerminalClock();	
-        // enable watchdog timer in case the application hangs.
-        // wdr (watchdog reset) should be called to avoid reset
-        wdt_enable(WDTO_4S);
+    SleepUntilTerminalClock();	
+    // enable watchdog timer in case the application hangs.
+    // wdr (watchdog reset) should be called to avoid reset
+    wdt_enable(WDTO_4S);
 	
 	if(InitSCDTransaction(t_inverse, t_TC1, &cInverse, 
 		&cProto, &cTC1, &cTA3, &cTB3))
@@ -1413,7 +1482,7 @@ void InitSCD()
 
 	// Disable WDT to keep safe operation
 	MCUSR = 0;
-        wdt_disable();
+    wdt_disable();
 
 	// Ports setup
 	DDRB = 0x00;
@@ -1473,79 +1542,12 @@ void InitSCD()
 	power_spi_disable();
 	power_twi_disable();
 	power_usart1_disable();
-	power_usb_disable();
+	//power_usb_disable();
 
 	// Enable interrupts
 	sei();	
 }
 
-/**
- * This function puts the SCD to sleep (including all peripherials), until
- * there is clock received from terminal
- */
-void SleepUntilTerminalClock()
-{
-	uint8_t sreg, lcdstate;
-
-	Write16bitRegister(&OCR3A, 100);
-	Write16bitRegister(&TCNT3, 1);
-	TCCR3A = 0;	
-	TIMSK3 = 0x02;  //Interrupt on Timer3 compare A match
-	TCCR3B = 0x0F;	// CTC, timer external source
-	sreg = SREG;
-
-	// stop LCD and LEDs before going to sleep
-	lcdstate = GetLCDState();
-	if(lcdAvailable && lcdstate != 0) LCDOff();
-	Led1Off();
-	Led2Off();
-	Led3Off();
-	Led4Off();
-
-	// go to sleep
-	set_sleep_mode(SLEEP_MODE_IDLE); // it is also possible to use sleep_mode() below
-	cli();
-	sleep_enable();	
-	sei();
-        sleep_cpu();    
-
-	// back from sleep
-	sleep_disable();	
-	SREG = sreg;
-	TIMSK3 = 0; // disable interrupts on Timer3
-	TCCR3B = 0; // stop timer	
-	Led4On();
-}
-
-/**
- * This function puts the SCD to sleep (including all peripherials), until
- * the card is inserted or removed
- */
-void SleepUntilCardInserted()
-{
-	uint8_t sreg, lcdstate;
-
-	// stop LCD and LEDs before going to sleep
-	lcdstate = GetLCDState();
-	if(lcdAvailable && lcdstate != 0) LCDOff();
-	Led1Off();
-	Led2Off();
-	Led3Off();
-	Led4Off();
-
-	// go to sleep
-	sreg = SREG;
-	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-	cli();
-	sleep_enable();	
-	sei();
-        sleep_cpu();    
-
-	// back from sleep
-	sleep_disable();	
-	SREG = sreg;
-	Led4On();
-}
 
 /* Intrerupts */
 
@@ -1570,7 +1572,7 @@ ISR(INT0_vect)
     wdt_disable();
 
 	// Update transaction counter in case it was modified
-        eeprom_write_byte((uint8_t*)EEPROM_COUNTER, nCounter);
+    eeprom_write_byte((uint8_t*)EEPROM_COUNTER, nCounter);
 
 	// Get current transaction log pointer
 	addrHi = eeprom_read_byte((uint8_t*)EEPROM_TLOG_POINTER_HI);
@@ -1621,7 +1623,7 @@ ISR(INT0_vect)
 		}
 
 		// write end of log
-	        eeprom_write_block(endstr, (void*)addrStream, 5);
+	    eeprom_write_block(endstr, (void*)addrStream, 5);
 		addrStream += 5;		
 
 		// update log address
@@ -1630,8 +1632,8 @@ ISR(INT0_vect)
 		addrLo += 8;
 		addrLo = addrLo & 0xF8; // make the address multiple
 								// of 8 (page size)
-                eeprom_write_byte((uint8_t*)EEPROM_TLOG_POINTER_HI, addrHi);
-                eeprom_write_byte((uint8_t*)EEPROM_TLOG_POINTER_LO, addrLo);
+        eeprom_write_byte((uint8_t*)EEPROM_TLOG_POINTER_HI, addrHi);
+        eeprom_write_byte((uint8_t*)EEPROM_TLOG_POINTER_LO, addrLo);
 	}
 
 	if(GetTerminalFreq())
@@ -1655,7 +1657,7 @@ ISR(INT0_vect)
 	else
 	{
 		// restart SCD
-                eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, 0);
+        eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, 0);
 		while(EECR & _BV(EEPE));		
 	}
 
@@ -2151,3 +2153,4 @@ void SwitchLeds()
       Led2On();
    }
 }
+

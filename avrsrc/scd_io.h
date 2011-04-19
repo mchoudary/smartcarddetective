@@ -22,6 +22,9 @@
  *
  */
 
+#ifndef _SCD_IO_H_
+#define _SCD_IO_H_
+
 #include<stdio.h>
 
 /// Delay of LCD commands
@@ -73,6 +76,16 @@ void Led3Off();
 
 /// Turn off Led4
 void Led4Off();
+
+/* Other signals */
+void T_C4On();
+void T_C8On();
+void T_C4Off();
+void T_C8Off();
+void JTAG_P1On();
+void JTAG_P3On();
+void JTAG_P1Off();
+void JTAG_P3Off();
 
 /* Button functions */
 
@@ -138,3 +151,4 @@ uint16_t Read16bitRegister(volatile uint16_t *reg);
 /// Clears the contents of the EEPROM
 void EraseEEPROM();
 
+#endif // _SCD_IO_H_

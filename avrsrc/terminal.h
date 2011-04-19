@@ -21,6 +21,9 @@
  *
  */
 
+#ifndef _TERMINAL_H_
+#define _TERMINAL_H_
+
 // -------------------------------------------------------------------
 // Structures and enums used by the terminal
 
@@ -128,6 +131,8 @@ typedef struct {
    uint8_t dataAuthCode[2];            // tag 0x9F45
    uint8_t iccDynamicNumber[8];        // tag 0x9F4C
    uint8_t cvmResults[3];              // tag 0x9F34
+   uint8_t arc[2];                     // tag 0x8A
+   uint8_t IssuerAuthData[8];          // tag 0x91
 } GENERATE_AC_PARAMS;
 
 
@@ -232,4 +237,6 @@ void FreeFCIList(FCIList *data);
 
 /// Eliberates the memory used by an APPINFO structure
 void FreeAPPINFO(APPINFO *data);
+
+#endif // _TERMINAL_H_
 

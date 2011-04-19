@@ -20,10 +20,13 @@
  *
  */
 
+#ifndef _SCD_VALUES_H_
+#define _SCD_VALUES_H_
+
 typedef enum retstat{
    RET_SUCCESS = 0,
    RET_ERROR = 1,
    RET_ERR_CHECK = 2,
 } RETURN_CODE;
 
-
+#endif // _SCD_VALUES_H_

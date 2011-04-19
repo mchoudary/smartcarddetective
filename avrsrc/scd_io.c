@@ -108,6 +108,55 @@ void Led4Off()
 	PORTE &= ~(_BV(PE4));
 }
 
+// Ohter signals
+
+void T_C4On()
+{
+    DDRB |= _BV(PB4);
+    PORTB |= _BV(PB4);
+}
+
+void T_C8On()
+{
+    DDRB |= _BV(PB5);
+    PORTB |= _BV(PB5);
+}
+
+void T_C4Off()
+{
+    DDRB &= ~(_BV(PB4));
+    PORTB &= ~(_BV(PB4));
+}
+
+void T_C8Off()
+{
+    DDRB &= ~(_BV(PB5));
+    PORTB &= ~(_BV(PB5));
+}
+
+void JTAG_P1On()
+{
+    DDRF |= _BV(PF4);
+    PORTF |= _BV(PF4);
+}
+
+void JTAG_P1Off()
+{
+    DDRF &= ~(_BV(PF4));
+    PORTF &= ~(_BV(PF4));
+}
+
+void JTAG_P3On()
+{
+    DDRF |= _BV(PF6);
+    PORTF |= _BV(PF6);
+}
+
+void JTAG_P3Off()
+{
+    DDRF &= ~(_BV(PF6));
+    PORTF &= ~(_BV(PF6));
+}
 
 //---------------------------------------------------------------
 

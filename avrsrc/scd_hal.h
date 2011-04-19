@@ -25,7 +25,8 @@
  *
  */
 
-
+#ifndef _SCD_HAL_H_
+#define _SCD_HAL_H_
 
 /* SCD to Terminal functions */
 
@@ -111,3 +112,5 @@ uint8_t ActivateICC(uint8_t warm);
 
 /// Starts the deactivation sequence for the ICC
 void DeactivateICC();
+
+#endif // _SCD_HAL_H_

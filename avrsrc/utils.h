@@ -25,7 +25,24 @@
  *
  */
 
+#ifndef _UTILS_H_
+#define _UTILS_H_
+
 #include <avr/io.h>
 
+extern uint8_t lcdAvailable;
+
+/// Write a 16-bit value
 void Write16bitRegister(volatile uint16_t *reg, uint16_t value);
+
+/// Read a 16-bit value
 uint16_t Read16bitRegister(volatile uint16_t *reg);
+
+/// Puts the SCD to sleep until receives clock from terminal
+void SleepUntilTerminalClock();
+
+/// Puts the SCD to sleep until card is inserted or removed
+void SleepUntilCardInserted();
+
+#endif // _UTILS_H_
+
