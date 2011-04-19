@@ -17,6 +17,29 @@ See http://www.nongnu.org/avr-libc/ for more information.
 BUILD
 Compile the project using the command "make all"
 
+In order to program via JTAG or USB without root access you must create the following
+rule files under /etc/udev/rules.d (ubuntu, probably similar on other distros):
+
+45-atmel.rules:
+    ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2103", MODE="0660", GROUP="plugdev"
+    ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2107", MODE="0660", GROUP="plugdev"
+
+98-lufa-virtualserial.rules:
+    SUBSYSTEM=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="204b", MODE="660", GROUP="plugdev"
+    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="204b", MODE="660", GROUP="plugdev"
+
+    SUBSYSTEM=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="2044", MODE="660", GROUP="plugdev"
+    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="2044", MODE="660", GROUP="plugdev"
+
+    SUBSYSTEM=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="204f", MODE="660", GROUP="plugdev"
+    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="204f", MODE="660", GROUP="plugdev"
+
+    SUBSYSTEM=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="206f", MODE="660", GROUP="plugdev"
+    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="206f", MODE="660", GROUP="plugdev"
+
+99-dfu_programmer.rules:
+    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="*", MODE="666", GROUP="root"
+
 DEBUG/PROGRAM
 I recommend using an AVR Dragon for programming and debugging of your chip. Use
 avrdude to program your chip. If you don't have a hardware platform look at
