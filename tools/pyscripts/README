@@ -1,0 +1,4 @@
+This folder contains several python scripts that can be used with the SCD:
+    - scdtrace.py: parses the contents of the SCD EEPROM (i.e. the .hex file that you get from the SCD)
+                   and shows the details of the EMV commands and responses
+

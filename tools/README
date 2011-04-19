@@ -1,0 +1,6 @@
+This folder contains different tools useful in combination with the SCD.
+
+Currently there are the following tools:
+    - pyscripts: several python scripts useful in parsing SCD EEPROM data and performing other operations.
+               (see pyscripts/README for more details)
+
