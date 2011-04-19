@@ -6,7 +6,7 @@ versions.
 
 VERSION
 Current version of the software is 2.3.
-Last updated: March 16 2011.
+Last updated: 19 April 2011.
 
 REQUIREMENTS
 In order to compile this project you need the avr-libc and avr-gcc tools.
@@ -42,22 +42,24 @@ rule files under /etc/udev/rules.d (ubuntu, probably similar on other distros):
 
 DEBUG/PROGRAM
 I recommend using an AVR Dragon for programming and debugging of your chip. Use
-avrdude to program your chip. If you don't have a hardware platform look at
-my website for the hardware files. Get in touch with me if you want to order
-a SCD device.
+avrdude to program your chip. 
 
-Use "make program" to program the SCD using avrdude.
+Use the following commands to program:
+    "make program-dragon": program the SCD using avrdude and the AVR Dragon.
+    "make program-dragon-dfu": similar to "program-dragon" but include the bootloader so that you can later program the SCD via USB.
+    "make program-dfu": program the SCD via USB using dfu-programmer (you need the bootloader preinstalled on the SCD).
 
-Use "make avarice" to debug the application using the SCD and AVR Dragon.
-
-Use "make debug" to connect avr-gdb to avarice (once avarice is running).
+Use the following commands to debug:
+    "make avarice": allow debugging of the application using the SCD and AVR Dragon (next use "make debug").
+    "make debug": connect avr-gdb to avarice (once avarice is running).
+    "make debug-insight": similar to "make debug" but using the INSIGHT interface of GDB.
 
 DOCUMENTATION
 You can find the documentation in HTML format for the source code in the doc/ folder.
 Point your browser to the doc/html/index.html file.
 
-Also, check the forum of the Smart Card Detective at:
-http://www.smartcarddetective.com/
+For more information about the software and how to get the SCD check the forum of the Smart Card Detective at:
+http://www.smartcarddetective.com/forum/
 
 Copyright (C) Omar Choudary (osc22@cam.ac.uk)
 http://cl.cam.ac.uk/~osc22/scd/
