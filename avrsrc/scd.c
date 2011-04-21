@@ -56,7 +56,7 @@
 #define LCD_ENABLED 1			
 
 /// Set this to 1 to enable debug mode
-#define DEBUG 1
+#define DEBUG 0
 
 /// Set this to 1 to enable card presence interrupt
 #define ICC_PRES_INT_ENABLE 1 		
@@ -172,11 +172,12 @@ int main(void)
 
        case APP_VIRTUAL_SERIAL_PORT:
          VirtualSerial();
+       break;
 
        default:
-         selected = APP_TERMINAL;
+         selected = APP_VIRTUAL_SERIAL_PORT;
          eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);
-         Terminal();
+         VirtualSerial();
    }
 
    // if needed disable wdt to avoid restart
@@ -428,11 +429,8 @@ uint8_t Terminal()
    else
       return RET_ERROR;
 
-#if DEBUG
-#else
    // at this point the card should be inserted
    wdt_enable(WDTO_4S);
-#endif
 
    // Initialize card
    if(ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3)) return RET_ERROR;
@@ -1194,9 +1192,6 @@ uint8_t FilterAndLog()
 				FreeRAPDU(response);
 				return RET_ERROR;
 			}
-#if DEBUG
-			Led3On();
-#endif
 		}
 		else
 		{
@@ -1214,9 +1209,6 @@ uint8_t FilterAndLog()
 				return RET_ERROR;
 			}
 
-#if DEBUG
-			Led3On();
-#endif
 		}			
 
 		if(nTransactions < MAX_EXCHANGES)

@@ -176,6 +176,9 @@ program-dfu: $(HEXTARGET)
 	$(DFUPROG) $(MCU) flash $<
 	$(DFUPROG) $(MCU) reset
 
+# Set the correct values for the fuses
+set-dragon-fuses: 
+	$(AVRDUDE) -p $(AVRDUDE_PARTNO) -c $(AVRDUDE_PROGID) -P $(AVRDUDE_PORT) -e -U hfuse:w:0x19:m -U lfuse:w:0xCE:m -U efuse:w:0xF3:m
 
 # Create gdb conf file for debug
 $(GDBCONF): $(TARGET)
