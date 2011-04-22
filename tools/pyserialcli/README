@@ -1,0 +1,18 @@
+This folder contains the command line interface for serial communication to the SCD.
+
+Run the cli by typing "python clis.py -h". You should see all the possible options.
+
+Connect the SCD using the serial port or the USB Virtual Serial port and then run any desired command.
+
+Example to read eeprom:
+
+"python clis.py /dev/ttyACM0 --geteepromhex"
+or 
+"python clis.py /dev/ttyACM0 --geteepromhex file.hex"
+
+where /dev/ttyACM0 is the serial port where the SCD is connected.
+
+
+REQUIREMENTS
+You need to install Python 2.7 or later as well as the PySerial module.
+
