@@ -70,8 +70,8 @@
 	/* Function Prototypes: */
 		void SetupHardware(void);
 		void CDC_Task(void);
-        uint8_t GetHostData(char *buf, uint8_t buf_len, uint8_t *len);
-        uint8_t SendHostData(char *buf, uint8_t buf_len);
+        char* GetHostData(uint8_t len);
+        uint8_t SendHostData(char *data);
 
 		void EVENT_USB_Device_Connect(void);
 		void EVENT_USB_Device_Disconnect(void);

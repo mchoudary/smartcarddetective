@@ -2,9 +2,8 @@
  *	\brief scd.h Header file
  *
  *  Contains definitions of functions used by the Smart Card Detective
- *  including filtering and modification of EMV commands
  *
- *  Copyright (C) 2010 Omar Choudary (osc22@cam.ac.uk)
+ *  Copyright (C) 2011 Omar Choudary (osc22@cam.ac.uk)
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -108,33 +107,6 @@ void InitSCD();
 
 /// Show menu and select application
 uint8_t SelectApplication();
-
-/// Forward commands between terminal and ICC through the ICC
-uint8_t ForwardData();
-
-/// Hard-codded version of the FilterGenerateAC function
-uint8_t FilterGenerateACSimple();
-
-/// Filter Generate AC command until user accepts or denies the transaction
-uint8_t FilterGenerateAC();
-
-/// Stores the PIN data from VERIFY command to EEPROM
-uint8_t StorePIN();
-
-/// Forward commands and modify VERIFY command with EEPROM PIN data
-uint8_t ForwardAndChangePIN();
-
-/// Filter Generate AC command and log transaction
-uint8_t FilterAndLog();
-
-/// Run the terminal application
-uint8_t Terminal();
-
-/// Virtual Serial Port (send/receive command strings)
-uint8_t VirtualSerial();
-
-/// Process the serial data
-uint8_t* ProcessSerialData(const uint8_t* data, uint8_t len, uint8_t *replen);
 
 /** Self Test methods **/
 /// Tests the SCD-Terminal communication

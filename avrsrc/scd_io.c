@@ -379,7 +379,7 @@ void WriteStringLCD(char *string, uint8_t len)
  * @param unused unused parameter FILE
  * @return 0 if successful, non-zero otherwise
  */
-uint8_t LcdPutchar(uint8_t c, FILE *unused)
+int LcdPutchar(char c, FILE *unused)
 {
   static uint8_t nl_seen;
 

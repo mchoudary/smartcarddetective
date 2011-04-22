@@ -119,7 +119,7 @@ void InitLCD();
 void WriteStringLCD(char *string, uint8_t len);
 
 /// Send character to the LCD display
-uint8_t LcdPutchar(uint8_t c, FILE *unused);
+int LcdPutchar(char c, FILE *unused);
 
 /// Check if the LCD is working properly
 uint8_t CheckLCD();

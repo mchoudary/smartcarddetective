@@ -114,7 +114,7 @@ ALLTARGETS = $(TARGET) $(HEXTARGET) $(EEPTARGET) $(LSSTARGET) $(SIZETARGET) $(HE
 CLEANTARGETS = $(TARGET) $(EEPTARGET) $(LSSTARGET) $(SIZETARGET)
 
 # All project source files (C, C++, ASM)
-PRJSRC = scd.c emv.c scd_hal.c scd_io.c utils.c terminal.c scd_hal.S scd.S
+PRJSRC = scd.c emv.c scd_hal.c scd_io.c utils.c terminal.c serial.c apps.c scd_hal.S scd.S
 PRJSRC += lufa_usb_virtual_serial/VirtualSerial.c lufa_usb_virtual_serial/Descriptors.c
 PRJSRC += $(LUFA_SRC_USB)
 

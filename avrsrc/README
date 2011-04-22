@@ -5,7 +5,7 @@ gpl-3.0.txt). The rights of this code or its license can be modified in future
 versions.
 
 VERSION
-Current version of the software is 2.3.2.
+Current version of the software is 2.3.3.
 Last updated: 19 April 2011.
 
 REQUIREMENTS
@@ -64,6 +64,12 @@ Use the following commands to debug:
     "make avarice": allow debugging of the application using the SCD and AVR Dragon (next use "make debug").
     "make debug": connect avr-gdb to avarice (once avarice is running).
     "make debug-insight": similar to "make debug" but using the INSIGHT interface of GDB.
+
+SET FUSES
+For the first time using the board you might need to set up the fuses for correct operation of the SCD.
+This can be done easily typing the following command:
+    "make set-dragon-fuses"
+as the name suggests, you need to use the AVR Dragon or similar JTAG programmer.
 
 DOCUMENTATION
 You can find the documentation in HTML format for the source code in the doc/ folder.

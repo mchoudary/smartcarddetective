@@ -260,23 +260,25 @@ void CDC_Task(void)
  *
  * This function will block until a string data (ended with CR, LF or CRLF)
  * is received from the USB host (the SCD is the USB device). This method
- * removes any trailing characters (CR, LF or CRLF).
+ * removes any trailing characters (CR, LF or CRLF) and appends the NUL
+ * character '\0'.
  *
- * @param buf a caller-allocated buffer to store the received data
- * @param buf_len the size of the given buffer buf
- * @param len the legth of the received data
- *
- * @return zero is success, non-zero otherwise
+ * @param len the maximum length of the string to be received
+ * @return the NUL('\0') terminated string if success, NULL if error. The
+ * caller is responsible for eliberating the returned memory.
  */
-uint8_t GetHostData(char *buf, uint8_t buf_len, uint8_t *len)
+char* GetHostData(uint8_t len)
 {
     uint8_t pos = 0;
     uint8_t retval;
+    char* buf;
+
+    buf = (char*)malloc(len * sizeof(char));
 
     if (buf == NULL || USB_DeviceState != DEVICE_STATE_Configured)
-        return 1;
+        return NULL;
 
-    memset(buf, 0, buf_len);
+    memset(buf, 0, len);
 
 	/* Select the Serial Rx Endpoint */
 	Endpoint_SelectEndpoint(CDC_RX_EPNUM);
@@ -287,7 +289,7 @@ uint8_t GetHostData(char *buf, uint8_t buf_len, uint8_t *len)
 
         while(Endpoint_WaitUntilReady() != ENDPOINT_READYWAIT_NoError);
 
-        retval = Endpoint_Read_Stream_LE(&buf[pos], buf_len - pos);
+        retval = Endpoint_Read_Stream_LE(&buf[pos], len - pos);
         if(retval != ENDPOINT_RWSTREAM_NoError && retval != ENDPOINT_RWSTREAM_Timeout)
             continue;
 
@@ -307,39 +309,37 @@ uint8_t GetHostData(char *buf, uint8_t buf_len, uint8_t *len)
                 pos = pos - 1;
             }
 
-            *len = pos;
             break;
         }
 
         Endpoint_ClearOUT();
     }
 
-    return 0;
+    return buf;
 }
 
 /**
  * Send a string data to the USB host
  *
- * This function will transmit a string data (without adding any ending)
- * to the USB host (the SCD is the USB device)
+ * This function will transmit a string data (without adding CR or LF) to
+ * the USB host (the SCD is the USB device)
  *
- * @param buf a caller-allocated buffer containing the data to transmit
- * @param buf_len the size of the given buffer buf
+ * @param data a NUL ('\0') terminated string to be transmitted
  *
- * @return zero is success, non-zero otherwise
+ * @return zero if success, non-zero otherwise
  */
-uint8_t SendHostData(char *buf, uint8_t buf_len)
+uint8_t SendHostData(char *data)
 {
     uint8_t full;
 
-    if (buf == NULL || USB_DeviceState != DEVICE_STATE_Configured)
+    if (data == NULL || USB_DeviceState != DEVICE_STATE_Configured)
         return 1;
 
     /* Select the Serial Tx Endpoint */
     Endpoint_SelectEndpoint(CDC_TX_EPNUM);
 
     /* Write the String to the Endpoint */
-    Endpoint_Write_Stream_LE(buf, buf_len);
+    Endpoint_Write_Stream_LE(data, strlen(data));
 
     /* Remember if the packet to send completely fills the endpoint */
     full = (Endpoint_BytesInEndpoint() == CDC_TXRX_EPSIZE);
