@@ -1,6 +1,10 @@
 This folder contains different tools useful in combination with the SCD.
 
 Currently there are the following tools:
-    - pyscripts: several python scripts useful in parsing SCD EEPROM data and performing other operations.
-               (see pyscripts/README for more details)
+    - pyscripts/: several python scripts useful in parsing SCD EEPROM data and performing other operations.
+               See pyscripts/README for more details.
 
+    - pyserialcli/: a python command line interface to communicate with the SCD over serial or virtual serial (USB) port.
+               See pyserialcli/README for more details.
+
+    - install_avr_tools.sh: a script to install all the necessary tools for programming/debugging the SCD in linux.

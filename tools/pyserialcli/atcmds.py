@@ -8,4 +8,7 @@ class AT_CMD:
     AT_CGEE = 'AT+CGEE\r\n'
     AT_CEEE = 'AT+CEEE\r\n'
     AT_CGBM = 'AT+CGBM\r\n'
+    AT_CCINIT = 'AT+CCINIT\r\n'
+    AT_CCAPDU = 'AT+CCAPDU\r\n'
+    AT_CCEND = 'AT+CCEND\r\n'
 
