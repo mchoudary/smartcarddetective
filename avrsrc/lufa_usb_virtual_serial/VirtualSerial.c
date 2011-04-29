@@ -328,7 +328,7 @@ char* GetHostData(uint8_t len)
  *
  * @return zero if success, non-zero otherwise
  */
-uint8_t SendHostData(char *data)
+uint8_t SendHostData(const char *data)
 {
     uint8_t full;
 

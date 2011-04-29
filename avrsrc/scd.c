@@ -87,6 +87,8 @@ uint8_t nTransactions;		            // used to log data
 uint8_t lcdAvailable;			        // non-zero if LCD is working
 uint8_t nCounter;			            // number of transactions
 uint8_t selected;			            // ID of application selected
+uint8_t bootkey;                        // used for bootloader jump
+uint16_t revision = 0x22;               // current revision number, saved as BCD
 
 // Use the LCD as stderr (see main)
 FILE lcd_str = FDEV_SETUP_STREAM(LcdPutchar, NULL, _FDEV_SETUP_WRITE);
@@ -168,9 +170,9 @@ int main(void)
          VirtualSerial();
 
        default:
-         selected = APP_TERMINAL;
+         selected = APP_VIRTUAL_SERIAL_PORT;
          eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);
-         Terminal();
+         VirtualSerial();
    }
 
    // if needed disable wdt to avoid restart
@@ -467,6 +469,39 @@ ISR(TIMER3_COMPA_vect, ISR_NAKED)
 {	
 	reti();	// Do nothing, used just to wake up the CPU
 }
+
+
+/**
+ * Jump into the Bootloader application, typically the DFU bootloader for
+ * USB programming.
+ *
+ * Code taken from:
+ * http://www.fourwalledcubicle.com/files/LUFA/Doc/100807/html/_page__software_bootloader_start.html
+ */
+void BootloaderJumpCheck()
+{
+    uint16_t bootloader_addr;
+    uint8_t fuse_high;
+    
+    // If the reset source was the bootloader and the key is correct, clear it and jump to the bootloader
+    if ((MCUSR & (1<<WDRF)) && (bootkey == MAGIC_BOOT_KEY))
+    {
+        bootkey = 0;
+        
+        fuse_high = boot_lock_fuse_bits_get(GET_HIGH_FUSE_BITS);
+        fuse_high = (fuse_high & 0x07) >> 1;
+        if(fuse_high == 0)
+            bootloader_addr = 0xF000;
+        else if(fuse_high == 1)
+            bootloader_addr = 0xF800;
+        else if(fuse_high == 2)
+            bootloader_addr = 0xFC00;
+        else if(fuse_high == 3)
+            bootloader_addr = 0xFE00;
+            
+        ((void (*)(void))bootloader_addr)();
+    }   
+} 
 
 /**
  * This function performs a test of the hardware.

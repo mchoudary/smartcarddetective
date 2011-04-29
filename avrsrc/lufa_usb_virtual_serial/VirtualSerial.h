@@ -71,7 +71,7 @@
 		void SetupHardware(void);
 		void CDC_Task(void);
         char* GetHostData(uint8_t len);
-        uint8_t SendHostData(char *data);
+        uint8_t SendHostData(const char *data);
 
 		void EVENT_USB_Device_Connect(void);
 		void EVENT_USB_Device_Disconnect(void);

@@ -31,6 +31,7 @@
 #include <avr/io.h>
 
 extern uint8_t lcdAvailable;
+extern uint16_t revision;
 
 
 /**
@@ -44,6 +45,9 @@ typedef enum {
     AT_CGEE,        // Get EEPROM contents
     AT_CEEE,        // Erase EEPROM contents
     AT_CGBM,        // Go into bootloader mode
+    AT_CCINIT,      // Initialise a card transaction
+    AT_CCAPDU,      // Send raw terminal CAPDU
+    AT_CCEND,       // Ends the current card transaction
     AT_DUMMY
 }AT_CMD;
 
@@ -52,11 +56,19 @@ typedef enum {
 char* ProcessSerialData(const char* data);
 
 /// Parse an AT command received from the host
-uint8_t ParseATCommand(const char *data, AT_CMD *command, char *atparams);
+uint8_t ParseATCommand(const char *data, AT_CMD *command, char **atparams);
 
 /// Send EEPROM content as Intel Hex format to the virtual serial port
 uint8_t SendEEPROMHexVSerial();
     
+/// Virtual Serial Terminal application
+void TerminalVSerial();
+
+/// Convert two hex digit characters into a byte
+uint8_t hexCharsToByte(char c1, char c2);
+
+/// Convert a nibble into a hex char
+char nibbleToHexChar(uint8_t b, uint8_t high);
 
 #endif // _SERIAL_H_
 

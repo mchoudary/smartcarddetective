@@ -175,6 +175,7 @@ program-dfu: $(HEXTARGET)
 	$(DFUPROG) $(MCU) erase
 	$(DFUPROG) $(MCU) flash $<
 	$(DFUPROG) $(MCU) reset
+	$(DFUPROG) $(MCU) reset
 
 # Set the correct values for the fuses
 set-dragon-fuses: 

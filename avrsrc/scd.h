@@ -118,6 +118,9 @@ void TestSCDICC();
 /// Simple application to switch some LEDs on and off
 void SwitchLeds();
 
+/// Jump to bootloader if required
+void BootloaderJumpCheck(void) __attribute__ ((naked, section (".init3")));
+
 /// Tests the hardware (LEDs, LCD and buttons)
 void TestHardware();
 

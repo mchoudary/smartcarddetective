@@ -34,11 +34,24 @@
 /// Maximum number of command-response pairs recorded when logging
 #define MAX_EXCHANGES 50
 
+/// Use for bootloader jump
+#define MAGIC_BOOT_KEY 0x77
+
 /* Global external variables */
 extern CRP* transactionData[MAX_EXCHANGES]; 	// used to log data
 extern uint8_t nTransactions;		            // used to log data
 extern uint8_t lcdAvailable;			        // non-zero if LCD is working
 extern uint8_t nCounter;			            // number of transactions
+extern uint8_t bootkey;                         // used for bootloader jump
+
+/// Virtual Serial Port (send/receive command strings)
+uint8_t VirtualSerial();
+
+/// Clears the contents of the EEPROM
+void EraseEEPROM();
+
+/// Jump to bootloader
+void RunBootloader();
 
 /// Forward commands between terminal and ICC through the ICC
 uint8_t ForwardData();
@@ -57,10 +70,6 @@ uint8_t FilterAndLog();
 
 /// Run the terminal application
 uint8_t Terminal();
-
-/// Virtual Serial Port (send/receive command strings)
-uint8_t VirtualSerial();
-
 
 #endif // _APPS_H_
 

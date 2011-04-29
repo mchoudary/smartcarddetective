@@ -32,6 +32,9 @@
 #include <stdlib.h>
 
 #include "apps.h"
+#include "emv.h"
+#include "terminal.h"
+#include "scd_hal.h"
 #include "serial.h"
 #include "scd_io.h"
 #include "scd_values.h"
@@ -48,9 +51,16 @@ static const char strAT_CLET[] = "AT+CLET";
 static const char strAT_CGEE[] = "AT+CGEE";
 static const char strAT_CEEE[] = "AT+CEEE";
 static const char strAT_CGBM[] = "AT+CGBM";
-
+static const char strAT_CCINIT[] = "AT+CCINIT";
+static const char strAT_CCAPDU[] = "AT+CCAPDU";
+static const char strAT_CCEND[] = "AT+CCEND";
 static const char strAT_RBAD[] = "AT BAD\r\n";
 static const char strAT_ROK[] = "AT OK\r\n";
+static const char strAT_RE1[] = "AT RE1\r\n";
+static const char strAT_RE2[] = "AT RE2\r\n";
+static const char strAT_RE3[] = "AT RE3\r\n";
+static const char strAT_RE4[] = "AT RE4\r\n";
+
 
 /**
  * This method handles the data received from the serial or virtual serial port.
@@ -76,16 +86,11 @@ char* ProcessSerialData(const char* data)
     //fprintf(stderr, "%s\n", data);
     //_delay_ms(500);
     
-    tmp = ParseATCommand(data, &atcmd, atparams);
+    tmp = ParseATCommand(data, &atcmd, &atparams);
     if(tmp != 0)
         return strdup(strAT_RBAD);
 
-    if(atcmd == AT_NONE)
-    {
-        fprintf(stderr, "AT_NONE\n");
-        _delay_ms(500);
-    }
-    else if(atcmd == AT_CRST)
+    if(atcmd == AT_CRST)
     {
         // Reset the SCD within 1S so that host can reset connection
         wdt_enable(WDTO_1S);
@@ -108,6 +113,18 @@ char* ProcessSerialData(const char* data)
     {
         EraseEEPROM();
     }
+    else if(atcmd == AT_CGBM)
+    {
+        RunBootloader();
+    }
+    else if(atcmd == AT_CCINIT)
+    {
+        TerminalVSerial();
+    }
+    else
+    {
+        return strdup(strAT_RBAD);
+    }
     
     return strdup(strAT_ROK);
 } 
@@ -124,11 +141,11 @@ char* ProcessSerialData(const char* data)
  * command are located or is NULL if there are no parameters
  * @return 0 if success, non-zero otherwise
  */
-uint8_t ParseATCommand(const char *data, AT_CMD *atcmd, char *atparams)
+uint8_t ParseATCommand(const char *data, AT_CMD *atcmd, char **atparams)
 {
-    uint8_t len;
+    uint8_t len, pos;
 
-    atparams = NULL;
+    *atparams = NULL;
     *atcmd = AT_NONE;
 
     if(data == NULL || data[0] != 'A' || data[1] != 'T')
@@ -168,6 +185,24 @@ uint8_t ParseATCommand(const char *data, AT_CMD *atcmd, char *atparams)
         else if(strstr(data, strAT_CGBM) == data)
         {
             *atcmd = AT_CGBM;
+            return 0;
+        }
+        else if(strstr(data, strAT_CCINIT) == data)
+        {
+            *atcmd = AT_CCINIT;
+            return 0;
+        }
+        else if(strstr(data, strAT_CCAPDU) == data)
+        {
+            *atcmd = AT_CCAPDU;
+            pos = strlen(strAT_CCAPDU);
+            if((strlen(data) > pos + 1) && data[pos] == '=')
+                *atparams = &data[pos + 1];
+            return 0;
+        }
+        else if(strstr(data, strAT_CCEND) == data)
+        {
+            *atcmd = AT_CCEND;
             return 0;
         }
     }
@@ -253,5 +288,186 @@ uint8_t SendEEPROMHexVSerial()
         return RET_ERROR;
     
     return 0;
+}
+
+
+/**
+ * This method implements a virtual serial terminal application.
+ *
+ * The SCD receives CAPDUs from the Virtual Serial host and transmits
+ * back the RAPDUs received from the card. This method should be called
+ * upon reciving the AT+CINIT serial command.
+ *
+ * This function never returns, after completion it will restart the SCD.
+ *
+ */
+void TerminalVSerial()
+{
+    uint8_t convention, proto, TC1, TA3, TB3;
+    uint8_t tmp, i, lparams, ldata;
+    char *buf, *atparams = NULL;
+    char reply[512];
+    uint8_t data[256];
+    AT_CMD atcmd;
+    RAPDU *response = NULL;
+    CAPDU *command = NULL;
+
+    // First thing is to respond to the VS host since this method
+    // was presumably called based on an AT+CINIT command
+    if(!IsICCInserted())
+    {
+        SendHostData(strAT_RBAD);
+        wdt_enable(WDTO_60MS);
+        while(1);
+    }
+
+    if(ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3))
+    {
+        SendHostData(strAT_RBAD);
+        wdt_enable(WDTO_60MS);
+        while(1);
+    }
+    if(proto != 0) // Not implemented yet, perhaps someone will...
+    {
+        SendHostData(strAT_RBAD);
+        wdt_enable(WDTO_60MS);
+        while(1);
+    }
+
+    // If all is well so far announce the host
+    SendHostData(strAT_ROK);
+
+    // Loop continuously until the host ends the transaction or
+    // we get an error
+    while(1)
+    {
+        buf = GetHostData(255);
+        if(buf == NULL)
+        {
+            _delay_ms(100);
+            continue;
+        }
+
+        tmp = ParseATCommand(buf, &atcmd, &atparams);
+        lparams = strlen(atparams);
+
+        if(atcmd == AT_CCEND)
+        {
+            SendHostData(strAT_ROK);
+            wdt_enable(WDTO_60MS);
+            while(1);
+        }
+        else if(atcmd != AT_CCAPDU || atparams == NULL || lparams < 10 || (lparams % 2) != 0)
+        {
+            SendHostData(strAT_RBAD);
+            free(buf);
+            continue;
+        }
+
+        memset(data, 0, 256);
+        for(i = 0; i < lparams/2; i++)
+        {
+            data[i] = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
+        }
+        free(buf);
+
+        ldata = (lparams - 10) / 2;
+        command = MakeCommand(
+                data[0], data[1], data[2], data[3], data[4],
+                &data[5], ldata);
+        if(command == NULL)
+        {
+            //SendHostData(strAT_RBAD);
+            SendHostData(strAT_RE1);
+            continue;
+        }
+
+        // Send the command
+        response = TerminalSendT0Command(command, convention, TC1);
+        FreeCAPDU(command);
+        if(response == NULL)
+        {
+            FreeCAPDU(command);
+            //SendHostData(strAT_RBAD);
+            SendHostData(strAT_RE3);
+            continue;
+        }
+
+        memset(reply, 0, 512);
+        reply[0] = nibbleToHexChar(response->repStatus->sw1, 1);
+        reply[1] = nibbleToHexChar(response->repStatus->sw1, 0);
+        reply[2] = nibbleToHexChar(response->repStatus->sw2, 1);
+        reply[3] = nibbleToHexChar(response->repStatus->sw2, 0);
+        for(i = 0; i < response->lenData; i++)
+        {
+            reply[4 + i*2] = nibbleToHexChar(response->repData[i], 1);
+            reply[5 + i*2] = nibbleToHexChar(response->repData[i], 0);
+        }
+        reply[4 + i] = '\r';
+        reply[5 + i] = '\n';
+        FreeRAPDU(response);
+        SendHostData(reply);
+    } // end while(1)
+}
+
+
+/**
+ * Convert 2 hexadecimal characters ('0' to '9', 'A' to 'F') into its
+ * binary/hexa representation
+ *
+ * @param c1 the most significant hexa character
+ * @param c2 the least significant hexa character
+ * @return a byte containing the binary representation
+ */
+uint8_t hexCharsToByte(char c1, char c2)
+{
+    uint8_t result = 0;
+
+    if(c1 >= '0' && c1 <= '9')
+        result = c1 - '0';
+    else if(c1 >= 'A' && c1 <= 'F')
+        result = c1 - '7';
+    else if(c1 >= 'a' && c1 <= 'f')
+        result = c1 - 'W';
+    else
+        return 0;
+
+    result = result << 4;
+
+    if(c2 >= '0' && c2 <= '9')
+        result |= c2 - '0';
+    else if(c2 >= 'A' && c2 <= 'F')
+        result |= c2 - '7';
+    else if(c2 >= 'a' && c2 <= 'f')
+        result |= c2 - 'W';
+    else
+        return 0;
+
+    return result;
+}
+
+/**
+ * Convert a nibble into a hexadecimal character ('0' to '9', 'A' to 'F')
+ *
+ * @param b the byte containing the binary representation
+ * @param high set to 1 if high nibble should be converted, zero if the low
+ * nibble is desired. Example: byteToHexChar(0xF3, 1) returns "F".
+ * @return the character hexa representation of the given nibble
+ */
+char nibbleToHexChar(uint8_t b, uint8_t high)
+{
+    char result = '0';
+    
+    if(high)
+        b = (b & 0xF0) >> 4;
+    else
+        b = b & 0x0F;
+
+    if(b < 10)
+        result = b + '0';
+    else if(b < 16)
+        result = b + '7';
+
+    return result;
 }
 

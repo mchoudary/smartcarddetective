@@ -27,6 +27,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/wdt.h>
+#include <avr/boot.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -48,6 +49,12 @@
 
 /// Set this to 1 to enable debug mode
 #define DEBUG 0
+
+///size of SCD's EEPROM
+#define EEPROM_SIZE 4096
+
+///address of bootloader section
+#define BOOTLOADER_START_ADDRESS 0xF000
 
 /* Static variables */
 #if LCD_ENABLED
@@ -93,13 +100,6 @@ uint8_t VirtualSerial()
             continue;
         }
 
-        // Solve the problem ... why the virtual serial requires a delay before GetHostData....
-#if DEBUG
-        fprintf(stderr, "len: %d\n", strlen(buf));
-        _delay_ms(500);
-        fprintf(stderr, "%s\n", buf);
-        _delay_ms(500);
-#endif
         response = (char*)ProcessSerialData(buf);
         free(buf);
 
@@ -109,13 +109,50 @@ uint8_t VirtualSerial()
             free(response);
             response = NULL;
         }
-
-#if DEBUG
-        fprintf(stderr, "VS round\n");
-        _delay_ms(1000);
-#endif
     }
 }
+
+
+/** 
+ * This function erases the entire contents of the EEPROM.
+ * Interrupts are disabled during operation.
+ */
+void EraseEEPROM()
+{
+	uint8_t sreg, k;
+    uint16_t eeaddr = 0;
+	uint8_t eeclear[32] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	                       0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	                       0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	                       0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+	sreg = SREG;
+	cli();
+
+	// Write page by page using the block writing method
+    for(k = 0; k < EEPROM_SIZE / 32; k++)
+    {
+        eeprom_update_block(eeclear, (void*)eeaddr, 32);
+        eeaddr = eeaddr + 32;
+    }
+
+	SREG = sreg;
+}
+
+/**
+ * Jump into the Bootloader application, typically the DFU bootloader for
+ * USB programming.
+ *
+ * Code taken from:
+ * http://www.fourwalledcubicle.com/files/LUFA/Doc/100807/html/_page__software_bootloader_start.html
+ */
+void RunBootloader()
+{
+    bootkey = MAGIC_BOOT_KEY;
+    wdt_enable(WDTO_2S);
+    while(1);
+}
+
 
 /**
  * Test function to make multiple DDA transactions
@@ -193,6 +230,7 @@ endtransaction:
    
    return status;
 }
+
 
 /**
  * This method implements a terminal application with the basic steps

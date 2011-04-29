@@ -6,7 +6,11 @@ versions.
 
 VERSION
 Current version of the software is 2.3.3.
-Last updated: 19 April 2011.
+Last updated: 29 April 2011.
+
+The current version of the software uses the LUFA library for USB communication
+to the AVR:
+http://www.fourwalledcubicle.com/LUFA.php
 
 REQUIREMENTS
 In order to compile this project you need the avr-libc and avr-gcc tools.
@@ -14,8 +18,8 @@ Please use avr-libc version 1.7.0 or higher as the previous versions have proble
 with the malloc functions. See http://www.nongnu.org/avr-libc/ for more information.
 
 I recommend using my script (for any linux distribution) to install all the
-necessary tools and the correct versions:
-http://www.cl.cam.ac.uk/~osc22/files/install_avr_tools.sh
+necessary tools and the correct versions.
+The script is available under the tools/ folder.
 (please see the comments at the start of the script for additional requirements)
 
 Alternatively you can use your distro installation of avr tools but make sure
@@ -78,6 +82,6 @@ Point your browser to the doc/html/index.html file.
 For more information about the software and how to get the SCD check the forum of the Smart Card Detective at:
 http://www.smartcarddetective.com/forum/
 
-Copyright (C) Omar Choudary (osc22@cam.ac.uk)
+Copyright (C) Omar Choudary (omar.choudary@cl.cam.ac.uk)
 http://cl.cam.ac.uk/~osc22/scd/
 

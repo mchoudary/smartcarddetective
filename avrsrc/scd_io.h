@@ -42,9 +42,6 @@
 /// value for Button D in result from GetButton function
 #define BUTTON_D 0x08
 
-/// value of EEPROM address
-#define EEPROM_END 0xFFF
-
 // this is needed for the delay on the new avr-libc-1.7.0
 #ifndef __DELAY_BACKWARD_COMPATIBLE__
 #define __DELAY_BACKWARD_COMPATIBLE__
@@ -147,8 +144,5 @@ uint8_t* ReadBytesEEPROM(uint16_t addr, uint16_t len);
 
 /// Read multiple bytes from EEPROM
 uint16_t Read16bitRegister(volatile uint16_t *reg);
-
-/// Clears the contents of the EEPROM
-void EraseEEPROM();
 
 #endif // _SCD_IO_H_
