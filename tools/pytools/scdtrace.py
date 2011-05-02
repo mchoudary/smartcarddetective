@@ -107,7 +107,7 @@ class SCDTrace:
                 
         return result_string
 
-def parseHexfile(filename):
+def parseSCDHexTrace(filename):
     '''Parses an Intel Hex file containing an SCD trace and returns a list with all the
     different transaction bytes, removing starting and trailing Intel Hex bytes'''
     tracelist = []
@@ -142,6 +142,8 @@ def parseHexfile(filename):
         tracelist.append(bigtrace[j: k + len(end)])
         i = k + len(end)
 
+    f.close()
+
     return tracelist
 
 def main():
@@ -151,7 +153,7 @@ def main():
         return
 
     fname = sys.argv[1]
-    traces = parseHexfile(fname)
+    traces = parseSCDHexTrace(fname)
 
     count = 0
     for trace in traces:

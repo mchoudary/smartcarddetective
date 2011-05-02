@@ -30,8 +30,9 @@
 
 #include <avr/io.h>
 
-extern uint8_t lcdAvailable;
-extern uint16_t revision;
+extern uint8_t lcdAvailable;                // if LCD is available
+extern uint16_t revision;                   // current SVN revision in BCD
+extern extern uint8_t selected;             // ID of application selected
 
 
 /**

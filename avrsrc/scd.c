@@ -81,14 +81,14 @@ static char* strAvailable = "Avail.  apps:";
 #endif
 
 /* Global variables */
-uint8_t warmResetByte;
+uint8_t warmResetByte;                  // stores the status of last card reset (warm/cold)
 CRP* transactionData[MAX_EXCHANGES]; 	// used to log data
 uint8_t nTransactions;		            // used to log data
 uint8_t lcdAvailable;			        // non-zero if LCD is working
 uint8_t nCounter;			            // number of transactions
 uint8_t selected;			            // ID of application selected
 uint8_t bootkey;                        // used for bootloader jump
-uint16_t revision = 0x22;               // current revision number, saved as BCD
+uint16_t revision = 0x24;               // current revision number, saved as BCD
 
 // Use the LCD as stderr (see main)
 FILE lcd_str = FDEV_SETUP_STREAM(LcdPutchar, NULL, _FDEV_SETUP_WRITE);
@@ -163,7 +163,7 @@ int main(void)
        break;
 
        case APP_TERMINAL:
-         Terminal();
+         Terminal(1);
        break;
 
        case APP_VIRTUAL_SERIAL_PORT:
@@ -322,7 +322,6 @@ void InitSCD()
 	sei();	
 }
 
-
 /* Intrerupts */
 
 /**
@@ -332,108 +331,12 @@ void InitSCD()
  */
 ISR(INT0_vect)
 {
-	uint8_t i;
-	uint8_t *stream = NULL, lStream = 0;
-	uint16_t addrStream;
-	uint8_t addrHi, addrLo;
-	uint8_t cmdstr[] = {0xCC, 0xCC, 0xCC, 0xCC, 0xCC};
-	uint8_t rspstr[] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
-	uint8_t appstr[] = {0xDD, 0xDD, 0xDD, 0xDD, 0xDD};
-	uint8_t endstr[] = {0xBB, 0xBB, 0xBB, 0xBB, 0xBB};
-
 	// disable wdt
 	MCUSR = 0;
     wdt_disable();
 
-	// Update transaction counter in case it was modified
-    eeprom_write_byte((uint8_t*)EEPROM_COUNTER, nCounter);
-
-	// Get current transaction log pointer
-	addrHi = eeprom_read_byte((uint8_t*)EEPROM_TLOG_POINTER_HI);
-	addrLo = eeprom_read_byte((uint8_t*)EEPROM_TLOG_POINTER_LO);
-	addrStream = ((addrHi << 8) | addrLo);
-
-	if(addrStream == 0xFFFF) addrStream = EEPROM_TLOG_DATA;
-
-	
-	if(nTransactions > 0 && addrStream < EEPROM_MAX_ADDRESS)
-	{
-		// write selected application ID
-		eeprom_write_block(appstr, (void*)addrStream, 5);
-		addrStream += 5;
-		eeprom_write_byte((uint8_t*)addrStream, selected);
-		addrStream += 1;
-
-		// serialize and write transaction data to EEPROM
-		for(i = 0; i < nTransactions; i++)
-		{
-			// Write command to EEPROM
-			stream = SerializeCommand(transactionData[i]->cmd, &lStream);
-			if(stream != NULL)
-			{
-				eeprom_write_block(cmdstr, (void*)addrStream, 5);
-				addrStream += 5;
-				eeprom_write_block(stream, (void*)addrStream, lStream);
-				free(stream);
-				stream = NULL;
-				addrStream += lStream;
-				if(addrStream > EEPROM_MAX_ADDRESS) break;
-			}
-
-			// Write response to EEPROM
-			stream = SerializeResponse(transactionData[i]->response, &lStream);
-			if(stream != NULL)
-			{
-				eeprom_write_block(rspstr, (void*)addrStream, 5);
-				addrStream += 5;
-				eeprom_write_block(stream, (void*)addrStream, lStream);
-				free(stream);
-				stream = NULL;
-				addrStream += lStream;
-				if(addrStream > EEPROM_MAX_ADDRESS) break;
-			}
-
-			FreeCRP(transactionData[i]);	
-		}
-
-		// write end of log
-	    eeprom_write_block(endstr, (void*)addrStream, 5);
-		addrStream += 5;		
-
-		// update log address
-		addrHi = (uint8_t)((addrStream >> 8) & 0x00FF);
-		addrLo = (uint8_t)(addrStream & 0x00FF);
-		addrLo += 8;
-		addrLo = addrLo & 0xF8; // make the address multiple
-								// of 8 (page size)
-        eeprom_write_byte((uint8_t*)EEPROM_TLOG_POINTER_HI, addrHi);
-        eeprom_write_byte((uint8_t*)EEPROM_TLOG_POINTER_LO, addrLo);
-	}
-
-	if(GetTerminalFreq())
-	{
-		// warm reset
-		warmResetByte = eeprom_read_byte((uint8_t*)EEPROM_WARM_RESET);
-
-		if(warmResetByte == WARM_RESET_VALUE)
-		{
-			// we already had a warm reset so go to initial state
-                        eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, 0);
-			while(EECR & _BV(EEPE));			
-		}
-		else
-		{
-			// set 0xAA in EEPROM meaning we have a warm reset
-                        eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, WARM_RESET_VALUE);
-			while(EECR & _BV(EEPE));			
-		}		
-	}
-	else
-	{
-		// restart SCD
-        eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, 0);
-		while(EECR & _BV(EEPE));		
-	}
+    // Write the log
+    WriteLogEEPROM();
 
 	// disable INT0	
 	EIMSK &= ~(_BV(INT0));
@@ -472,7 +375,8 @@ ISR(TIMER3_COMPA_vect, ISR_NAKED)
 
 
 /**
- * Jump into the Bootloader application, typically the DFU bootloader for
+ * Check what to do at boot time based on the boot key.
+ * Can jump into the Bootloader application, typically the DFU bootloader for
  * USB programming.
  *
  * Code taken from:
@@ -482,6 +386,9 @@ void BootloaderJumpCheck()
 {
     uint16_t bootloader_addr;
     uint8_t fuse_high;
+
+    // Disable wdt in case it was enabled
+    wdt_disable();
     
     // If the reset source was the bootloader and the key is correct, clear it and jump to the bootloader
     if ((MCUSR & (1<<WDRF)) && (bootkey == MAGIC_BOOT_KEY))

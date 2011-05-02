@@ -24,6 +24,14 @@
 #ifndef _TERMINAL_H_
 #define _TERMINAL_H_
 
+/// Maximum number of command-response pairs recorded when logging
+#define MAX_EXCHANGES 50
+
+/* Global external variables */
+extern CRP* transactionData[MAX_EXCHANGES];     // used to log data
+extern uint8_t nTransactions;                   // used to log data
+extern uint8_t nCounter;                        // number of transactions
+
 // -------------------------------------------------------------------
 // Structures and enums used by the terminal
 
@@ -145,34 +153,34 @@ RAPDU* TerminalSendT0Command(CAPDU* cmd, uint8_t inverse_convention,
 
 /// Starts the application selection process
 FCITemplate* ApplicationSelection(uint8_t convention, uint8_t TC1,
-        const ByteArray *aid, uint8_t autoselect);
+        const ByteArray *aid, uint8_t autoselect, uint8_t log);
 
 /// Initialize a transaction by sending GET PROCESSING OPTS command
 APPINFO* InitializeTransaction(uint8_t convention, uint8_t TC1,
-      const FCITemplate *fci);
+      const FCITemplate *fci, uint8_t log);
 
 /// Retrieves all the Data Objects from the card
 RECORD* GetTransactionData(uint8_t convention, uint8_t TC1, 
-      const APPINFO* appInfo, ByteArray *offlineAuthData);
+      const APPINFO* appInfo, ByteArray *offlineAuthData, uint8_t log);
 
 /// Selects application based on AID list
 FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1,
-        const ByteArray *aid);
+        const ByteArray *aid, uint8_t log);
 
 /// Selects application based on PSE
 FCITemplate* SelectFromPSE(uint8_t convention, uint8_t TC1,
-      uint8_t sfiPSE, uint8_t autoselect);
+      uint8_t sfiPSE, uint8_t autoselect, uint8_t log);
 
 /// Checks if the specified PIN is accepted by the card
 uint8_t VerifyPlaintextPIN(uint8_t convention, uint8_t TC1,
-      const ByteArray *pin);
+      const ByteArray *pin, uint8_t log);
 
 /// Send a GENERATE AC request with the specified amounts
 RAPDU* SendGenerateAC(uint8_t convention, uint8_t TC1, AC_REQ_TYPE acType,
-      const TLV* cdol, const GENERATE_AC_PARAMS *params);
+      const TLV* cdol, const GENERATE_AC_PARAMS *params, uint8_t log);
 
 /// Sign the Dynamic Application Data using INTERNAL AUTHENTICATE
-RAPDU* SignDynamicData(uint8_t convention, uint8_t TC1, const ByteArray *data);
+RAPDU* SignDynamicData(uint8_t convention, uint8_t TC1, const ByteArray *data, uint8_t log);
 
 /// Returns the SFI value from the response to a SELECT command
 uint8_t GetSFIFromSELECT(const RAPDU *response);
@@ -185,7 +193,7 @@ TLV* GetPDOL(const FCITemplate *fci);
 
 /// Return the specified primitive data object from the card
 ByteArray* GetDataObject(uint8_t convention, uint8_t TC1,
-      CARD_PDO pdo);
+      CARD_PDO pdo, uint8_t log);
 
 /// Returns a TLV from a RECORD based on its tag
 TLV* GetTLVFromRECORD(RECORD *rec, uint8_t tag1, uint8_t tag2);

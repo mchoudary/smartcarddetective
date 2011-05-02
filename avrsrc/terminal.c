@@ -195,41 +195,53 @@ static RAPDU* TerminalSendT0CommandR(CAPDU *tmpCommand, RAPDU *tmpResponse,
  * @param TC1 parameter from ATR
  * @param aid the AID of the desired application; pass NULL to use existing list
  * @param autoselect just used for the case of PSE selection: use zero to enable
+ * @param log non-zero if EEPROM-log is desired, zero otherwise
  * user selection, non-zero to automatically select the first available application
  * @return the FCI Template resulted from application
  * selection or NULL if there is an error. The caller is responsible
  * for eliberating the memory used by the FCI Template.
  */
 FCITemplate* ApplicationSelection(uint8_t convention, uint8_t TC1,
-        const ByteArray *aid, uint8_t autoselect)
+        const ByteArray *aid, uint8_t autoselect, uint8_t log)
 {
-   CAPDU* command;
-   RAPDU* response;
-   uint8_t sfi;
+    CAPDU* command;
+    RAPDU* response;
+    uint8_t sfi;
 
-   // First try to select using PSE, else use list of AIDs
-   command = MakeCommandC(CMD_SELECT, bPSEString, nPSELen);
-   if(command == NULL) return NULL;
-   response = TerminalSendT0Command(command, convention, TC1);
-   FreeCAPDU(command);
-   if(response == NULL) return NULL;
+    // First try to select using PSE, else use list of AIDs
+    command = MakeCommandC(CMD_SELECT, bPSEString, nPSELen);
+    if(command == NULL) return NULL;
+    response = TerminalSendT0Command(command, convention, TC1);
+    if(response == NULL)
+    {
+        FreeCAPDU(command);
+        return NULL;
+    }
+    if(log && (nTransactions < MAX_EXCHANGES))
+    {
+        transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+        transactionData[nTransactions]->cmd = CopyCAPDU(command);
+        transactionData[nTransactions]->response = CopyRAPDU(response);
+        nTransactions++;
+    }
+    FreeCAPDU(command);
 
-   if(response->repStatus->sw1 == 0x90 &&
+    if(response->repStatus->sw1 == 0x90 &&
          response->repStatus->sw2 == 0)
-   {
-      sfi = GetSFIFromSELECT(response);
-      FreeRAPDU(response);
-      return SelectFromPSE(convention, TC1, sfi, autoselect);
-   }
-   else if((response->repStatus->sw1 == 0x6A && response->repStatus->sw2 == 0x82) ||
-         (response->repStatus->sw1 == 0x62 && response->repStatus->sw2 == 0x83))
-   {
-      FreeRAPDU(response);
-      return SelectFromAID(convention, TC1, aid);
-   }
+    {
+        sfi = GetSFIFromSELECT(response);
+        FreeRAPDU(response);
+        return SelectFromPSE(convention, TC1, sfi, autoselect, log);
+    }
+    else if((response->repStatus->sw1 == 0x6A && response->repStatus->sw2 == 0x82) ||
+        (response->repStatus->sw1 == 0x62 && response->repStatus->sw2 == 0x83))
+    {
+        FreeRAPDU(response);
+        return SelectFromAID(convention, TC1, aid, log);
+    }
 
-   FreeRAPDU(response);
-   return NULL;
+    FreeRAPDU(response);
+    return NULL;
 }
 
 /**
@@ -241,36 +253,48 @@ FCITemplate* ApplicationSelection(uint8_t convention, uint8_t TC1,
  * @param convention parameter from ATR
  * @param TC1 parameter from ATR
  * @param fci the FCI Template returned in application selection
+ * @param log non-zero if EEPROM-log is desired, zero otherwise
  * @return an APPINFO cotnaining the AIP and AFL or NULL if
  * an error ocurrs
  */
 APPINFO* InitializeTransaction(uint8_t convention, uint8_t TC1,
-      const FCITemplate *fci)
+      const FCITemplate *fci, uint8_t log)
 {
-   TLV *pdol;
-   ByteArray *data;
-   CAPDU *command;
-   RAPDU *response;
-   APPINFO *appInfo;
+    TLV *pdol;
+    ByteArray *data;
+    CAPDU *command;
+    RAPDU *response;
+    APPINFO *appInfo;
 
-   pdol = GetPDOL(fci);
-   if(pdol == NULL) return NULL;
-   pdol->tag1 = 0x83;
-   pdol->tag2 = 0;
-   data = SerializeTLV(pdol);
-   if(data == NULL) return NULL;
+    pdol = GetPDOL(fci);
+    if(pdol == NULL) return NULL;
+    pdol->tag1 = 0x83;
+    pdol->tag2 = 0;
+    data = SerializeTLV(pdol);
+    if(data == NULL) return NULL;
 
-   command = MakeCommandC(CMD_GET_PROCESSING_OPTS, data->bytes, data->len);
-   FreeByteArray(data);
-   if(command == NULL) return NULL;
-   response = TerminalSendT0Command(command, convention, TC1);
-   FreeCAPDU(command);
-   if(response == NULL) return NULL;
+    command = MakeCommandC(CMD_GET_PROCESSING_OPTS, data->bytes, data->len);
+    FreeByteArray(data);
+    if(command == NULL) return NULL;
+    response = TerminalSendT0Command(command, convention, TC1);
+    if(response == NULL)
+    {
+        FreeCAPDU(command);
+        return NULL;
+    }
+    if(log && (nTransactions < MAX_EXCHANGES))
+    {
+        transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+        transactionData[nTransactions]->cmd = CopyCAPDU(command);
+        transactionData[nTransactions]->response = CopyRAPDU(response);
+        nTransactions++;
+    }
+    FreeCAPDU(command);
 
-   appInfo = ParseApplicationInfo(response->repData, response->lenData);
-   FreeRAPDU(response);
+    appInfo = ParseApplicationInfo(response->repData, response->lenData);
+    FreeRAPDU(response);
 
-   return appInfo;
+    return appInfo;
 }
 
 /**
@@ -283,13 +307,14 @@ APPINFO* InitializeTransaction(uint8_t convention, uint8_t TC1,
  * @param TC1 parameter from ATR
  * @param appInfo the APPINFO structure that specifies which files to read
  * @param offlineAuthData array of bytes representing the offline authentication
+ * @param log non-zero if EEPROM-log is desired, zero otherwise
  * data. The user should send an empty but initialized ByteArray if this data
  * is required. This method will ignore any previous contents.
  * @return a RECORD structure containing all the data objects read or NULL
  * if there are no objects to read or an error ocurrs
  */
 RECORD* GetTransactionData(uint8_t convention, uint8_t TC1, const APPINFO* appInfo,
-   ByteArray *offlineAuthData)
+   ByteArray *offlineAuthData, uint8_t log)
 {
    RECORD *data, *tmp;
    CAPDU *command;
@@ -325,6 +350,13 @@ RECORD* GetTransactionData(uint8_t convention, uint8_t TC1, const APPINFO* appIn
          command->cmdHeader->p1 = j;
          command->cmdHeader->p2 = (uint8_t)(afl->sfi | 4);
          response = TerminalSendT0Command(command, convention, TC1);
+         if(log && (nTransactions < MAX_EXCHANGES))
+         {
+            transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+            transactionData[nTransactions]->cmd = CopyCAPDU(command);
+            transactionData[nTransactions]->response = CopyRAPDU(response);
+            nTransactions++;
+         }
          
          if(response == NULL || response->repStatus->sw1 != 0x90 || 
                response->repStatus->sw2 != 0)
@@ -335,7 +367,10 @@ RECORD* GetTransactionData(uint8_t convention, uint8_t TC1, const APPINFO* appIn
             return NULL;
          }
          if(response->repData == NULL || response->lenData < 2)
+         {
+            FreeRAPDU(response);
             continue;
+         }
 
          // If there is data for offline authentication
          if(offlineAuthData != NULL && 
@@ -399,12 +434,14 @@ RECORD* GetTransactionData(uint8_t convention, uint8_t TC1, const APPINFO* appIn
  * @param TC1 parameter from ATR
  * @param aid if given will be used as Application ID (AID), else
  * use predefined list. This parameter remains untouched
+ * @param log non-zero if EEPROM-log is desired, zero otherwise
  * @return the FCI Template resulted from application
  * selection or NULL if there is an error. The caller is responsible
  * for eliberating the memory used by the FCI Template.
  * @sa ApplicationSelection
  */
-FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1, const ByteArray *aid)
+FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1, const ByteArray *aid,
+        uint8_t log)
 {
    CAPDU* command;
    RAPDU* response;
@@ -416,8 +453,19 @@ FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1, const ByteArray *aid
       command = MakeCommandC(CMD_SELECT, aid->bytes, nAIDLen);
       if(command == NULL) return NULL;
       response = TerminalSendT0Command(command, convention, TC1);
+      if(response == NULL)
+      {
+          FreeCAPDU(command);
+          return NULL;
+      }
+      if(log && (nTransactions < MAX_EXCHANGES))
+      {
+          transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+          transactionData[nTransactions]->cmd = CopyCAPDU(command);
+          transactionData[nTransactions]->response = CopyRAPDU(response);
+          nTransactions++;
+      }
       FreeCAPDU(command);
-      if(response == NULL) return NULL;
 
       if(response->repStatus->sw1 == 0x90 && response->repStatus->sw2 == 0)
       {
@@ -435,9 +483,21 @@ FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1, const ByteArray *aid
       command = MakeCommandC(CMD_SELECT, &(bAIDList[nAIDLen * i]), nAIDLen);
       if(command == NULL) return NULL;
       response = TerminalSendT0Command(command, convention, TC1);
-      FreeCAPDU(command);
-      if(response == NULL) return NULL;
+      if(response == NULL)
+      {
+          FreeCAPDU(command);
+          return NULL;
+      }
 
+      if(log && (nTransactions < MAX_EXCHANGES))
+      {
+          transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+          transactionData[nTransactions]->cmd = CopyCAPDU(command);
+          transactionData[nTransactions]->response = CopyRAPDU(response);
+          nTransactions++;
+      }
+
+      FreeCAPDU(command);
       if(response->repStatus->sw1 == 0x90 && response->repStatus->sw2 == 0)
       {
          fci = ParseFCI(response->repData, response->lenData);
@@ -467,13 +527,14 @@ FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1, const ByteArray *aid
  * SELECT command
  * @param autoselect if non-zero the first application will be used,
  * else the user will select from a menu (LCD needed).
+ * @param log non-zero if EEPROM-log is desired, zero otherwise
  * @return the FCI Template resulted from application
  * selection or NULL if there is an error. The caller is responsible
  * for eliberating the memory used by the FCI Template.
  * @sa ApplicationSelection
  */
 FCITemplate* SelectFromPSE(uint8_t convention, uint8_t TC1,
-      uint8_t sfiPSE, uint8_t autoselect)
+      uint8_t sfiPSE, uint8_t autoselect, uint8_t log)
 {
    FCITemplate* fci = NULL;
    CAPDU* command = NULL;
@@ -499,8 +560,16 @@ FCITemplate* SelectFromPSE(uint8_t convention, uint8_t TC1,
       more = 0;
       command->cmdHeader->p1 += 1;
       response = TerminalSendT0Command(command, convention, TC1);
-
       if(response == NULL) goto clean;
+      
+      if(log && (nTransactions < MAX_EXCHANGES))
+      {
+          transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+          transactionData[nTransactions]->cmd = CopyCAPDU(command);
+          transactionData[nTransactions]->response = CopyRAPDU(response);
+          nTransactions++;
+      }
+
       if(response->repData != NULL)
       {
          more = 1;
@@ -572,120 +641,134 @@ clean:
  * @param pin the PIN as a ByteArray having the structure
  * required by the VERIFY command. The data in the ByteArray
  * will be copied as it is on the VERIFY payload
+ * @param log non-zero if EEPROM-log is desired, zero otherwise
  * @return 0 if the PIN is correct, non-zero otherwise or if
  * an error ocurred
  */
 uint8_t VerifyPlaintextPIN(uint8_t convention, uint8_t TC1,
-      const ByteArray *pin)
+      const ByteArray *pin, uint8_t log)
 {
-   CAPDU* command;
-   RAPDU* response;
+    CAPDU* command;
+    RAPDU* response;
 
-   if(pin == NULL || pin->len == 0) return -1;
+    if(pin == NULL || pin->len == 0) return -1;
 
-   command = MakeCommandC(CMD_VERIFY, pin->bytes, pin->len);
-   if(command == NULL) return RET_ERROR;
-   response = TerminalSendT0Command(command, convention, TC1);
-   FreeCAPDU(command);
-   if(response == NULL) return RET_ERROR;
-   if(response->repStatus == NULL || response->repStatus->sw1 != 0x90 || 
+    command = MakeCommandC(CMD_VERIFY, pin->bytes, pin->len);
+    if(command == NULL) return RET_ERROR;
+    response = TerminalSendT0Command(command, convention, TC1);
+    if(response == NULL)
+    {
+        FreeCAPDU(command);
+        return RET_ERROR;
+    }
+    if(log && (nTransactions < MAX_EXCHANGES))
+    {
+      transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+      transactionData[nTransactions]->cmd = CopyCAPDU(command);
+      transactionData[nTransactions]->response = CopyRAPDU(response);
+      nTransactions++;
+    }
+    FreeCAPDU(command);
+
+    if(response->repStatus == NULL || response->repStatus->sw1 != 0x90 || 
          response->repStatus->sw2 != 0)
-   {
-      FreeRAPDU(response);
-      return RET_ERROR;
-   }
+    {
+        FreeRAPDU(response);
+        return RET_ERROR;
+    }
 
-   FreeRAPDU(response);
-   return 0;
+    FreeRAPDU(response);
+    return 0;
 }
 
 /**
- * This function sends a GENERATE AC command to the card
- * with the specified amount and request (ARQC, AAC or TC)
- * Any of the amount parameters can be sent as NULL in which
- * case that field will be filled with zeros
- *
- * @param convention parameter from ATR
- * @param TC1 parameter from ATR
- * @param cdol the CDOL data object read from the card
- * @param acType the type of Applicatio Cryptogram (AC)
- * requested (see AC_REQ_TYPE)
- * @param params a GENERATE_AC_PARAMS structure containing the
- * data to be sent in the GENERATE AC command. This structure is
- * mandatory for this command, even if some of the fields are unused.
- * @return the response APDU given by the card or NULL if an
- * error ocurred. The caller is responsible for eliberating this
- * memory.
- */
+* This function sends a GENERATE AC command to the card
+* with the specified amount and request (ARQC, AAC or TC)
+* Any of the amount parameters can be sent as NULL in which
+* case that field will be filled with zeros
+*
+* @param convention parameter from ATR
+* @param TC1 parameter from ATR
+* @param cdol the CDOL data object read from the card
+* @param acType the type of Applicatio Cryptogram (AC)
+* requested (see AC_REQ_TYPE)
+* @param params a GENERATE_AC_PARAMS structure containing the
+* data to be sent in the GENERATE AC command. This structure is
+* mandatory for this command, even if some of the fields are unused.
+* @param log non-zero if EEPROM-log is desired, zero otherwise
+* @return the response APDU given by the card or NULL if an
+* error ocurred. The caller is responsible for eliberating this
+* memory.
+*/
 RAPDU* SendGenerateAC(uint8_t convention, uint8_t TC1, AC_REQ_TYPE acType,
-      const TLV* cdol, const GENERATE_AC_PARAMS *params)
+  const TLV* cdol, const GENERATE_AC_PARAMS *params, uint8_t log)
 {
-   CAPDU* command;
-   RAPDU* response;
-   uint8_t* data;
-   uint8_t i, j, k, len;
-   TLV* tlv;
+CAPDU* command;
+RAPDU* response;
+uint8_t* data;
+uint8_t i, j, k, len;
+TLV* tlv;
 
-   if(cdol == NULL || params == NULL) return NULL;
+if(cdol == NULL || params == NULL) return NULL;
 
-   // make the command data to be sent
-   data = NULL;
-   len = 0;
-   i = 0;
-   k = 0;
-   while(k < cdol->len)
-   {
-      tlv = ParseTLV(&(cdol->value[k]), cdol->len - k, 0);
-      k += 2;
-      if(tlv == NULL) continue;
-      if(tlv->tag2 != 0) k += 1;
-      len += tlv->len;
-      data = (uint8_t*)realloc(data, len * sizeof(uint8_t));
-      if(data == NULL)
-      {
-         FreeTLV(tlv);
-         return NULL;
-      }
+// make the command data to be sent
+data = NULL;
+len = 0;
+i = 0;
+k = 0;
+while(k < cdol->len)
+{
+  tlv = ParseTLV(&(cdol->value[k]), cdol->len - k, 0);
+  k += 2;
+  if(tlv == NULL) continue;
+  if(tlv->tag2 != 0) k += 1;
+  len += tlv->len;
+  data = (uint8_t*)realloc(data, len * sizeof(uint8_t));
+  if(data == NULL)
+  {
+     FreeTLV(tlv);
+     return NULL;
+  }
 
-      if(tlv->tag1 == 0x9F && tlv->tag2 == 0x02)
-      {
-         for(j = 0; j < tlv->len && j < sizeof(params->amount); j++)
-            data[i++] = params->amount[j];
-         while(j < tlv->len)
-         {
-            data[i++] = 0;
-            j++;
-         }
-      }
-      else if(tlv->tag1 == 0x9F && tlv->tag2 == 0x03) 
-      {
-         for(j = 0; j < tlv->len && j < sizeof(params->amountOther); j++)
-            data[i++] = params->amountOther[j];
-         while(j < tlv->len)
-         {
-            data[i++] = 0;
-            j++;
-         }
-      }
-      else if(tlv->tag1 == 0x9F && tlv->tag2 == 0x1A)
-      {
-         for(j = 0; j < tlv->len && j < sizeof(params->terminalCountryCode); j++)
-            data[i++] = params->terminalCountryCode[j];
-         while(j < tlv->len)
-         {
-            data[i++] = 0;
-            j++;
-         }
-      }
-      else if(tlv->tag1 == 0x95)
-      {
-         for(j = 0; j < tlv->len && j < sizeof(params->tvr); j++)
-            data[i++] = params->tvr[j];
-         while(j < tlv->len)
-         {
-            data[i++] = 0;
-            j++;
-         }
+  if(tlv->tag1 == 0x9F && tlv->tag2 == 0x02)
+  {
+     for(j = 0; j < tlv->len && j < sizeof(params->amount); j++)
+        data[i++] = params->amount[j];
+     while(j < tlv->len)
+     {
+        data[i++] = 0;
+        j++;
+     }
+  }
+  else if(tlv->tag1 == 0x9F && tlv->tag2 == 0x03) 
+  {
+     for(j = 0; j < tlv->len && j < sizeof(params->amountOther); j++)
+        data[i++] = params->amountOther[j];
+     while(j < tlv->len)
+     {
+        data[i++] = 0;
+        j++;
+     }
+  }
+  else if(tlv->tag1 == 0x9F && tlv->tag2 == 0x1A)
+  {
+     for(j = 0; j < tlv->len && j < sizeof(params->terminalCountryCode); j++)
+        data[i++] = params->terminalCountryCode[j];
+     while(j < tlv->len)
+     {
+        data[i++] = 0;
+        j++;
+     }
+  }
+  else if(tlv->tag1 == 0x95)
+  {
+     for(j = 0; j < tlv->len && j < sizeof(params->tvr); j++)
+        data[i++] = params->tvr[j];
+     while(j < tlv->len)
+     {
+        data[i++] = 0;
+        j++;
+     }
       }
       else if(tlv->tag1 == 0x5F && tlv->tag2 == 0x2A)
       {
@@ -789,6 +872,13 @@ RAPDU* SendGenerateAC(uint8_t convention, uint8_t TC1, AC_REQ_TYPE acType,
    if(command == NULL) return NULL;
    command->cmdHeader->p1 = (uint8_t)acType;
    response = TerminalSendT0Command(command, convention, TC1);
+   if(log && (nTransactions < MAX_EXCHANGES))
+   {
+      transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+      transactionData[nTransactions]->cmd = CopyCAPDU(command);
+      transactionData[nTransactions]->response = CopyRAPDU(response);
+      nTransactions++;
+   }
 
    FreeCAPDU(command);
    return response;
@@ -804,11 +894,13 @@ RAPDU* SendGenerateAC(uint8_t convention, uint8_t TC1, AC_REQ_TYPE acType,
  * @param TC1 parameter from ATR
  * @param data ByteArray structure containing the data that shall
  * be passed to the INTERNAL AUTHENTICATE command
+ * @param log non-zero if EEPROM-log is desired, zero otherwise
  * @return the response APDU given by the card or NULL if an
  * error ocurred. The caller is responsible for eliberating this
  * memory.
  */
-RAPDU* SignDynamicData(uint8_t convention, uint8_t TC1, const ByteArray *data)
+RAPDU* SignDynamicData(uint8_t convention, uint8_t TC1, const ByteArray *data,
+        uint8_t log)
 {
    CAPDU* command;
    RAPDU* response;
@@ -816,6 +908,13 @@ RAPDU* SignDynamicData(uint8_t convention, uint8_t TC1, const ByteArray *data)
    command = MakeCommandC(CMD_INTERNAL_AUTHENTICATE, data->bytes, data->len);
    if(command == NULL) return NULL;
    response = TerminalSendT0Command(command, convention, TC1);
+   if(log && response != NULL && (nTransactions < MAX_EXCHANGES))
+   {
+      transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+      transactionData[nTransactions]->cmd = CopyCAPDU(command);
+      transactionData[nTransactions]->response = CopyRAPDU(response);
+      nTransactions++;
+   }
    FreeCAPDU(command);
    return response;
 }
@@ -1078,50 +1177,63 @@ TLV* GetPDOL(const FCITemplate *fci)
  * @param TC1 parameter from ATR
  * @param pdo the kind of data object you want to retrieve
  * (see CARD_PDO)
+ * @param log non-zero if EEPROM-log is desired, zero otherwise
  * @return a ByteArray structure containing the data retrieved
  * or NULL if no data is available or there is an error. The
  * caller is responsible to release the memory used by the
  * ByteArray structure
  */
 ByteArray* GetDataObject(uint8_t convention, uint8_t TC1, 
-      CARD_PDO pdo)
+      CARD_PDO pdo, uint8_t log)
 {
-   ByteArray* data = NULL;
-   CAPDU* command;
-   RAPDU* response;
-   TLV* tlv;
+    ByteArray* data = NULL;
+    CAPDU* command;
+    RAPDU* response;
+    TLV* tlv;
 
-   command = MakeCommandC(CMD_GET_DATA, NULL, 0);
-   if(command == NULL) return NULL;
-   command->cmdHeader->p1 = 0x9F;
-   command->cmdHeader->p2 = (uint8_t)pdo;
-   response = TerminalSendT0Command(command, convention, TC1);
-   FreeCAPDU(command);
-   if(response == NULL) return NULL;
-   if(response->repData == NULL)
-   {
-      FreeRAPDU(response);
-      return NULL;
-   }
+    command = MakeCommandC(CMD_GET_DATA, NULL, 0);
+    if(command == NULL) return NULL;
+    command->cmdHeader->p1 = 0x9F;
+    command->cmdHeader->p2 = (uint8_t)pdo;
+    response = TerminalSendT0Command(command, convention, TC1);
+    if(response == NULL)
+    {
+        FreeCAPDU(command);
+        return NULL;
+    }
+    if(log && (nTransactions < MAX_EXCHANGES))
+    {
+        transactionData[nTransactions] = (CRP*)malloc(sizeof(CRP));
+        transactionData[nTransactions]->cmd = CopyCAPDU(command);
+        transactionData[nTransactions]->response = CopyRAPDU(response);
+        nTransactions++;
+    }
+    FreeCAPDU(command);
 
-   tlv = ParseTLV(response->repData, response->lenData, 1);
-   FreeRAPDU(response);
-   if(tlv == NULL) return NULL;
-   data = (ByteArray*)malloc(sizeof(ByteArray));
-   data->len = tlv->len;
-   data->bytes = NULL;
-   if(tlv->len > 0 && tlv->value != NULL)
-   {
-      data->bytes = (uint8_t*)malloc(data->len * sizeof(uint8_t));
-      if(data->bytes == NULL)
-      {
-         free(data);
-         return NULL;
-      }
-      memcpy(data->bytes, tlv->value, data->len);
-   }
+    if(response->repData == NULL)
+    {
+        FreeRAPDU(response);
+        return NULL;
+    }
 
-   return data;
+    tlv = ParseTLV(response->repData, response->lenData, 1);
+    FreeRAPDU(response);
+    if(tlv == NULL) return NULL;
+    data = (ByteArray*)malloc(sizeof(ByteArray));
+    data->len = tlv->len;
+    data->bytes = NULL;
+    if(tlv->len > 0 && tlv->value != NULL)
+    {
+        data->bytes = (uint8_t*)malloc(data->len * sizeof(uint8_t));
+        if(data->bytes == NULL)
+        {
+            free(data);
+            return NULL;
+        }
+        memcpy(data->bytes, tlv->value, data->len);
+    }
+
+    return data;
 }
 
 /**

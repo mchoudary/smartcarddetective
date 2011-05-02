@@ -38,10 +38,12 @@
 #define MAGIC_BOOT_KEY 0x77
 
 /* Global external variables */
+extern uint8_t warmResetByte;                   // stores the status of last card reset (warm/cold)
 extern CRP* transactionData[MAX_EXCHANGES]; 	// used to log data
 extern uint8_t nTransactions;		            // used to log data
 extern uint8_t lcdAvailable;			        // non-zero if LCD is working
 extern uint8_t nCounter;			            // number of transactions
+extern uint8_t selected;                        // ID of application selected
 extern uint8_t bootkey;                         // used for bootloader jump
 
 /// Virtual Serial Port (send/receive command strings)
@@ -69,7 +71,10 @@ uint8_t ForwardAndChangePIN();
 uint8_t FilterAndLog();
 
 /// Run the terminal application
-uint8_t Terminal();
+uint8_t Terminal(uint8_t log);
+
+/// Write the log of the last transaction to EEPROM
+void WriteLogEEPROM();
 
 #endif // _APPS_H_
 

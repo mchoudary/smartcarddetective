@@ -5,8 +5,8 @@ gpl-3.0.txt). The rights of this code or its license can be modified in future
 versions.
 
 VERSION
-Current version of the software is 2.3.3.
-Last updated: 29 April 2011.
+Current version of the software is 2.3.4.
+Last updated: 02 May 2011.
 
 The current version of the software uses the LUFA library for USB communication
 to the AVR:

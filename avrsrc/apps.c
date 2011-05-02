@@ -171,7 +171,7 @@ uint8_t TestDDA(uint8_t convention, uint8_t TC1)
 
    // Select application
    //fci = ApplicationSelection(convention, TC1); // to use PSE first
-   fci = SelectFromAID(convention, TC1, NULL);
+   fci = SelectFromAID(convention, TC1, NULL, 0);
    if(fci == NULL)
    {
       fprintf(stderr, "%s\n", strError);
@@ -181,7 +181,7 @@ uint8_t TestDDA(uint8_t convention, uint8_t TC1)
    wdt_reset();
 
    // Start transaction by issuing Get Processing Opts command
-   appInfo = InitializeTransaction(convention, TC1, fci);
+   appInfo = InitializeTransaction(convention, TC1, fci, 0);
    if(appInfo == NULL)
    {
       fprintf(stderr, "%s\n", strError);
@@ -192,7 +192,7 @@ uint8_t TestDDA(uint8_t convention, uint8_t TC1)
 
    // Get transaction data
    offlineAuthData = (ByteArray*)malloc(sizeof(ByteArray));
-   tData = GetTransactionData(convention, TC1, appInfo, offlineAuthData);
+   tData = GetTransactionData(convention, TC1, appInfo, offlineAuthData, 0);
    if(tData == NULL)
    {
       fprintf(stderr, "%s\n", strError);
@@ -205,7 +205,7 @@ uint8_t TestDDA(uint8_t convention, uint8_t TC1)
    ddata = MakeByteArrayV(4,
          0x05, 0x06, 0x07, 0x08
          );
-   response = SignDynamicData(convention, TC1, ddata);
+   response = SignDynamicData(convention, TC1, ddata, 0);
    if(response == NULL)
    {
       fprintf(stderr, "%s\n", strError);
@@ -237,9 +237,10 @@ endtransaction:
  * of an EMV transaction. This includes selection by AID, DDA signature,
  * PIN verification and transaction data authorization (Generate AC).
  *
+ * @param log send non-zero if EEPROM log is desired, zero otherwise
  * @return 0 if successful, non-zero otherwise
  */
-uint8_t Terminal()
+uint8_t Terminal(uint8_t log)
 {
    uint8_t convention, proto, TC1, TA3, TB3;
    uint8_t tmp;
@@ -288,7 +289,7 @@ uint8_t Terminal()
 
    // Select application
    //fci = ApplicationSelection(convention, TC1); // to use PSE first
-   fci = SelectFromAID(convention, TC1, NULL);
+   fci = SelectFromAID(convention, TC1, NULL, log);
    if(fci == NULL)
    {
       fprintf(stderr, "%s\n", strError);
@@ -297,7 +298,7 @@ uint8_t Terminal()
    wdt_reset();
 
    // Start transaction by issuing Get Processing Opts command
-   appInfo = InitializeTransaction(convention, TC1, fci);
+   appInfo = InitializeTransaction(convention, TC1, fci, log);
    if(appInfo == NULL)
    {
       fprintf(stderr, "%s\n", strError);
@@ -307,7 +308,7 @@ uint8_t Terminal()
 
    // Get transaction data
    offlineAuthData = (ByteArray*)malloc(sizeof(ByteArray));
-   tData = GetTransactionData(convention, TC1, appInfo, offlineAuthData);
+   tData = GetTransactionData(convention, TC1, appInfo, offlineAuthData, log);
    if(tData == NULL)
    {
       fprintf(stderr, "%s\n", strError);
@@ -321,7 +322,7 @@ uint8_t Terminal()
       ddata = MakeByteArrayV(4,
             0x01, 0x02, 0x03, 0x04
             );
-      response = SignDynamicData(convention, TC1, ddata);
+      response = SignDynamicData(convention, TC1, ddata, log);
       if(response == NULL)
       {
          fprintf(stderr, "%s\n", strError);
@@ -331,7 +332,7 @@ uint8_t Terminal()
    }
 
    // Get PIN try counter
-   pinTryCounter = GetDataObject(convention, TC1, PDO_PIN_TRY_COUNTER);
+   pinTryCounter = GetDataObject(convention, TC1, PDO_PIN_TRY_COUNTER, log);
    if(pinTryCounter == NULL)
    {
       fprintf(stderr, "%s\n", strError);
@@ -357,7 +358,7 @@ uint8_t Terminal()
       fprintf(stderr, "%s\n", strError);
       goto endpintry;
    }
-   tmp = VerifyPlaintextPIN(convention, TC1, pin);
+   tmp = VerifyPlaintextPIN(convention, TC1, pin, log);
    if(tmp == 0)
       fprintf(stderr, "%s\n", strPINOK);
    else
@@ -367,8 +368,7 @@ uint8_t Terminal()
    }
    wdt_reset();
 
-   // Send the first GENERATE_AC command
-   acParams.amount[5] = 0x55;
+   // Send the first GENERATE_AC command (amount = 0)
    acParams.tvr[0] = 0x80;
    acParams.terminalCountryCode[0] = 0x08;
    acParams.terminalCountryCode[1] = 0x26;
@@ -385,15 +385,22 @@ uint8_t Terminal()
    }
 
    if(response != NULL) FreeRAPDU(response);
-   response = SendGenerateAC(convention, TC1, AC_REQ_ARQC, cdol, &acParams);
+   response = SendGenerateAC(convention, TC1, AC_REQ_ARQC, cdol, &acParams, log);
+   wdt_disable();
    if(response == NULL)
    {
       fprintf(stderr, "%s\n", strError);
       goto endpin;
    }
-   wdt_reset();
 
+   if(log)
+   {
+       fprintf(stderr, "Writing Log\n");
+       WriteLogEEPROM();
+   }
+   fprintf(stderr, "Done\n");
 
+   FreeRAPDU(response);
 endpin:
    FreeByteArray(pin);
 endpintry:
@@ -408,7 +415,9 @@ endfci:
    FreeFCITemplate(fci);
 endtransaction:
    DeactivateICC();
-   _delay_ms(2000);
+
+   wdt_enable(WDTO_15MS);
+   while(1);
    
    return 0;
 }
@@ -1301,4 +1310,113 @@ uint8_t ForwardData()
 
 	return 0;
 }
+
+/**
+ * This method writes to EEPROM the log of the last transaction.
+ * The log is done either while monitoring a card-terminal
+ * transaction or by enabling log while running  other application
+ * (e.g. the Terminal() application).
+ */
+void WriteLogEEPROM()
+{
+	uint8_t i;
+	uint8_t *stream = NULL, lStream = 0;
+	uint16_t addrStream;
+	uint8_t addrHi, addrLo;
+	uint8_t cmdstr[] = {0xCC, 0xCC, 0xCC, 0xCC, 0xCC};
+	uint8_t rspstr[] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA};
+	uint8_t appstr[] = {0xDD, 0xDD, 0xDD, 0xDD, 0xDD};
+	uint8_t endstr[] = {0xBB, 0xBB, 0xBB, 0xBB, 0xBB};
+
+
+	// Update transaction counter in case it was modified
+    eeprom_write_byte((uint8_t*)EEPROM_COUNTER, nCounter);
+
+	// Get current transaction log pointer
+	addrHi = eeprom_read_byte((uint8_t*)EEPROM_TLOG_POINTER_HI);
+	addrLo = eeprom_read_byte((uint8_t*)EEPROM_TLOG_POINTER_LO);
+	addrStream = ((addrHi << 8) | addrLo);
+
+	if(addrStream == 0xFFFF) addrStream = EEPROM_TLOG_DATA;
+
+	
+	if(nTransactions > 0 && addrStream < EEPROM_MAX_ADDRESS)
+	{
+		// write selected application ID
+		eeprom_write_block(appstr, (void*)addrStream, 5);
+		addrStream += 5;
+		eeprom_write_byte((uint8_t*)addrStream, selected);
+		addrStream += 1;
+
+		// serialize and write transaction data to EEPROM
+		for(i = 0; i < nTransactions; i++)
+		{
+			// Write command to EEPROM
+			stream = SerializeCommand(transactionData[i]->cmd, &lStream);
+			if(stream != NULL)
+			{
+				eeprom_write_block(cmdstr, (void*)addrStream, 5);
+				addrStream += 5;
+				eeprom_write_block(stream, (void*)addrStream, lStream);
+				free(stream);
+				stream = NULL;
+				addrStream += lStream;
+				if(addrStream > EEPROM_MAX_ADDRESS) break;
+			}
+
+			// Write response to EEPROM
+			stream = SerializeResponse(transactionData[i]->response, &lStream);
+			if(stream != NULL)
+			{
+				eeprom_write_block(rspstr, (void*)addrStream, 5);
+				addrStream += 5;
+				eeprom_write_block(stream, (void*)addrStream, lStream);
+				free(stream);
+				stream = NULL;
+				addrStream += lStream;
+				if(addrStream > EEPROM_MAX_ADDRESS) break;
+			}
+
+			FreeCRP(transactionData[i]);	
+		}
+
+		// write end of log
+	    eeprom_write_block(endstr, (void*)addrStream, 5);
+		addrStream += 5;		
+
+		// update log address
+		addrHi = (uint8_t)((addrStream >> 8) & 0x00FF);
+		addrLo = (uint8_t)(addrStream & 0x00FF);
+		addrLo += 8;
+		addrLo = addrLo & 0xF8; // make the address multiple
+								// of 8 (page size)
+        eeprom_write_byte((uint8_t*)EEPROM_TLOG_POINTER_HI, addrHi);
+        eeprom_write_byte((uint8_t*)EEPROM_TLOG_POINTER_LO, addrLo);
+	}
+
+	if(GetTerminalFreq())
+	{
+		// warm reset
+		warmResetByte = eeprom_read_byte((uint8_t*)EEPROM_WARM_RESET);
+
+		if(warmResetByte == WARM_RESET_VALUE)
+		{
+			// we already had a warm reset so go to initial state
+            eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, 0);
+			while(EECR & _BV(EEPE));			
+		}
+		else
+		{
+			// set 0xAA in EEPROM meaning we have a warm reset
+            eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, WARM_RESET_VALUE);
+			while(EECR & _BV(EEPE));			
+		}		
+	}
+	else
+	{
+        eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, 0);
+		while(EECR & _BV(EEPE));		
+	}
+}
+
 

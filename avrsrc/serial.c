@@ -94,7 +94,7 @@ char* ProcessSerialData(const char* data)
     }
     else if(atcmd == AT_CTERM)
     {
-        Terminal();
+        Terminal(1);
     }
     else if(atcmd == AT_CLET)
     {
