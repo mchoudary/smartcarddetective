@@ -274,11 +274,8 @@ uint8_t Terminal()
    else
       return RET_ERROR;
 
-#if DEBUG
-#else
    // at this point the card should be inserted
    wdt_enable(WDTO_4S);
-#endif
 
    // Initialize card
    if(ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3)) return RET_ERROR;
@@ -1040,9 +1037,6 @@ uint8_t FilterAndLog()
 				FreeRAPDU(response);
 				return RET_ERROR;
 			}
-#if DEBUG
-			Led3On();
-#endif
 		}
 		else
 		{
@@ -1060,9 +1054,6 @@ uint8_t FilterAndLog()
 				return RET_ERROR;
 			}
 
-#if DEBUG
-			Led3On();
-#endif
 		}			
 
 		if(nTransactions < MAX_EXCHANGES)

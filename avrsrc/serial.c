@@ -56,10 +56,6 @@ static const char strAT_CCAPDU[] = "AT+CCAPDU";
 static const char strAT_CCEND[] = "AT+CCEND";
 static const char strAT_RBAD[] = "AT BAD\r\n";
 static const char strAT_ROK[] = "AT OK\r\n";
-static const char strAT_RE1[] = "AT RE1\r\n";
-static const char strAT_RE2[] = "AT RE2\r\n";
-static const char strAT_RE3[] = "AT RE3\r\n";
-static const char strAT_RE4[] = "AT RE4\r\n";
 
 
 /**
@@ -377,8 +373,7 @@ void TerminalVSerial()
                 &data[5], ldata);
         if(command == NULL)
         {
-            //SendHostData(strAT_RBAD);
-            SendHostData(strAT_RE1);
+            SendHostData(strAT_RBAD);
             continue;
         }
 
@@ -388,8 +383,7 @@ void TerminalVSerial()
         if(response == NULL)
         {
             FreeCAPDU(command);
-            //SendHostData(strAT_RBAD);
-            SendHostData(strAT_RE3);
+            SendHostData(strAT_RBAD);
             continue;
         }
 
