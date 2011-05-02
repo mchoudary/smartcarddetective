@@ -32,7 +32,7 @@
 
 extern uint8_t lcdAvailable;                // if LCD is available
 extern uint16_t revision;                   // current SVN revision in BCD
-extern extern uint8_t selected;             // ID of application selected
+extern uint8_t selected;             // ID of application selected
 
 
 /**
