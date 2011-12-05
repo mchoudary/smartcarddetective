@@ -300,7 +300,7 @@ uint8_t SendEEPROMHexVSerial()
 void TerminalVSerial()
 {
     uint8_t convention, proto, TC1, TA3, TB3;
-    uint8_t tmp, i, lparams, ldata;
+    uint8_t tmp, i, lparams, ldata, result;
     char *buf, *atparams = NULL;
     char reply[512];
     uint8_t data[256];
@@ -312,19 +312,28 @@ void TerminalVSerial()
     // was presumably called based on an AT+CINIT command
     if(!IsICCInserted())
     {
+        fprintf(stderr, "ICC not inserted\n");
+         _delay_ms(500);
         SendHostData(strAT_RBAD);
         wdt_enable(WDTO_60MS);
         while(1);
     }
 
-    if(ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3))
+    result = ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3);
+    if(result)
     {
+        fprintf(stderr, "ICC reset failed\n");
+         _delay_ms(500);
+        fprintf(stderr, "result: %2X\n", result);
+         _delay_ms(500);
         SendHostData(strAT_RBAD);
         wdt_enable(WDTO_60MS);
         while(1);
     }
     if(proto != 0) // Not implemented yet, perhaps someone will...
     {
+        fprintf(stderr, "bad ICC proto\n");
+         _delay_ms(500);
         SendHostData(strAT_RBAD);
         wdt_enable(WDTO_60MS);
         while(1);

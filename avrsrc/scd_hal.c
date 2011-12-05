@@ -31,6 +31,8 @@
 #include <util/delay.h>
 
 #include "scd_hal.h"
+#include "scd_io.h"
+#include "scd_values.h"
 #include "utils.h"
 
 #define DEBUG 1					    // Set this to 1 to enable debug code
@@ -977,7 +979,7 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 	GetByteICCNoParity(0, &tmp);
 	if(tmp == 0x3B) *inverse_convention = 0;
 	else if(tmp == 0x03) *inverse_convention = 1;
-	else return 1;	
+	else return RET_ERR_INIT_ICC_ATR_TS;	
 		
 	// Get T0
 	GetByteICCNoParity(*inverse_convention, &tmp);
@@ -987,19 +989,30 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 	tb = tmp & 0x20;
 	tc = tmp & 0x40;
 	td = tmp & 0x80;
+	if(tb == 0) return RET_ERR_INIT_ICC_ATR_T0;	
 
 	if(ta){
-		// Get TA1
+		// Get TA1, coded as [FI, DI], where FI and DI are used to derive
+        // the work etu. ETU = (1/D) * (F/f) where f is the clock frequency.
+        // From ISO/IEC 7816-3 pag 12, F and D are mapped to FI/DI as follows:
+        //
+        // FI:  0x1  0x2  0x3  0x4  0x5  0x6  0x9  0xA  0xB  0xC  0xD
+        // F:   372  558  744  1116 1488 1860 512  768  1024 1536 2048 
+        //
+        // DI:  0x1 0x2 0x3 0x4 0x5 0x6 0x8 0x9 0xA 0xB 0xC 0xD  0xE  0xF
+        // D:   1   2   4   8   16  32  12  20  1/2 1/4 1/8 1/16 1/32 1/64
+        //
+        // For the moment the SCD only works with D = 1, F = 372
+        // which should be used even for different values of TA1 if the
+        // negotiable mode of operation is selected (abscence of TA2)
 		GetByteICCNoParity(*inverse_convention, &tmp);
 		check ^= tmp;
-		if(tmp != 0x11) return 1; //SCD only accepts D = 1, F = 372
 	}
 
 	// Get TB1
-	if(tb == 0) return 1;	
 	GetByteICCNoParity(*inverse_convention, &tmp);
 	check ^= tmp;
-	if(tmp != 0) return 1;
+	if(tmp != 0) return RET_ERR_INIT_ICC_ATR_TB1;
 	
 	// Get TC1
 	if(tc)
@@ -1021,15 +1034,18 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 		td = tmp & 0x80;
 		if(nb == 0x01) *proto = 1;
 		else if(nb == 0x00) *proto = 0;
-		else return 1;
+		else return RET_ERR_INIT_ICC_ATR_TD1;
 
-		if(ta) return 1;
-		if(tb) return 1;
+        // The SCD does not currently support specific modes of operation.
+        // Perhaps we can trigger a PTS selection or reset in the future.
+		if(ta) return RET_ERR_INIT_ICC_ATR_TA2;
+
+		if(tb) return RET_ERR_INIT_ICC_ATR_TB2;
 		if(tc){
 			// Get TC2
 			GetByteICCNoParity(*inverse_convention, &tmp);
 			check ^= tmp;
-			if(tmp != 0x0A) return 1;
+			if(tmp != 0x0A) return RET_ERR_INIT_ICC_ATR_TC2;
 		}
 		if(td){
 			// Get TD2
@@ -1040,40 +1056,40 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 			tb = tmp & 0x20;
 			tc = tmp & 0x40;
 			td = tmp & 0x80;
-			if(*proto == 0 && nb != 0x0E) return 1;
-			if(*proto == 1 && nb != 0x01) return 1;
+            // we allow any value of nb although EMV restricts to some values
+            // these values could be used if we implement PTS
 
 			if(ta)
 			{	
 				// Get TA3
 				GetByteICCNoParity(*inverse_convention, &tmp);
 				check ^= tmp;
-				if(tmp < 0x0F || tmp == 0xFF) return 1;
+				if(tmp < 0x0F || tmp == 0xFF) return RET_ERR_INIT_ICC_ATR_TA3;
 				*TA3 = tmp;
 			}
 			else
 				*TA3 = 0x20;
 
-			if(*proto == 1 && tb == 0) return 1;
+			if(*proto == 1 && tb == 0) return RET_ERR_INIT_ICC_ATR_TB3;
 			if(tb)
 			{
 				// Get TB3
 				GetByteICCNoParity(*inverse_convention, &tmp);
 				check ^= tmp;
 				nb = tmp & 0x0F;
-				if(nb > 5) return 1;
+				if(nb > 5) return RET_ERR_INIT_ICC_ATR_TB3;
 				nb = tmp & 0xF0;
-				if(nb > 64) return 1;
+				if(nb > 64) return RET_ERR_INIT_ICC_ATR_TB3;
 				*TB3 = tmp;				
 			}
 
-			if(*proto == 0 && tc != 0) return 1;
+			if(*proto == 0 && tc != 0) return RET_ERR_INIT_ICC_ATR_TC3;
 			if(tc)
 			{
 				// Get TC3
 				GetByteICCNoParity(*inverse_convention, &tmp);
 				check ^= tmp;
-				if(tmp != 0) return 1;
+				if(tmp != 0) return RET_ERR_INIT_ICC_ATR_TC3;
 			}
 		}		
 	} 
@@ -1092,7 +1108,7 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 	{
 		GetByteICCNoParity(*inverse_convention, &tmp);
 		check ^= tmp;
-		if(check != 0) return 1;
+		if(check != 0) return RET_ERR_INIT_ICC_ATR_T1_CHECK;
 	}
 
 	return 0;
@@ -1113,8 +1129,10 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 uint8_t ResetICC(uint8_t warm, uint8_t *inverse_convention, uint8_t *proto,
 					uint8_t *TC1, uint8_t *TA3, uint8_t *TB3)
 {		
+    uint8_t response;
+
 	// Activate the ICC
-	if(ActivateICC(warm)) return 1;	
+	if(ActivateICC(warm)) return RET_ERR_INIT_ICC_ACTIVATE;	
 
 	// Wait for approx 42000 ICC clocks = 112 ETUs
 	LoopICCETU(112);
@@ -1129,17 +1147,18 @@ uint8_t ResetICC(uint8_t warm, uint8_t *inverse_convention, uint8_t *proto,
 			return ResetICC(1, inverse_convention, proto, TC1, TA3, TB3);						
 
 		DeactivateICC();
-		return 1;
+		return RET_ERR_INIT_ICC_RESPONSE;
 	}
 
 	// Get ATR
-	if(GetATRICC(inverse_convention, proto, TC1, TA3, TB3))
+	response = GetATRICC(inverse_convention, proto, TC1, TA3, TB3);
+	if(response)
 	{
 		if(warm == 0)
 			return ResetICC(1, inverse_convention, proto, TC1, TA3, TB3);						
 
 		DeactivateICC();
-		return 1;
+		return response;
 	}
 	
 	return 0;

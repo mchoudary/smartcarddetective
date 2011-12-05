@@ -25,9 +25,26 @@
 
 typedef enum retstat{
    RET_SUCCESS = 0,
-   RET_ERROR = 1,
-   RET_ERR_CHECK = 2,
-   RET_ERR_PARAM = 3,
+
+   // General errors
+   RET_ERROR =                          0x01,
+   RET_ERR_CHECK =                      0x02,
+   RET_ERR_PARAM =                      0x03,
+
+   // Initialisation errors
+   RET_ERR_INIT_ICC_ACTIVATE =          0x10,
+   RET_ERR_INIT_ICC_RESPONSE =          0x11,
+   RET_ERR_INIT_ICC_ATR_TS =            0x12,
+   RET_ERR_INIT_ICC_ATR_T0 =            0x13,
+   RET_ERR_INIT_ICC_ATR_TB1 =           0x14,
+   RET_ERR_INIT_ICC_ATR_TD1 =           0x15,
+   RET_ERR_INIT_ICC_ATR_TA2 =           0x16,
+   RET_ERR_INIT_ICC_ATR_TB2 =           0x17,
+   RET_ERR_INIT_ICC_ATR_TC2 =           0x18,
+   RET_ERR_INIT_ICC_ATR_TA3 =           0x19,
+   RET_ERR_INIT_ICC_ATR_TB3 =           0x10,
+   RET_ERR_INIT_ICC_ATR_TC3 =           0x1A,
+   RET_ERR_INIT_ICC_ATR_T1_CHECK =      0x1B,
 } RETURN_CODE;
 
 #endif // _SCD_VALUES_H_
