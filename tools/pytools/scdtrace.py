@@ -60,10 +60,14 @@ class SCDTrace:
 
         # Find the beginning of the transaction (DDDDDDDDDD)
         start = hexstring.find(startstr, 0, end)
+        if start >= 0 and start % 2 != 0:
+            start = hexstring.find(startstr, start + 1, end)
         if start < 0:
             return
 
         pos = hexstring.find(commandstr, start + len(startstr), end)
+        if pos >= 0 and pos % 2 != 0:
+            pos = hexstring.find(commandstr, pos + 1, end)
         if pos < 0:
             return
 
@@ -72,13 +76,19 @@ class SCDTrace:
         while done == 0:
             # get command and response pairs
             pos2 = hexstring.find(responsestr, pos, end)
+            if pos2 >= 0 and pos2 % 2 != 0:
+                pos2 = hexstring.find(responsestr, pos2 + 1, end)
             if pos2 < 0:
                 return
             command = CAPDU(hexstring[pos + len(commandstr):pos2])
 
             pos = hexstring.find(commandstr, pos2, end)
+            if pos >= 0 and pos % 2 != 0:
+                pos = hexstring.find(commandstr, pos + 1, end)
             if pos < 0:
                 pos = hexstring.find(endstr, pos2, end)
+                if pos >= 0 and pos % 2 != 0:
+                    pos = hexstring.find(endstr, pos + 1, end)
                 if pos < 0:
                     return
                 else:
@@ -101,6 +111,7 @@ class SCDTrace:
             result_string += increment + "data: " + response.data + "\n"
             if len(response.data) > 0:
                 tlv = TLV(response.data, False)
+                print "response data: ", response.data
                 result_string += tlv.pretty_print(increment + increment, increment)
             result_string += "\n"
             k = k + 1
@@ -136,9 +147,13 @@ def parseSCDHexTrace(filename):
         j = bigtrace.find(start, i)
         if j < 0:
             break
+        if j % 2 != 0:
+            j += 1
         k = bigtrace.find(end, j)
         if k < 0:
             break
+        if k % 2 != 0:
+            k += 1
         tracelist.append(bigtrace[j: k + len(end)])
         i = k + len(end)
 
