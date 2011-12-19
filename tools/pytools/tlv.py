@@ -130,13 +130,17 @@ class TLV:
         ## None in this version of the code)
         return constructed, tag, None, claimed_length, value, rest
 
-    def pretty_print(self, indent="", increment="    "):
+    def pretty_print(self, indent="", increment="    ", verbose=False):
         result_string = "%s"%"\n".join(self.errors)
         for tag, value in self.items:
             if not type(value) is str:
                 result_string += indent + "$$ " + tag + ": \n" 
                 result_string += value.pretty_print(indent+increment, increment)
             else:
+                if verbose:
+                    print "indent = ", indent
+                    print "tag = ", tag
+                    print "value = ", value
                 result_string += indent + tag + ": " + value + " - " + to_ascii(a2b_hex(value)) + "\n"
 
         return result_string

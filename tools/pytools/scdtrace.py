@@ -5,7 +5,7 @@
 import string
 import sys
 from binascii import b2a_hex, a2b_hex
-from tlv import TLV
+from tlv import TLV, ParsingError
 
 class CAPDU:
     def __init__(self, hexstring):
@@ -35,7 +35,7 @@ class RAPDU:
 
 
 class SCDTrace:
-    def __init__(self, hexstring):
+    def __init__(self, hexstring, verbose=False):
         self.hexstring = hexstring
         self.errors = []
         self.warnings = []
@@ -44,17 +44,18 @@ class SCDTrace:
         self.items = []
 
         try:
-            self.parse(hexstring)
+            self.parse(hexstring, verbose)
         except Exception, e:
             raise ParsingError(str(e))
 
-    def parse(self, hexstring):
+    def parse(self, hexstring, verbose=False):
         """
         Parse the trace and get the different commands and responses
         """
         startstr = "DDDDDDDDDD"
         commandstr = "CCCCCCCCCC"
-        responsestr = "AAAAAAAAAA"
+        response_1 = "AAAAAAAAAA6"
+        response_2 = "AAAAAAAAAA9"
         endstr = "BBBBBBBBBB"
         end = len(hexstring)
 
@@ -73,13 +74,26 @@ class SCDTrace:
 
         done = 0
         pos2 = 0
+        pos2a = 0
+        pos2b = 0
+        if verbose:
+            print "Parsing trace: ", hexstring
+
         while done == 0:
             # get command and response pairs
-            pos2 = hexstring.find(responsestr, pos, end)
-            if pos2 >= 0 and pos2 % 2 != 0:
-                pos2 = hexstring.find(responsestr, pos2 + 1, end)
+            pos2a = hexstring.find(response_1, pos, end)
+            pos2b = hexstring.find(response_2, pos, end)
+            if pos2a > 0 and pos2b > 0:
+                pos2 = min(pos2a, pos2b)
+            else:
+                pos2 = max(pos2a, pos2b)
             if pos2 < 0:
                 return
+            if verbose:
+                print("at pos: ",
+                        pos + len(commandstr),
+                        "command: ",
+                        hexstring[pos + len(commandstr):pos2])
             command = CAPDU(hexstring[pos + len(commandstr):pos2])
 
             pos = hexstring.find(commandstr, pos2, end)
@@ -93,10 +107,15 @@ class SCDTrace:
                     return
                 else:
                     done = 1
-            response = RAPDU(hexstring[pos2 + len(responsestr):pos])
+            if verbose:
+                print("at pos: ",
+                        pos2 + len(response_1) - 1,
+                        "response: ",
+                        hexstring[pos2 + len(response_1) - 1:pos])
+            response = RAPDU(hexstring[pos2 + len(response_1) - 1:pos])
             self.items.append((command, response))
 
-    def pretty_print(self, indent="", increment="    "):
+    def pretty_print(self, indent="", increment="    ", verbose=False):
         k = 1
         result_string = "%s"%"\n".join(self.errors)
         for command, response in self.items:
@@ -111,8 +130,12 @@ class SCDTrace:
             result_string += increment + "data: " + response.data + "\n"
             if len(response.data) > 0:
                 tlv = TLV(response.data, False)
-                print "response data: ", response.data
-                result_string += tlv.pretty_print(increment + increment, increment)
+                if verbose:
+                    print "response data: ", response.data
+                result_string += tlv.pretty_print(
+                        increment + increment,
+                        increment,
+                        verbose)
             result_string += "\n"
             k = k + 1
                 
@@ -173,7 +196,7 @@ def main():
     count = 0
     for trace in traces:
         print "\nTransaction %d"%(count)
-        strace = SCDTrace(trace)
+        strace = SCDTrace(trace, False)
         print "Number of messages: %d"%(len(strace.items))
         print strace.pretty_print()
         count = count + 1
