@@ -507,7 +507,7 @@ void TestSCDTerminal()
 		strLCD[5] = 0;	
 
 		Led1On();
-		Led2Off();		
+		Led2Off();
 
 		// Send INS (procedure byte) back
 		LoopTerminalETU(20);

@@ -34,6 +34,7 @@
 #include "scd_hal.h"
 #include "emv_values.h"
 #include "scd_values.h"
+#include "scd_io.h"
 
 #define DEBUG 0   // Set DEBUG to 1 to enable debug code
 
@@ -359,7 +360,6 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
 	tmp = (uint8_t)((60000 - tdelay) / 372);
 	LoopTerminalETU(tmp);
 	if(ActivateICC(0)) return RET_ERROR;	// takes about 1 ETU
-	
 	// Send TS to terminal when RST line should be high	
 	tmpi = (int8_t)((tdelay - 10000) / 372);
 	if(tmpi < 0) tmpi = 0;
@@ -379,6 +379,7 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
 	{
 		DeactivateICC();
 		return RET_ERROR; 				// May be changed with a warm reset
+
 	}
 	
 	if(GetATRICC(inverse_convention, proto, TC1, TA3, TB3))
@@ -784,7 +785,7 @@ uint8_t SendT0Command(uint8_t inverse_convention, uint8_t TC1, CAPDU *cmd)
    // for other cases (3, 4) get procedure byte and send command data
    LoopICCETU(6);
 
-   // Get firs byte (can be INS, ~INS, 60, 61, 6C or other in case of error)
+   // Get first byte (can be INS, ~INS, 60, 61, 6C or other in case of error)
    if(GetByteICCParity(inverse_convention, &tmp)) return RET_ERROR;
 
    while(tmp == SW1_MORE_TIME)

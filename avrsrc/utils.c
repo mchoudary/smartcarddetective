@@ -114,7 +114,7 @@ void SleepUntilCardInserted()
     cli();
     sleep_enable();
     sei();
-        sleep_cpu();
+    sleep_cpu();
 
     // back from sleep
     sleep_disable();

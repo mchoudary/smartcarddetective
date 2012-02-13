@@ -38,6 +38,8 @@
 /// EEPROM address for stored PIN
 #define EEPROM_PIN 0x8		
 
+#define EEPROM_ATR 0x10
+
 /// EEPROM address for selected application
 #define EEPROM_APPLICATION 0x32	
 

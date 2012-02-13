@@ -261,6 +261,8 @@ uint8_t Terminal(uint8_t log)
    // if card was removed restart the SCD and wait for insertion
    if(!IsICCInserted())
    {
+      Led1On();
+      Led2On();
       wdt_enable(WDTO_15MS);
       _delay_ms(100);
    }
@@ -1255,17 +1257,18 @@ uint8_t FilterAndLog()
  */
 uint8_t ForwardData()
 {
-	uint8_t t_inverse = 0, t_TC1 = 0;
-	uint8_t cInverse, cProto, cTC1, cTA3, cTB3;
+    uint8_t t_inverse = 0, t_TC1 = 0;
+    uint8_t cInverse, cProto, cTC1, cTA3, cTB3;
+    uint8_t threeState;
 
     SleepUntilTerminalClock();	
     // enable watchdog timer in case the application hangs.
     // wdr (watchdog reset) should be called to avoid reset
     wdt_enable(WDTO_4S);
 	
-	if(InitSCDTransaction(t_inverse, t_TC1, &cInverse, 
-		&cProto, &cTC1, &cTA3, &cTB3))
-		return RET_ERROR;
+    if(InitSCDTransaction(t_inverse, t_TC1, &cInverse, &cProto, &cTC1, &cTA3, &cTB3)){
+	return RET_ERROR;
+    }
 
 	// Enable INT0 on falling edge
 	// This is the recommended procedure, as in the data sheet
@@ -1288,12 +1291,23 @@ uint8_t ForwardData()
 	// update transaction counter
 	nCounter++;
 
+        threeState=0;
 	while(1)
 	{
-		transactionData[nTransactions++] = ExchangeCompleteData(t_inverse, 
-			cInverse, t_TC1, cTC1);
-		if(transactionData[nTransactions-1] == NULL) return RET_ERROR;
-		if(nTransactions == MAX_EXCHANGES) return RET_ERROR;
+		if (threeState){
+			Led3Off();
+			threeState=0;
+		} else {
+			Led3On();
+			threeState=1;
+		}
+		transactionData[nTransactions++] = ExchangeCompleteData(t_inverse, cInverse, t_TC1, cTC1);
+		if(transactionData[nTransactions-1] == NULL) {
+			return RET_ERROR;
+		}
+		if(nTransactions == MAX_EXCHANGES) {
+			return RET_ERROR;
+		}
 
 		// Disable WDT after the first command
 		MCUSR = 0;
@@ -1330,7 +1344,7 @@ void WriteLogEEPROM()
 
 
 	// Update transaction counter in case it was modified
-    eeprom_write_byte((uint8_t*)EEPROM_COUNTER, nCounter);
+        eeprom_write_byte((uint8_t*)EEPROM_COUNTER, nCounter);
 
 	// Get current transaction log pointer
 	addrHi = eeprom_read_byte((uint8_t*)EEPROM_TLOG_POINTER_HI);

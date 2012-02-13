@@ -29,15 +29,18 @@
 #include <avr/interrupt.h> 
 #include <avr/io.h>
 #include <util/delay.h>
+#include <avr/eeprom.h>
 
 #include "scd_hal.h"
 #include "scd_io.h"
 #include "scd_values.h"
 #include "utils.h"
 
+#define EEPROM_ATR 0x10
+
 #define DEBUG 1					    // Set this to 1 to enable debug code
 #define F_CPU 16000000UL  		    // Change this to the correct frequency (generally CLK = CLK_IO)
-#define ICC_CLK_MODE 1              // Set to:
+#define ICC_CLK_MODE 0              // Set to:
                                     // 0 for ICC_CLK = 4 MHz
                                     // 1 for ICC_CLK = 2 MHz
                                     // 2 for ICC_CLK = 1 MHz
@@ -100,52 +103,52 @@ uint16_t GetTerminalFreq()
              	 "nop\n\t"
              	 "nop\n\t"
              	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
              	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
              	 "nop\n\t"
              	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
              	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
              	 "nop\n\t"
              	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
              	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 ::);
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+             	 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+             	 "nop\n\t"
+             	 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"
+             	 "nop\n\t"
+		 "nop\n\t"
+		 "nop\n\t"  //49x
+		 ::);
 	time = TCNT3;	
 
 	if(time == 1)
@@ -590,7 +593,7 @@ void SendT0ATRTerminal(uint8_t inverse_convention, uint8_t TC1)
  */
 uint8_t IsICCInserted()
 {
-	return bit_is_set(PIND, PD1);
+	return (!bit_is_set(PIND, PD1));
 }
 
 
@@ -609,7 +612,7 @@ uint8_t IsICCPowered()
  */
 uint8_t PowerUpICC()
 {
-	if(bit_is_clear(PIND, PD1))
+	if(!bit_is_clear(PIND, PD1))
 		return 1;
 
 	PORTD &= ~(_BV(PD7));
@@ -702,17 +705,17 @@ uint8_t GetByteICCNoParity(uint8_t inverse_convention, uint8_t *r_byte)
 #endif	
 
 	// wait for start bit		
-	while(bit_is_set(PINB, PB6));	
+	while(bit_is_set(PINB, PB6)); //start bit goes low for 1ETU	
 
+	TIFR1 |= _BV(OCF1A);							// Reset OCR1A compare fl
 	Write16bitRegister(&TCNT1, 1);					// TCNT1 = 1		
 	Write16bitRegister(&OCR1A, ETU_HALF(ETU_ICC));	// OCR1A 0.5 ETU
-	TIFR1 |= _BV(OCF1A);							// Reset OCR1A compare flag		
 
 	while(bit_is_clear(TIFR1, OCF1A));
 	TIFR1 |= _BV(OCF1A);
 
 	// check result and set timer for next bit
-	bit = bit_is_set(PINB, PB6);	
+	bit = bit_is_set(PINB, PB6);	// this is LO = start bit
 	Write16bitRegister(&OCR1A, ETU_ICC);			// OCR1A = 1 ETU => next bit at 1.5 ETU
 	*r_byte = 0;
 	byte = 0;
@@ -974,15 +977,19 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 {
 	uint8_t history, i, tmp, ta, tb, tc, td, nb;
 	uint8_t check = 0; // used only for T=1
+	uint16_t offset = 0;
+        uint8_t buffer[32];
 
 	// Get TS
 	GetByteICCNoParity(0, &tmp);
+	buffer[offset++]=tmp; offset = offset%32;
 	if(tmp == 0x3B) *inverse_convention = 0;
 	else if(tmp == 0x03) *inverse_convention = 1;
-	else return RET_ERR_INIT_ICC_ATR_TS;	
+	else return RET_ERR_INIT_ICC_ATR_TS;
 		
 	// Get T0
 	GetByteICCNoParity(*inverse_convention, &tmp);
+	buffer[offset++]=tmp; offset = offset%32;
 	check ^= tmp;
 	history = tmp & 0x0F;
 	ta = tmp & 0x10;
@@ -1006,18 +1013,21 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
         // which should be used even for different values of TA1 if the
         // negotiable mode of operation is selected (abscence of TA2)
 		GetByteICCNoParity(*inverse_convention, &tmp);
+		buffer[offset++]=tmp; offset = offset%32;
 		check ^= tmp;
 	}
 
 	// Get TB1
 	GetByteICCNoParity(*inverse_convention, &tmp);
+	buffer[offset++]=tmp; offset = offset%32;
 	check ^= tmp;
-	if(tmp != 0) return RET_ERR_INIT_ICC_ATR_TB1;
+	//DC   if(tmp != 0) return RET_ERR_INIT_ICC_ATR_TB1;
 	
 	// Get TC1
 	if(tc)
 	{
 		GetByteICCNoParity(*inverse_convention, TC1);
+		buffer[offset++]=tmp; offset = offset%32;
 		check ^= tmp;
 	}
 	else
@@ -1026,6 +1036,7 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 	if(td){
 		// Get TD1
 		GetByteICCNoParity(*inverse_convention, &tmp);
+		buffer[offset++]=tmp; offset = offset%32;
 		check ^= tmp;
 		nb = tmp & 0x0F;
 		ta = tmp & 0x10;
@@ -1044,12 +1055,14 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 		if(tc){
 			// Get TC2
 			GetByteICCNoParity(*inverse_convention, &tmp);
+			buffer[offset++]=tmp; offset = offset%32;
 			check ^= tmp;
 			if(tmp != 0x0A) return RET_ERR_INIT_ICC_ATR_TC2;
 		}
 		if(td){
 			// Get TD2
 			GetByteICCNoParity(*inverse_convention, &tmp);
+			buffer[offset++]=tmp; offset = offset%32;
 			check ^= tmp;
 			nb = tmp & 0x0F;
 			ta = tmp & 0x10;
@@ -1063,6 +1076,7 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 			{	
 				// Get TA3
 				GetByteICCNoParity(*inverse_convention, &tmp);
+				buffer[offset++]=tmp; offset = offset%32;
 				check ^= tmp;
 				if(tmp < 0x0F || tmp == 0xFF) return RET_ERR_INIT_ICC_ATR_TA3;
 				*TA3 = tmp;
@@ -1075,6 +1089,7 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 			{
 				// Get TB3
 				GetByteICCNoParity(*inverse_convention, &tmp);
+				buffer[offset++]=tmp; offset = offset%32;
 				check ^= tmp;
 				nb = tmp & 0x0F;
 				if(nb > 5) return RET_ERR_INIT_ICC_ATR_TB3;
@@ -1088,6 +1103,7 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 			{
 				// Get TC3
 				GetByteICCNoParity(*inverse_convention, &tmp);
+				buffer[offset++]=tmp; offset = offset%32;
 				check ^= tmp;
 				if(tmp != 0) return RET_ERR_INIT_ICC_ATR_TC3;
 			}
@@ -1097,9 +1113,11 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 		*proto = 0;
 	
 	// Get historical bytes
+//DC - the next loop does not work for some reason, I suspect problem with timing -> wrong ATR
 	for(i = 0; i < history; i++)	
 	{
 		GetByteICCNoParity(0, &tmp);
+		buffer[offset++]=tmp; offset = offset%32;
 		check ^= tmp;
 	}
 
@@ -1107,10 +1125,12 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 	if(*proto == 1) 
 	{
 		GetByteICCNoParity(*inverse_convention, &tmp);
+		buffer[offset++]=tmp; offset = offset%32;
 		check ^= tmp;
 		if(check != 0) return RET_ERR_INIT_ICC_ATR_T1_CHECK;
 	}
 
+	eeprom_write_block(buffer, (void*)EEPROM_ATR, offset);
 	return 0;
 }
 
