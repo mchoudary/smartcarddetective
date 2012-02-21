@@ -612,7 +612,7 @@ uint8_t IsICCPowered()
  */
 uint8_t PowerUpICC()
 {
-	if(!bit_is_clear(PIND, PD1))
+	if(!IsICCInserted())
 		return 1;
 
 	PORTD &= ~(_BV(PD7));
@@ -980,6 +980,7 @@ uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
 	uint16_t offset = 0;
         uint8_t buffer[32];
 
+Led3On();
 	// Get TS
 	GetByteICCNoParity(0, &tmp);
 	buffer[offset++]=tmp; offset = offset%32;
@@ -1205,7 +1206,7 @@ uint8_t ActivateICC(uint8_t warm)
 		DDRB |= _BV(PB6);	
 		PORTB &= ~(_BV(PB7));
 		DDRB |= _BV(PB7);	
-		PORTD &= ~(_BV(PD4));	
+		PORTD &= ~(_BV(PD4));
 		DDRD |= _BV(PD4);	
 		_delay_us(ICC_VCC_DELAY_US);
 		if(PowerUpICC())

@@ -29,6 +29,7 @@
 */
 
 #define  __INCLUDE_FROM_USB_DRIVER
+#include <util/delay.h>
 #include "../HighLevel/USBMode.h"
 
 #if defined(USB_CAN_BE_DEVICE)
@@ -133,6 +134,7 @@ uint8_t Endpoint_WaitUntilReady(void)
 			if (!(TimeoutMSRem--))
 			  return ENDPOINT_READYWAIT_Timeout;
 		}
+		_delay_ms(2);
 	}
 }
 #endif

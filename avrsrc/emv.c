@@ -370,9 +370,8 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
 		SendByteTerminalNoParity(0x3B, t_inverse);
 
 	// Set ICC RST line to high and receive ATR from ICC
-	LoopTerminalETU(12);
-	PORTD |= _BV(PD4);		
-	
+	LoopTerminalETU(112);
+	PORTD |= _BV(PD4);	
 	// Wait for ATR from ICC for a maximum of 42000 clock cycles + 40 ms
 	// this number is based on the assembler of this function
 	if(WaitForICCData(50000))	
@@ -381,6 +380,7 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
 		return RET_ERROR; 				// May be changed with a warm reset
 
 	}
+Led3On();
 	
 	if(GetATRICC(inverse_convention, proto, TC1, TA3, TB3))
 	{

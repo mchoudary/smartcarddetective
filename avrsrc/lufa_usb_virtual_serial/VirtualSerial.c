@@ -332,7 +332,7 @@ uint8_t SendHostData(const char *data)
 {
     uint8_t full;
 
-    if (data == NULL || USB_DeviceState != DEVICE_STATE_Configured)
+    if (data == NULL || (USB_DeviceState != DEVICE_STATE_Configured))
         return 1;
 
     /* Select the Serial Tx Endpoint */
