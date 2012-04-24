@@ -57,14 +57,19 @@ COMMON = -mmcu=$(MCU)
 ## Compile options common for all C compilation units.
 DEPFOLDER = dep
 CFLAGS = $(COMMON)
-CFLAGS += -Wall -gdwarf-2 -std=gnu99 -DF_CPU=16000000UL -O$(OPTLEVEL) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CFLAGS += -Wall -std=gnu99 -DF_CPU=16000000UL -O$(OPTLEVEL) -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+## Add the following line if you need debugging
+CFLAGS += -gdwarf-2
 CFLAGS += -MD -MP -MT $(*F).o -MF $(DEPFOLDER)/$(@F).d 
 CFLAGS += $(LUFA_DEFS)
+
+## Use the following flag if the smartcard reader has inverted card detector
+## CFLAGS += -D INVERT_ICC_SWITCH
 
 ## Assembly specific flags
 ASMFLAGS = $(COMMON)
 ASMFLAGS += $(CFLAGS)
-ASMFLAGS += -x assembler-with-cpp -Wa,-gdwarf2
+ASMFLAGS += -x assembler-with-cpp
 
 ## Linker flags
 MAPFILE = $(PROJECTNAME).map
@@ -114,7 +119,7 @@ ALLTARGETS = $(TARGET) $(HEXTARGET) $(EEPTARGET) $(LSSTARGET) $(SIZETARGET) $(HE
 CLEANTARGETS = $(TARGET) $(EEPTARGET) $(LSSTARGET) $(SIZETARGET)
 
 # All project source files (C, C++, ASM)
-PRJSRC = scd.c emv.c scd_hal.c scd_io.c utils.c terminal.c serial.c apps.c scd_hal.S scd.S
+PRJSRC = scd.c emv.c scd_hal.c scd_io.c utils.c terminal.c serial.c apps.c scd_hal.S scd.S scd_logger.c
 PRJSRC += lufa_usb_virtual_serial/VirtualSerial.c lufa_usb_virtual_serial/Descriptors.c
 PRJSRC += $(LUFA_SRC_USB)
 

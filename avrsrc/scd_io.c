@@ -1,26 +1,35 @@
-/** \file
- *	\brief scd_io.c source file
+/**
+ * \file
+ * \brief scd_io.c source file
  *
- *  This file implement the functions for all micro-controller
- *  I/O functions, including control of LCD, leds and buttons
+ * This file implements the functions for all micro-controller
+ * I/O functions, including control of LCD, leds and buttons
  *
- *  Copyright (C) 2010 Omar Choudary (osc22@cam.ac.uk)
+ * Copyright (C) 2012 Omar Choudary (omar.choudary@cl.cam.ac.uk)
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
- *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
+
 
 /// Frequency of CPU, used for _delay_XX functions
 #define F_CPU 16000000UL  
@@ -134,27 +143,27 @@ void T_C8Off()
     PORTB &= ~(_BV(PB5));
 }
 
-void JTAG_P1On()
+void JTAG_P1_High()
 {
     DDRF |= _BV(PF4);
     PORTF |= _BV(PF4);
 }
 
-void JTAG_P1Off()
+void JTAG_P1_Low()
 {
-    DDRF &= ~(_BV(PF4));
+    DDRF |= _BV(PF4);
     PORTF &= ~(_BV(PF4));
 }
 
-void JTAG_P3On()
+void JTAG_P3_High()
 {
     DDRF |= _BV(PF6);
     PORTF |= _BV(PF6);
 }
 
-void JTAG_P3Off()
+void JTAG_P3_Low()
 {
-    DDRF &= ~(_BV(PF6));
+    DDRF |= _BV(PF6);
     PORTF &= ~(_BV(PF6));
 }
 
@@ -477,9 +486,9 @@ uint8_t CheckLCD()
  */
 void LCDOff()
 {
+	SendLCDCommand(0, 0, 0x08, LCD_COMMAND_DELAY);
 	DDRC &= ~(_BV(PC5));
 	PORTC &= ~(_BV(PC5));
-	SendLCDCommand(0, 0, 0x08, LCD_COMMAND_DELAY);
 	lcd_state = 0;
 }
 
@@ -607,5 +616,125 @@ uint8_t* ReadBytesEEPROM(uint16_t addr, uint16_t len)
 	SREG = sreg;
 
 	return data;
+}
+
+
+/**
+ * Initiualise the USART port
+ *
+ * @param baudUBRR the baud UBRR parameter as given in table 18-12 of
+ * the datasheet, page 203. The formula is: baud = FCLK / (16 * (baudUBRR + 1)).
+ * So for FCLK = 16 MHz and desired BAUD = 9600 bps => baudUBRR = 103.
+ */
+void InitUSART(uint16_t baudUBRR)
+{
+    uint8_t sreg = SREG;
+    cli();
+
+    // Set baud
+    UBRR1H = (uint8_t) (baudUBRR >> 8);
+    UBRR1L = (uint8_t) (baudUBRR & 0xFF);
+
+    // Enable receiver and transmitter
+    UCSR1B = (1 << RXEN1) || (1 << TXEN1);
+
+    // Set frame format: 8 data, 1 stop bit
+    UCSR1C = (3 << UCSZ10);
+    SREG = sreg;
+}
+
+void DisableUSART()
+{
+    uint8_t sreg = SREG;
+    cli();
+    UCSR1B = 0;
+    SREG = sreg;
+}
+
+/**
+ * Transmit a character throught the USART. Method as in the datasheet.
+ *
+ * @param data the character to be sent
+ */
+void SendCharUSART(char data)
+{
+    // Wait for empty buffer
+    while(!(UCSR1A & (1 << UDRE1)));
+
+    // Put and send the data
+    UDR1 = data;
+}
+
+
+/**
+ * Get a character from the USART. Method from the datasheet.
+ */
+char GetCharUSART(void)
+{
+    // wait for data to be received
+    while(!(UCSR1A & (1 << RXC1)));
+
+    // return the character
+    return UDR1;
+}
+
+/**
+ * Flush the receive buffer, useful in case of errors.
+ */
+void FlushUSART(void)
+{
+    char dummy;
+    while(UCSR1A & (1 << RXC1)) dummy = UDR1;
+}
+
+/**
+ * This method receives a line (ended CR LF) from the USART
+ *
+ * @return the line contents, removing the trailing CR LF and
+ * appending the NUL ('\0') character. The caller is responsible
+ * for eliberating the memory occupied by the returned string.
+ */
+char* GetLineUSART()
+{
+    char buf[256];
+    uint8_t i = 0;
+
+    memset(buf, 0, 256);
+
+    while(i < 256)
+    {
+        fprintf(stderr, "Getting char\n");
+        _delay_ms(200);
+        buf[i] = GetCharUSART();
+        fprintf(stderr, "Char: %c\n", buf[i]);
+        _delay_ms(200);
+
+        if(i == 0 && (buf[i] == '\n' || buf[i] == '\r'))
+            continue;
+        else if(buf[i] == '\n')
+        {
+            buf[i] = 0;
+            if(buf[i - 1] == '\r')
+                buf[i - 1] = 0;
+            return strdup(buf);
+        }
+
+        i = i + 1;
+    }
+
+    return NULL;
+}
+
+/**
+ * This method sends a data string (without adding CR LF) to the USART
+ *
+ * @param data the string to be transmitted, ended with the NUL ('\0') character.
+ */
+void SendLineUSART(const char *data)
+{
+    if(data == NULL) return;
+
+    while(data && *data)
+        SendCharUSART(*data++);
 }
 

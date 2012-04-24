@@ -1,25 +1,34 @@
-/** \file
- *	\brief terminal.h Header file
+/**
+ * \file
+ * \brief terminal.h Header file
  *
- *  Contains definitions of functions used by a terminal application
+ * Contains definitions of functions used by a terminal application
  *
- *  Copyright (C) 2010 Omar Choudary (osc22@cam.ac.uk)
+ * Copyright (C) 2012 Omar Choudary (omar.choudary@cl.cam.ac.uk)
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
- *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
+
 
 #ifndef _TERMINAL_H_
 #define _TERMINAL_H_
@@ -148,39 +157,72 @@ typedef struct {
 // Methods used by the terminal application
 
 /// This function sends a T=0 command from the terminal to the ICC
-RAPDU* TerminalSendT0Command(CAPDU* cmd, uint8_t inverse_convention,
-   uint8_t TC1);
+RAPDU* TerminalSendT0Command(
+        CAPDU* cmd,
+        uint8_t inverse_convention,
+        uint8_t TC1,
+        log_struct_t *logger);
 
 /// Starts the application selection process
-FCITemplate* ApplicationSelection(uint8_t convention, uint8_t TC1,
-        const ByteArray *aid, uint8_t autoselect, uint8_t log);
+FCITemplate* ApplicationSelection(
+        uint8_t convention,
+        uint8_t TC1,
+        const ByteArray *aid,
+        uint8_t autoselect,
+        log_struct_t *logger);
 
 /// Initialize a transaction by sending GET PROCESSING OPTS command
-APPINFO* InitializeTransaction(uint8_t convention, uint8_t TC1,
-      const FCITemplate *fci, uint8_t log);
+APPINFO* InitializeTransaction(
+        uint8_t convention,
+        uint8_t TC1,
+        const FCITemplate *fci,
+        log_struct_t *logger);
 
 /// Retrieves all the Data Objects from the card
-RECORD* GetTransactionData(uint8_t convention, uint8_t TC1, 
-      const APPINFO* appInfo, ByteArray *offlineAuthData, uint8_t log);
+RECORD* GetTransactionData(
+        uint8_t convention,
+        uint8_t TC1,
+        const APPINFO* appInfo,
+        ByteArray *offlineAuthData,
+        log_struct_t *logger);
 
 /// Selects application based on AID list
-FCITemplate* SelectFromAID(uint8_t convention, uint8_t TC1,
-        const ByteArray *aid, uint8_t log);
+FCITemplate* SelectFromAID(
+        uint8_t convention,
+        uint8_t TC1,
+        const ByteArray *aid,
+        log_struct_t *logger);
 
 /// Selects application based on PSE
-FCITemplate* SelectFromPSE(uint8_t convention, uint8_t TC1,
-      uint8_t sfiPSE, uint8_t autoselect, uint8_t log);
+FCITemplate* SelectFromPSE(
+        uint8_t convention,
+        uint8_t TC1,
+        uint8_t sfiPSE,
+        uint8_t autoselect,
+        log_struct_t *logger);
 
 /// Checks if the specified PIN is accepted by the card
-uint8_t VerifyPlaintextPIN(uint8_t convention, uint8_t TC1,
-      const ByteArray *pin, uint8_t log);
+uint8_t VerifyPlaintextPIN(
+        uint8_t convention,
+        uint8_t TC1,
+        const ByteArray *pin,
+        log_struct_t *logger);
 
 /// Send a GENERATE AC request with the specified amounts
-RAPDU* SendGenerateAC(uint8_t convention, uint8_t TC1, AC_REQ_TYPE acType,
-      const TLV* cdol, const GENERATE_AC_PARAMS *params, uint8_t log);
+RAPDU* SendGenerateAC(
+        uint8_t convention,
+        uint8_t TC1,
+        AC_REQ_TYPE acType,
+        const TLV* cdol,
+        const GENERATE_AC_PARAMS *params,
+        log_struct_t *logger);
 
 /// Sign the Dynamic Application Data using INTERNAL AUTHENTICATE
-RAPDU* SignDynamicData(uint8_t convention, uint8_t TC1, const ByteArray *data, uint8_t log);
+RAPDU* SignDynamicData(
+        uint8_t convention,
+        uint8_t TC1,
+        const ByteArray *data,
+        log_struct_t *logger);
 
 /// Returns the SFI value from the response to a SELECT command
 uint8_t GetSFIFromSELECT(const RAPDU *response);
@@ -192,8 +234,11 @@ TLV* GetPDOLFromFCI(const FCITemplate *fci);
 TLV* GetPDOL(const FCITemplate *fci);
 
 /// Return the specified primitive data object from the card
-ByteArray* GetDataObject(uint8_t convention, uint8_t TC1,
-      CARD_PDO pdo, uint8_t log);
+ByteArray* GetDataObject(
+        uint8_t convention,
+        uint8_t TC1,
+        CARD_PDO pdo,
+        log_struct_t *logger);
 
 /// Returns a TLV from a RECORD based on its tag
 TLV* GetTLVFromRECORD(RECORD *rec, uint8_t tag1, uint8_t tag2);

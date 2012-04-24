@@ -1,0 +1,24 @@
+Changelog file for The Smart Card Detective.
+
+Author: Omar Choudary (omar.choudary@cl.cam.ac.uk)
+Copyright @ 2012
+
+Current version: 2.4.0
+
+******************************************
+CHANGES from 2.3.4:
+******************************************
+- Introduced a millisecond counter that can be used to trace events.
+- Rewritten the logging mechanism completely. Now every byte sent or received by
+  either the card or the terminal can be logged independently, including the
+  bytes in the ATR. Also the counter is used to put timestamps into the log.
+  The limitation of the current hardware is the 8KB available of EEPROM which
+  effectively limits the logging capability to just a few full traces.
+  See the file scd_logger.h for the memory allocation. Change this with care,
+  since the malloc library uses the same memory as the log buffer (8KB of SRAM).
+- Sleep mode disabled in most of the applications, in order to enable an
+  accurate time-stamp of events even after many successive applications. 
+- Fixed many bugs I found along the way (hopefully I didn't introduce many new
+  ones).
+- Affected files: all.
+- New files: scd_logger.h, scd_logger.c, counter.h

@@ -1,90 +1,187 @@
-/** \file
- *	\brief scd_hal.c - SCD hardware abstraction layer source file for AT90USB1287
+/**
+ * \file
+ * \brief scd_hal.c - SCD hardware abstraction layer source file for AT90USB1287
  *
- *	This file implements the hardware abstraction layer functions
+ * This file implements the hardware abstraction layer functions
  *
- *  This functions are implemented specifically for each microcontroller
- *  but the function names should be the same for any microcontroller.
- *  Thus the definition halSCD.h should be the same, while only the
- *  implementation should differ.
+ * This functions are implemented specifically for each microcontroller
+ * but the function names should be the same for any microcontroller.
+ * Thus the definition halSCD.h should be the same, while only the
+ * implementation should differ.
  *
- *  Copyright (C) 2010 Omar Choudary (osc22@cam.ac.uk)
+ * Copyright (C) 2012 Omar Choudary (omar.choudary@cl.cam.ac.uk)
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
- *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <avr/interrupt.h> 
 #include <avr/io.h>
+#include <avr/wdt.h>
 #include <util/delay.h>
-#include <avr/eeprom.h>
 
 #include "scd_hal.h"
 #include "scd_io.h"
 #include "scd_values.h"
 #include "utils.h"
 
-#define EEPROM_ATR 0x10
-
 #define DEBUG 1					    // Set this to 1 to enable debug code
-#define F_CPU 16000000UL  		    // Change this to the correct frequency (generally CLK = CLK_IO)
-#define ICC_CLK_MODE 0              // Set to:
-                                    // 0 for ICC_CLK = 4 MHz
-                                    // 1 for ICC_CLK = 2 MHz
-                                    // 2 for ICC_CLK = 1 MHz
-                                    // 3 for ICC_CLK = 800 KHz
-                                    // 4 for ICC_CLK = 500 KHz
-#define ETU_TERMINAL 372
-#define ETU_HALF(X) ((unsigned int) ((X)/2))
-#define ETU_LESS_THAN_HALF(X) ((unsigned int) ((X)*0.46))
-#define ETU_EXTENDED(X) ((unsigned int) ((X)*1.075))
-#define ICC_VCC_DELAY_US 50   
-#define PULL_UP_HIZ_ICC	1		    // Set to 1 to enable pull-ups when setting
-								    // the I/O-ICC line to Hi-Z
-                                
 
-/* Hardcoded values for ICC clock - selected based on ICC_CLK_MODE above */
-#if (ICC_CLK_MODE == 0)
-#define ICC_CLK_OCR0A 1             // F_TIMER0 = CLK_IO / 4
-#define ICC_CLK_TCCR1B 0x09         // F_TIMER1 = CLK_IO
-#define ETU_ICC 1488                // 372 * 4
-#define ICC_RST_WAIT 50000          // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
-#elif (ICC_CLK_MODE == 1)
-#define ICC_CLK_OCR0A 3             // F_TIMER0 = CLK_IO / 8
-#define ICC_CLK_TCCR1B 0x0A         // F_TIMER1 = CLK_IO / 8
-#define ETU_ICC 372                 // 372 * 1
-#define ICC_RST_WAIT 100000         // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
-#elif (ICC_CLK_MODE == 2)
-#define ICC_CLK_OCR0A 7             // F_TIMER0 = CLK_IO / 16
-#define ICC_CLK_TCCR1B 0x0A         // F_TIMER1 = CLK_IO / 8
-#define ETU_ICC 744                 // 372 * 2
-#define ICC_RST_WAIT 200000         // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
-#elif (ICC_CLK_MODE == 3)
-#define ICC_CLK_OCR0A 9             // F_TIMER0 = CLK_IO / 20
-#define ICC_CLK_TCCR1B 0x0A         // F_TIMER1 = CLK_IO / 8
-#define ETU_ICC 930                 // 372 * 2.5
-#define ICC_RST_WAIT 250000         // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
-#elif (ICC_CLK_MODE == 4)
-#define ICC_CLK_OCR0A 15            // F_TIMER0 = CLK_IO / 32
-#define ICC_CLK_TCCR1B 0x0A         // F_TIMER1 = CLK_IO / 8
-#define ETU_ICC 1488                // 372 * 4
-#define ICC_RST_WAIT 400000         // Used for card reset; 50000 * ((CLK_IO / 4) / F_TIMER0)
-#endif
+/* Global Variables */
+volatile uint32_t syncCounter;      // counter updated regularly, e.g. by timer 2
 
 /* SCD to Terminal functions */
 
+
+/**
+ * Enable the terminal reset interrupt. This interrupt should fire
+ * when the terminal reset line goes low (0).
+ *
+ * Enable INT0 on falling edge. This is the recommended procedure, as in the
+ * data sheet. First disable the interrupt, then change the mode, then
+ * clear the interrupt flag and finally enable the interrupt
+ */
+void EnableTerminalResetInterrupt()
+{
+    EIMSK &= ~(_BV(INT0));
+    EICRA |= _BV(ISC01);
+    EICRA &= ~(_BV(ISC00));
+    EIFR |= _BV(INTF0);
+    EIMSK |= _BV(INT0);
+}
+
+/**
+ * Disable the terminal reset interrupt. This interrupt should fire
+ * when the terminal reset line goes low (0).
+ */
+void DisableTerminalResetInterrupt()
+{
+    EIMSK &= ~(_BV(INT0));
+}
+
+/**
+ * Get the status of the terminal I/O line
+ *
+ * @return 1 if the line is high or 0 if low.
+ *
+ * Assumes the terminal counter is already started (Timer 3)
+ */
+uint8_t GetTerminalIOLine()
+{
+    return bit_is_set(PINC, PC4);
+}
+
+/**
+ * Retrieves the state of the reset line from the terminal
+ * 
+ * @return 0 if reset is low, non-zero otherwise
+ */
+uint8_t GetTerminalResetLine()
+{
+	return bit_is_set(PIND, PD0);
+}
+
+/**
+ * Enable the Watch Dog Timer. This function will also enable the WDT
+ * interrupt.
+ *
+ * @param ms the number of miliseconds to wait. This is an estimate since each
+ * hardware platform might provide just a limited set of possible values.
+ * For the AT90USB1287 (this uC) the possible values are 15ms, 30ms, 60ms,
+ * 120ms, 250 ms, 500 ms, 1s, 2s, 4s and 8s. Therefore this function simply
+ * approximates the closest larger value. For example sending a value of 14 will
+ * actually use 15ms, sending 25 will use 30ms, sending 100 will use 120ms and
+ * sending 1000 will use 1s.
+ */
+void EnableWDT(uint16_t ms)
+{
+	if(ms <= 15)
+        wdt_enable(WDTO_15MS);
+    else if(ms <= 30)
+        wdt_enable(WDTO_30MS);
+    else if(ms <= 60)
+        wdt_enable(WDTO_60MS);
+    else if(ms <= 120)
+        wdt_enable(WDTO_120MS);
+    else if(ms <= 250)
+        wdt_enable(WDTO_250MS);
+    else if(ms <= 500)
+        wdt_enable(WDTO_500MS);
+    else if(ms <= 1000)
+        wdt_enable(WDTO_1S);
+    else if(ms <= 2000)
+        wdt_enable(WDTO_2S);
+    else if(ms <= 4000)
+        wdt_enable(WDTO_4S);
+    else
+        wdt_enable(WDTO_8S);
+
+    WDTCSR |= _BV(WDIE);
+}
+
+/**
+ * Disable the Watch Dog Timer and the WDT interrupt
+ */
+void DisableWDT()
+{
+    wdt_disable();
+    WDTCSR &= ~(_BV(WDIE));
+}
+
+/**
+ * Reset the Watch Dog Timer
+ */
+void ResetWDT()
+{
+    wdt_reset();
+}
+
+/**
+ * Loops until the IO or reset line from the terminal become low.
+ * 
+ * @param max_wait the maximum number of cycles to wait for the reset or the
+ * IO line to become low. Give 0 to wait indefinitely.
+ * @return 1 if reset is low, 2 if the I/O is low, or 3 if both lines are low.
+ * In case the maximum number of wait cycles has elapsed then this function
+ * returns 0.
+ */
+uint8_t WaitTerminalResetIOLow(uint32_t max_wait)
+{
+    volatile uint8_t tio, treset;
+    uint8_t result = 0;
+    uint32_t cnt = 0;
+
+    do{
+        cnt = cnt + 1;
+        tio = bit_is_clear(PINC, PC4);
+        treset = bit_is_clear(PIND, PD0);
+        result = (tio << 1) | treset;
+
+		if(max_wait != 0 && cnt == max_wait)
+            break;
+    }while(result == 0);
+    
+	return result;
+}
 
 /**
  * @return the frequency of the terminal clock in khz, zero if there is no clock
@@ -103,52 +200,52 @@ uint16_t GetTerminalFreq()
              	 "nop\n\t"
              	 "nop\n\t"
              	 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
              	 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-             	 "nop\n\t"
-             	 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-             	 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
              	 "nop\n\t"
              	 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
              	 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-             	 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
              	 "nop\n\t"
              	 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
              	 "nop\n\t"
-		 "nop\n\t"
-		 "nop\n\t"  //49x
-		 ::);
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+             	 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+             	 "nop\n\t"
+             	 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+             	 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 ::);
 	time = TCNT3;	
 
 	if(time == 1)
@@ -160,6 +257,81 @@ uint16_t GetTerminalFreq()
 
 	return result;
 }
+
+/**
+ * The timer T2 can be used for event management.
+ * It is an 8-bit counter.
+ *
+ * @return the value of the timer T2
+ * @sa StartTimerT2
+ */
+uint8_t ReadTimerT2()
+{
+	return TCNT2;	
+}
+
+
+/**
+ * Starts the timer T2 using the internal clock CLK_IO.
+ * The current setup is for an interrupt frequency f_t2_int = 976.5625 Hz.
+ * That means that each value of the udpated counter represents 1.024 ms.
+ * 
+ * @sa ReadTimerT2
+ */
+void StartTimerT2()
+{
+    // We use this to generate an interrupt with the given frequency
+    OCR2A = 16;                     // interrupt every 16 timer clocks
+    TIMSK2 |= _BV(OCIE2A);
+
+    TCNT2 = 0;
+	TCCR2A = _BV(WGM21);			// CTC mode, No toggle on OC2X pins, no PWM
+	TCCR2B = _BV(CS22) | _BV(CS21) | _BV(CS20);  // F_CLK_T2 = F_CLK_IO / 1024
+}
+
+/**
+ * Stops the timer T2
+ */
+void StopTimerT2()
+{
+	TCCR2B = 0;
+	TCCR2A = 0;
+    TIMSK2 = 0;
+    OCR2A = 0;
+}
+
+/**
+ * This method increments the synchronization counter.
+ * The sync counter can be used as a synchronization mechanism.
+ * It is a 32-bit value, which should be updated regularly, e.g. by the timer T2.
+ *
+ * @sa ReadTimerT2
+ */
+//void IncrementCounter()
+//{
+//	syncCounter++;
+//}
+
+/**
+ * This method returns the value of the sync counter.
+ *
+ * @return the value of the sync counter
+ * @sa IncrementCounter
+ */
+//uint32_t GetCounter()
+//{
+//	return syncCounter;
+//}
+
+/**
+ * This method resets to 0 the value of the sync counter.
+ *
+ * @sa IncrementCounter
+ */
+//void ResetCounter()
+//{
+//	syncCounter = 0;
+//}
 
 /**
  * @return the value of the terminal counter
@@ -215,16 +387,6 @@ void StopCounterTerminal()
 void PauseCounterTerminal()
 {
 	TCCR3B = 0;
-}
-
-/**
- * Retrieves the state of the reset line from the terminal
- * 
- * @return 0 if reset is low, non-zero otherwise
- */
-uint8_t GetResetStateTerminal()
-{
-	return bit_is_set(PIND, PD0);
 }
 
 /**
@@ -364,7 +526,7 @@ uint8_t SendByteTerminalParity(uint8_t byte, uint8_t inverse_convention)
 	// wait for one ETU to read I/O line
 	LoopTerminalETU(1);	
 
-	// if there is aparity error try 4 times to resend
+	// if there is a parity error try 4 times to resend
 	if(bit_is_clear(PINC, PC4))
 	{
 		Write16bitRegister(&OCR3A, ETU_TERMINAL);	// set ETU
@@ -420,30 +582,55 @@ uint8_t WaitForTerminalData(uint16_t max_cycles)
 		
 
 /**
- * Receives a byte from the terminal without parity checking
+ * Receives a byte from the terminal without parity checking.
+ * This function also checks if the terminal reset line is low.
  *  
  * @param inverse_convention different than 0 if inverse
  * convention is to be used
  * @param r_byte contains the byte read on return
- * @return zero if read was successful, non-zero otherwise
+ * @param max_wait the maximum number of cycles to wait for the reset or the
+ * IO line to become low. Give 0 to wait indefinitely.
+ * @return zero if read was successful, RET_TERMINAL_RESET_LOW if the terminal
+ * reset line was low while waiting, RET_TERMINAL_TIME_OUT if we did not
+ * get any signal within the specified max_wait period, or RET_ERROR otherwise
  * 
  * Terminal clock counter must be already enabled
  */
-uint8_t GetByteTerminalNoParity(uint8_t inverse_convention, uint8_t *r_byte)
+uint8_t GetByteTerminalNoParity(
+        uint8_t inverse_convention,
+        uint8_t *r_byte,
+        uint32_t max_wait)
 {
 	volatile uint8_t bit;
+    volatile uint8_t tio, treset;
 	uint8_t i, byte, parity;
+    uint32_t cnt;
 
 	TCCR3A = 0x0C;										// set OC3C because of chip behavior
 	DDRC &= ~(_BV(PC4));								// Set PC4 (OC3C) as input	
 	PORTC |= _BV(PC4);									// enable pull-up	
 	
-	// wait for start bit	
-	//loop_until_bit_is_clear(PINC, PC4);	// do NOT use this macro; is BUGGY!
-	while(bit_is_set(PINC, PC4));	
+	// wait for start bit or reset
+    cnt = 0;
+    while(1)
+    {
+        cnt = cnt + 1;
+
+        // check for start bit (Terminal I/O low)
+        tio = bit_is_clear(PINC, PC4);
+        if(tio)
+            break;
+
+        // check for terminal reset (reset low)
+        treset = bit_is_clear(PIND, PD0);
+        if(treset)
+            return RET_TERMINAL_RESET_LOW;
+
+		if(max_wait != 0 && cnt == max_wait)
+            return RET_TERMINAL_TIME_OUT;
+    }
 
 	Write16bitRegister(&TCNT3, 1);						// TCNT3 = 1		
-	//Write16bitRegister(&OCR3A, 180);					// OCR3A approx. 0.5 ETU
 	Write16bitRegister(&OCR3A, ETU_HALF(ETU_TERMINAL));	// OCR3A approx. 0.5 ETU
 	TIFR3 |= _BV(OCF3A);								// Reset OCR3A compare flag		
 
@@ -510,16 +697,23 @@ uint8_t GetByteTerminalNoParity(uint8_t inverse_convention, uint8_t *r_byte)
  * @param inverse_convention different than 0 if inverse
  * convention is to be used
  * @param r_byte contains the byte read on return
- * @return zero if read was successful, non-zero otherwise
+ * @param max_wait the maximum number of cycles to wait for the reset or the
+ * IO line to become low. Give 0 to wait indefinitely.
+ * @return zero if read was successful, RET_TERMINAL_RESET_LOW if the terminal
+ * reset line was low while waiting, RET_TERMINAL_TIME_OUT if we did not
+ * get any signal within the specified max_wait period, or RET_ERROR otherwise
  * 
  * Terminal clock counter must be enabled before calling this function
  */
-uint8_t GetByteTerminalParity(uint8_t inverse_convention, uint8_t *r_byte)
+uint8_t GetByteTerminalParity(
+        uint8_t inverse_convention,
+        uint8_t *r_byte,
+        uint32_t max_wait)
 {
 	uint8_t result;
 	
-	result = GetByteTerminalNoParity(inverse_convention, r_byte);
-	if(result != 0)
+	result = GetByteTerminalNoParity(inverse_convention, r_byte, max_wait);
+	if(result == RET_ERROR)
 	{
 		// check we have clock from terminal to avoid damage
 		if(!GetTerminalFreq())
@@ -559,33 +753,6 @@ uint8_t GetByteTerminalParity(uint8_t inverse_convention, uint8_t *r_byte)
 	return result;
 }
 
-/**
- * Sends default ATR for T=0 to terminal
- *
- * @param inverse_convention specifies if direct (0) or inverse
- * convention (non-zero) is to be used. Only direct convention should
- * be used for future applications.
- * @param TC1 specifies the TC1 byte of the ATR. This should be as
- * small as possible in order to limit the latency of communication,
- * or large if a large timeout between bytes is desired.
- */
-void SendT0ATRTerminal(uint8_t inverse_convention, uint8_t TC1)
-{
-	if(inverse_convention)
-		SendByteTerminalNoParity(0x3F, inverse_convention);
-	else
-		SendByteTerminalNoParity(0x3B, inverse_convention);
-	
-	LoopTerminalETU(250);
-	SendByteTerminalNoParity(0x60, inverse_convention);
-	LoopTerminalETU(2);
-	SendByteTerminalNoParity(0x00, inverse_convention);
-	LoopTerminalETU(2);
-	SendByteTerminalNoParity(TC1, inverse_convention);
-	LoopTerminalETU(2);
-}
-
-
 /* SCD to ICC functions */
 
 /**
@@ -593,7 +760,11 @@ void SendT0ATRTerminal(uint8_t inverse_convention, uint8_t TC1)
  */
 uint8_t IsICCInserted()
 {
-	return (!bit_is_set(PIND, PD1));
+#ifdef INVERT_ICC_SWITCH
+	return bit_is_clear(PIND, PD1);
+#else
+	return bit_is_set(PIND, PD1);
+#endif
 }
 
 
@@ -612,7 +783,7 @@ uint8_t IsICCPowered()
  */
 uint8_t PowerUpICC()
 {
-	if(!IsICCInserted())
+	if(bit_is_clear(PIND, PD1))
 		return 1;
 
 	PORTD &= ~(_BV(PD7));
@@ -705,17 +876,17 @@ uint8_t GetByteICCNoParity(uint8_t inverse_convention, uint8_t *r_byte)
 #endif	
 
 	// wait for start bit		
-	while(bit_is_set(PINB, PB6)); //start bit goes low for 1ETU	
+	while(bit_is_set(PINB, PB6));	
 
-	TIFR1 |= _BV(OCF1A);							// Reset OCR1A compare fl
 	Write16bitRegister(&TCNT1, 1);					// TCNT1 = 1		
 	Write16bitRegister(&OCR1A, ETU_HALF(ETU_ICC));	// OCR1A 0.5 ETU
+	TIFR1 |= _BV(OCF1A);							// Reset OCR1A compare flag		
 
 	while(bit_is_clear(TIFR1, OCF1A));
 	TIFR1 |= _BV(OCF1A);
 
 	// check result and set timer for next bit
-	bit = bit_is_set(PINB, PB6);	// this is LO = start bit
+	bit = bit_is_set(PINB, PB6);	
 	Write16bitRegister(&OCR1A, ETU_ICC);			// OCR1A = 1 ETU => next bit at 1.5 ETU
 	*r_byte = 0;
 	byte = 0;
@@ -958,231 +1129,18 @@ uint8_t SendByteICCParity(uint8_t byte, uint8_t inverse_convention)
 }
 
 
-
 /**
- * Receives the ATR from ICC after a successful activation
- * 
- * @param inverse_convention non-zero if inverse convention
- * is to be used
- * @param proto 0 for T=0 and non-zero for T=1
- * @param TC1 see ISO 7816-3 or EMV Book 1 section ATR
- * @param TA3 see ISO 7816-3 or EMV Book 1 section ATR
- * @param TB3 see ISO 7816-3 or EMV Book 1 section ATR
- * @return zero if successful, non-zero otherwise
+ * Sets the reset line of the ICC to the desired value
  *
- * This implementation is compliant with EMV 4.2 Book 1
+ * @param high send 0 to put the reset line to low (0), or non-zero to
+ * put the reset line to high (1)
  */
-uint8_t GetATRICC(uint8_t *inverse_convention, uint8_t *proto,
-					uint8_t *TC1, uint8_t *TA3, uint8_t *TB3)
+void SetICCResetLine(uint8_t high)
 {
-	uint8_t history, i, tmp, ta, tb, tc, td, nb;
-	uint8_t check = 0; // used only for T=1
-	uint16_t offset = 0;
-        uint8_t buffer[32];
-
-Led3On();
-	// Get TS
-	GetByteICCNoParity(0, &tmp);
-	buffer[offset++]=tmp; offset = offset%32;
-	if(tmp == 0x3B) *inverse_convention = 0;
-	else if(tmp == 0x03) *inverse_convention = 1;
-	else return RET_ERR_INIT_ICC_ATR_TS;
-		
-	// Get T0
-	GetByteICCNoParity(*inverse_convention, &tmp);
-	buffer[offset++]=tmp; offset = offset%32;
-	check ^= tmp;
-	history = tmp & 0x0F;
-	ta = tmp & 0x10;
-	tb = tmp & 0x20;
-	tc = tmp & 0x40;
-	td = tmp & 0x80;
-	if(tb == 0) return RET_ERR_INIT_ICC_ATR_T0;	
-
-	if(ta){
-		// Get TA1, coded as [FI, DI], where FI and DI are used to derive
-        // the work etu. ETU = (1/D) * (F/f) where f is the clock frequency.
-        // From ISO/IEC 7816-3 pag 12, F and D are mapped to FI/DI as follows:
-        //
-        // FI:  0x1  0x2  0x3  0x4  0x5  0x6  0x9  0xA  0xB  0xC  0xD
-        // F:   372  558  744  1116 1488 1860 512  768  1024 1536 2048 
-        //
-        // DI:  0x1 0x2 0x3 0x4 0x5 0x6 0x8 0x9 0xA 0xB 0xC 0xD  0xE  0xF
-        // D:   1   2   4   8   16  32  12  20  1/2 1/4 1/8 1/16 1/32 1/64
-        //
-        // For the moment the SCD only works with D = 1, F = 372
-        // which should be used even for different values of TA1 if the
-        // negotiable mode of operation is selected (abscence of TA2)
-		GetByteICCNoParity(*inverse_convention, &tmp);
-		buffer[offset++]=tmp; offset = offset%32;
-		check ^= tmp;
-	}
-
-	// Get TB1
-	GetByteICCNoParity(*inverse_convention, &tmp);
-	buffer[offset++]=tmp; offset = offset%32;
-	check ^= tmp;
-	//DC   if(tmp != 0) return RET_ERR_INIT_ICC_ATR_TB1;
-	
-	// Get TC1
-	if(tc)
-	{
-		GetByteICCNoParity(*inverse_convention, TC1);
-		buffer[offset++]=tmp; offset = offset%32;
-		check ^= tmp;
-	}
-	else
-		*TC1 = 0;
-
-	if(td){
-		// Get TD1
-		GetByteICCNoParity(*inverse_convention, &tmp);
-		buffer[offset++]=tmp; offset = offset%32;
-		check ^= tmp;
-		nb = tmp & 0x0F;
-		ta = tmp & 0x10;
-		tb = tmp & 0x20;
-		tc = tmp & 0x40;
-		td = tmp & 0x80;
-		if(nb == 0x01) *proto = 1;
-		else if(nb == 0x00) *proto = 0;
-		else return RET_ERR_INIT_ICC_ATR_TD1;
-
-        // The SCD does not currently support specific modes of operation.
-        // Perhaps we can trigger a PTS selection or reset in the future.
-		if(ta) return RET_ERR_INIT_ICC_ATR_TA2;
-
-		if(tb) return RET_ERR_INIT_ICC_ATR_TB2;
-		if(tc){
-			// Get TC2
-			GetByteICCNoParity(*inverse_convention, &tmp);
-			buffer[offset++]=tmp; offset = offset%32;
-			check ^= tmp;
-			if(tmp != 0x0A) return RET_ERR_INIT_ICC_ATR_TC2;
-		}
-		if(td){
-			// Get TD2
-			GetByteICCNoParity(*inverse_convention, &tmp);
-			buffer[offset++]=tmp; offset = offset%32;
-			check ^= tmp;
-			nb = tmp & 0x0F;
-			ta = tmp & 0x10;
-			tb = tmp & 0x20;
-			tc = tmp & 0x40;
-			td = tmp & 0x80;
-            // we allow any value of nb although EMV restricts to some values
-            // these values could be used if we implement PTS
-
-			if(ta)
-			{	
-				// Get TA3
-				GetByteICCNoParity(*inverse_convention, &tmp);
-				buffer[offset++]=tmp; offset = offset%32;
-				check ^= tmp;
-				if(tmp < 0x0F || tmp == 0xFF) return RET_ERR_INIT_ICC_ATR_TA3;
-				*TA3 = tmp;
-			}
-			else
-				*TA3 = 0x20;
-
-			if(*proto == 1 && tb == 0) return RET_ERR_INIT_ICC_ATR_TB3;
-			if(tb)
-			{
-				// Get TB3
-				GetByteICCNoParity(*inverse_convention, &tmp);
-				buffer[offset++]=tmp; offset = offset%32;
-				check ^= tmp;
-				nb = tmp & 0x0F;
-				if(nb > 5) return RET_ERR_INIT_ICC_ATR_TB3;
-				nb = tmp & 0xF0;
-				if(nb > 64) return RET_ERR_INIT_ICC_ATR_TB3;
-				*TB3 = tmp;				
-			}
-
-			if(*proto == 0 && tc != 0) return RET_ERR_INIT_ICC_ATR_TC3;
-			if(tc)
-			{
-				// Get TC3
-				GetByteICCNoParity(*inverse_convention, &tmp);
-				buffer[offset++]=tmp; offset = offset%32;
-				check ^= tmp;
-				if(tmp != 0) return RET_ERR_INIT_ICC_ATR_TC3;
-			}
-		}		
-	} 
-	else 
-		*proto = 0;
-	
-	// Get historical bytes
-//DC - the next loop does not work for some reason, I suspect problem with timing -> wrong ATR
-	for(i = 0; i < history; i++)	
-	{
-		GetByteICCNoParity(0, &tmp);
-		buffer[offset++]=tmp; offset = offset%32;
-		check ^= tmp;
-	}
-
-	// get TCK if T=1 is used
-	if(*proto == 1) 
-	{
-		GetByteICCNoParity(*inverse_convention, &tmp);
-		buffer[offset++]=tmp; offset = offset%32;
-		check ^= tmp;
-		if(check != 0) return RET_ERR_INIT_ICC_ATR_T1_CHECK;
-	}
-
-	eeprom_write_block(buffer, (void*)EEPROM_ATR, offset);
-	return 0;
-}
-
-/**
- * Starts activation sequence for ICC
- * 
- * @param warm 0 if a cold reset is to be issued, 1 otherwise
- * @param inverse_convention non-zero if inverse convention
- * is to be used
- * @param proto 0 for T=0 and non-zero for T=1
- * @param TC1 see ISO 7816-3 or EMV Book 1 section ATR
- * @param TA3 see ISO 7816-3 or EMV Book 1 section ATR
- * @param TB3 see ISO 7816-3 or EMV Book 1 section ATR
- * @return zero if successful, non-zero otherwise
- */
-uint8_t ResetICC(uint8_t warm, uint8_t *inverse_convention, uint8_t *proto,
-					uint8_t *TC1, uint8_t *TA3, uint8_t *TB3)
-{		
-    uint8_t response;
-
-	// Activate the ICC
-	if(ActivateICC(warm)) return RET_ERR_INIT_ICC_ACTIVATE;	
-
-	// Wait for approx 42000 ICC clocks = 112 ETUs
-	LoopICCETU(112);
-	
-	// Set RST to high
-	PORTD |= _BV(PD4);		
-	
-	// Wait for ATR from ICC for a maximum of 42000 ICC clock cycles + 40 ms
-	if(WaitForICCData(ICC_RST_WAIT))	
-	{		
-		if(warm == 0) 
-			return ResetICC(1, inverse_convention, proto, TC1, TA3, TB3);						
-
-		DeactivateICC();
-		return RET_ERR_INIT_ICC_RESPONSE;
-	}
-
-	// Get ATR
-	response = GetATRICC(inverse_convention, proto, TC1, TA3, TB3);
-	if(response)
-	{
-		if(warm == 0)
-			return ResetICC(1, inverse_convention, proto, TC1, TA3, TB3);						
-
-		DeactivateICC();
-		return response;
-	}
-	
-	return 0;
+    if(high)
+        PORTD |= _BV(PD4);		
+    else
+        PORTD &= ~(_BV(PD4));
 }
 
 /**
@@ -1204,9 +1162,15 @@ uint8_t ActivateICC(uint8_t warm)
 		// Put I/O, CLK and RST lines to 0 and give VCC
 		PORTB &= ~(_BV(PB6));
 		DDRB |= _BV(PB6);	
+#if ICC_CLK_OCR0A
 		PORTB &= ~(_BV(PB7));
 		DDRB |= _BV(PB7);	
-		PORTD &= ~(_BV(PD4));
+#else
+        // In the case of an external clock we don't want the MCU to receive input
+		PORTB &= ~(_BV(PB7));
+		DDRB &= ~(_BV(PB7));	
+#endif
+		PORTD &= ~(_BV(PD4));	
 		DDRD |= _BV(PD4);	
 		_delay_us(ICC_VCC_DELAY_US);
 		if(PowerUpICC())
@@ -1230,10 +1194,15 @@ uint8_t ActivateICC(uint8_t warm)
 		// I use the Timer 0 (8-bit) to give the clock to the ICC
 		// and the Timer 1 (16-bit) to count the number of clocks
 		// in order to provide the correct ETU reference		
-		TCCR0A = 0x42;						// toggle OC0A (PB7) on compare match, CTC mode
 		OCR0A = ICC_CLK_OCR0A;			    // set F_TIMER0 = CLK_IO / (2 * (ICC_CLK_OCR0A + 1));
 		TCNT0 = 0;
+#if ICC_CLK_OCR0A
+		TCCR0A = 0x42;						// toggle OC0A (PB7) on compare match, CTC mode
 		TCCR0B = 0x01;						// Start timer 0, CLK = CLK_IO
+#else
+		TCCR0A = 0;						    // Timer 0 not used for external clock
+		TCCR0B = 0;						    // Timer 0 not used for external clock
+#endif
 
 		TCCR1A = 0x30;						// set OC1B (PB6) to 1 on compare match
 		Write16bitRegister(&OCR1A, ETU_ICC);// ETU = 372 * (F_TIMER1 / F_TIMER0)
@@ -1260,9 +1229,11 @@ void DeactivateICC()
 	TCCR1A = 0;
 	TCCR1B = 0;	
 
+#if ICC_CLK_OCR0A
 	// Set CLK line to low to be sure
 	PORTB &= ~(_BV(PB7));
 	DDRB |= _BV(PB7);	
+#endif
 
 	// Set I/O line to low
 	PORTB &= ~(_BV(PB6));
@@ -1271,5 +1242,23 @@ void DeactivateICC()
 	// Depower VCC
 	PORTD |= _BV(PD7);
 	DDRD |= _BV(PD7);	
+}
+
+/**
+ * Enable the ICC insert interrupt on any edge trigger
+ */
+void EnableICCInsertInterrupt()
+{
+    EICRA |= _BV(ISC10);
+    EICRA &= ~(_BV(ISC11));
+    EIMSK |= _BV(INT1);
+}
+
+/**
+ * Disable the ICC insert interrupt
+ */
+void DisableICCInsertInterrupt()
+{
+    EIMSK &= ~(_BV(INT1));
 }
 

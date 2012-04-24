@@ -1,28 +1,36 @@
-/** \file
- *	\brief scd.c source file for Smart Card Detective
+/**
+ * \file
+ * \brief scd.c source file for Smart Card Detective
  *
- *	This file implements the main application of the Smart Card Detective
+ * This file implements the main application of the Smart Card Detective
  *
- *  It uses the functions defined in scd_hal.h and emv.h to communicate
- *  with the ICC and Terminal and the functions from scd_io.h to
- *  communicate with the LCD, buttons and LEDs 
+ * It uses the functions defined in scd_hal.h and emv.h to communicate
+ * with the ICC and Terminal and the functions from scd_io.h to
+ * communicate with the LCD, buttons and LEDs 
  *
- *  Copyright (C) 2011 Omar Choudary (osc22@cam.ac.uk)
+ * Copyright (C) 2012 Omar Choudary (omar.choudary@cl.cam.ac.uk)
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
- *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 
 // #define F_CPU 16000000UL  		  // Not needed if defined in Makefile
@@ -39,6 +47,7 @@
 #include <avr/eeprom.h>
 #include <string.h>
 #include <util/delay.h>
+#include <util/delay_basic.h>
 #include <stdlib.h>
 #include <avr/wdt.h> 
 
@@ -47,6 +56,7 @@
 #include "scd_hal.h"
 #include "scd_io.h"
 #include "scd.h"
+#include "scd_logger.h"
 #include "utils.h"
 #include "emv_values.h"
 #include "scd_values.h"
@@ -79,11 +89,10 @@ static char* strScroll = "BC to   scroll";
 static char* strSelect = "BD to   select";
 static char* strAvailable = "Avail.  apps:";
 #endif
+log_struct_t scd_logger;                // logger structure
 
 /* Global variables */
-uint8_t warmResetByte;                  // stores the status of last card reset (warm/cold)
-CRP* transactionData[MAX_EXCHANGES]; 	// used to log data
-uint8_t nTransactions;		            // used to log data
+uint8_t warmResetByte;
 uint8_t lcdAvailable;			        // non-zero if LCD is working
 uint8_t nCounter;			            // number of transactions
 uint8_t selected;			            // ID of application selected
@@ -115,7 +124,7 @@ int main(void)
        if(selected == APP_ERASE_EEPROM)
        {
                Led2On();
-               EraseEEPROM();
+               ResetEEPROM();
                Led2Off();
                wdt_enable(WDTO_15MS);
        }
@@ -127,6 +136,9 @@ int main(void)
                SREG = sreg;
        }
 
+       // restart micro-second counter every time we select an application
+       ResetCounter();
+
        // restart SCD so that LCD power is reduced (small trick)
        wdt_enable(WDTO_15MS);
    }
@@ -136,43 +148,44 @@ int main(void)
        cli();
        selected = eeprom_read_byte((uint8_t*)EEPROM_APPLICATION);
        SREG = sreg;
-
    }
 
-   // run the selected application
-   switch(selected)
+   // continuously run the selected application
+   // add here any applications that can be selected from the user menu
+   while(1)
    {
-       case APP_STORE_PIN: 
-         StorePIN();
-       break;
+       switch(selected)
+       {
+           case APP_VIRTUAL_SERIAL_PORT:
+             VirtualSerial(&scd_logger);
+           break;
+             
+           case APP_FORWARD:
+             ForwardData(&scd_logger);
+           break;
 
-       case APP_LOG_FORWARD: 
-         ForwardData();
-       break;
+           case APP_FILTER_GENERATEAC: 
+             FilterGenerateAC(&scd_logger);
+           break;
 
-       case APP_FW_MODIFY_PIN: 
-         ForwardAndChangePIN();
-       break;
+           case APP_TERMINAL:
+             Terminal(&scd_logger);
+           break;
 
-       case APP_FILTER_GENERATEAC: 
-         FilterGenerateAC();
-       break;
+           case APP_LOG_GENERATE_AC:
+             ForwardDataLogAC(&scd_logger);
+           break;
 
-       case APP_FILTER_LOG:
-         FilterAndLog();
-       break;
+           case APP_SERIAL_PORT:
+             SerialInterface(103); // at 9600 bps
+           break;
 
-       case APP_TERMINAL:
-         Terminal(1);
-       break;
 
-       case APP_VIRTUAL_SERIAL_PORT:
-         VirtualSerial();
-
-       default:
-         selected = APP_VIRTUAL_SERIAL_PORT;
-         eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);
-         VirtualSerial();
+           default:
+             selected = APP_VIRTUAL_SERIAL_PORT;
+             eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);
+             VirtualSerial(&scd_logger);
+       }
    }
 
    // if needed disable wdt to avoid restart
@@ -255,8 +268,14 @@ void InitSCD()
 	EIMSK = 0;
 
 	// Disable WDT to keep safe operation
-	MCUSR = 0;
-    wdt_disable();
+    DisableWDT();
+
+    // Reset log structure (the one in SRAM)
+    ResetLogger(&scd_logger);
+
+	// Read ms counter in order to continue from last value
+    // We add the estimated startup time of 4 ms
+    SetCounter(eeprom_read_dword((uint32_t*)EEPROM_TIMER_T2) + 4);
 
 	// Ports setup
 	DDRB = 0x00;
@@ -275,15 +294,15 @@ void InitSCD()
 	// change CLK Prescaler value
 	clock_prescale_set(clock_div_1); 	
 
+    // enable counter T2
+    StartTimerT2();
+
 	// light power led
 	Led4On();	
 
-#if ICC_PRES_INT_ENABLE
-	// enable INT1 on any edge
-	EICRA |= _BV(ISC10);
-	EICRA &= ~(_BV(ISC11));
-	EIMSK |= _BV(INT1);
-#endif	
+//#if ICC_PRES_INT_ENABLE
+//  EnableICCInsertInterrupt();
+//#endif	
 
 	// Read Warm byte info from EEPROM
 	warmResetByte = eeprom_read_byte((uint8_t*)EEPROM_WARM_RESET);
@@ -291,9 +310,6 @@ void InitSCD()
 	// Read number of transactions in EEPROM
 	nCounter = eeprom_read_byte((uint8_t*)EEPROM_COUNTER);	
 	
-	// Reset transaction index for log	
-	nTransactions = 0;
-
 	// Check LCD status and use as stderr if status OK
 	if(CheckLCD())
 	{
@@ -304,23 +320,25 @@ void InitSCD()
 	{
 		stderr = &lcd_str;
 		lcdAvailable = 1;
+        // disable LCD power
+        LCDOff();
 	}
-
-	// disable LCD power
-	DDRC &= ~(_BV(PC5));
-	PORTC &= ~(_BV(PC5));	
-	SetLCDState(0);
 
 	// Disable most modules; they should be re-enabled when needed
 	power_adc_disable();
 	power_spi_disable();
 	power_twi_disable();
 	power_usart1_disable();
-	//power_usb_disable();
+	power_usb_disable();
 
 	// Enable interrupts
 	sei();	
+
+    // Disable INT0 and INT1
+    EIMSK &= ~(_BV(INT0));
+    EIMSK &= ~(_BV(INT1));
 }
+
 
 /* Intrerupts */
 
@@ -332,17 +350,48 @@ void InitSCD()
 ISR(INT0_vect)
 {
 	// disable wdt
-	MCUSR = 0;
-    wdt_disable();
-
-    // Write the log
-    WriteLogEEPROM();
+    DisableWDT();
 
 	// disable INT0	
-	EIMSK &= ~(_BV(INT0));
+	DisableTerminalResetInterrupt();
+
+    // Log the event
+    LogByte1(&scd_logger, LOG_TERMINAL_RST_LOW, 0);
+
+    // Write the log to EEPROM and clear its contents
+    WriteLogEEPROM(&scd_logger);
+    ResetLogger(&scd_logger);
+
+    // check for warm vs cold reset
+    if(GetTerminalFreq())
+    {
+        // warm reset
+        warmResetByte = eeprom_read_byte((uint8_t*)EEPROM_WARM_RESET);
+
+        if(warmResetByte == WARM_RESET_VALUE)
+        {
+            // we already had a warm reset so go to initial state
+            eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, 0);
+            while(EECR & _BV(EEPE));
+        }
+        else
+        {
+            // set 0xAA in EEPROM meaning we have a warm reset
+            eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, WARM_RESET_VALUE);
+            while(EECR & _BV(EEPE));
+        }
+    }
+    else
+    {
+        eeprom_write_byte((uint8_t*)EEPROM_WARM_RESET, 0);
+        while(EECR & _BV(EEPE));
+    }
 
 	// re-enable wdt to restart device
 	wdt_enable(WDTO_15MS);
+
+    // Update timer value in EEPROM while we wait for restart
+    eeprom_update_dword((uint32_t*)EEPROM_TIMER_T2, GetCounter());
 }
 
 /**
@@ -364,6 +413,20 @@ ISR(INT1_vect)
 }
 
 /**
+ * Interrupt routine for the Watch Dog Timer.
+ */
+ISR(WDT_vect)
+{
+    // Log the event
+    LogByte1(&scd_logger, LOG_WDT_RESET, 0);
+
+    // Write the log to EEPROM and clear its contents
+    WriteLogEEPROM(&scd_logger);
+    ResetLogger(&scd_logger);
+}
+
+
+/**
  * Interrupt routine for Timer3 Compare Match A overflow. This interrupt
  * can fire when the Timer3 matches the OCR3A value and the corresponding
  * interrupt is enabled
@@ -373,10 +436,27 @@ ISR(TIMER3_COMPA_vect, ISR_NAKED)
 	reti();	// Do nothing, used just to wake up the CPU
 }
 
+/**
+ * Interrupt routine for Timer2 Compare Match A overflow. This interrupt
+ * can fire when the Timer2 matches the OCR2A value and the corresponding
+ * interrupt is enabled.
+ * We could put the IncrementCounter() code directly into the subroutine
+ * to save some clock cycles but we must take care to save all used
+ * registers since they are probably used by other functions.
+ * 
+ * Uncomment the code below to combine avr-gcc handling of register
+ * with the IncrementCounter assembler routine. Else the interrupt
+ * handler is entirely in assembler without calling the extra function.
+ *
+ * @sa file scd.S
+ */
+//ISR(TIMER2_COMPA_vect)
+//{	
+//    IncrementCounter();
+//}
 
 /**
- * Check what to do at boot time based on the boot key.
- * Can jump into the Bootloader application, typically the DFU bootloader for
+ * Jump into the Bootloader application, typically the DFU bootloader for
  * USB programming.
  *
  * Code taken from:
@@ -479,10 +559,10 @@ void TestSCDTerminal()
 	// wait for Terminal CLK and send ATR
 	while(ReadCounterTerminal() < 100);
 	Led1On();	
-	while(GetResetStateTerminal() == 0);
+	while(GetTerminalResetLine() == 0);
 	Led2On();
 	LoopTerminalETU(10);
-	SendT0ATRTerminal(0, 0x0F);
+	SendT0ATRTerminal(0, 0x0F, NULL);
 	Led1Off();	
 
 
@@ -498,16 +578,16 @@ void TestSCDTerminal()
 	while(1)
 	{
 		// Get SELECT command for "1PAY.SYS.DDF01"
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0]);	// CLA = 0x00
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1]);	// INS = 0xA4
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2]);	// P1 = 0x04
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3]);	// P2 = 0x00
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4]);	// P3 = 0x0E
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);	// CLA = 0x00
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);	// INS = 0xA4
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);	// P1 = 0x04
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);	// P2 = 0x00
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);	// P3 = 0x0E
 
 		strLCD[5] = 0;	
 
 		Led1On();
-		Led2Off();
+		Led2Off();		
 
 		// Send INS (procedure byte) back
 		LoopTerminalETU(20);
@@ -518,20 +598,20 @@ void TestSCDTerminal()
 		Led2On();
 
 		// Get Select command data => "1PAY.SYS.DDF01"
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4]);	
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[5]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[6]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[7]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[8]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[9]);	
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[10]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[11]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[12]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[13]);		
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[5], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[6], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[7], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[8], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[9], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[10], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[11], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[12], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[13], MAX_WAIT_TERMINAL);
 		strLCD[14] = 0;	
 		
 		Led1On();
@@ -556,11 +636,11 @@ void TestSCDTerminal()
 		Led2On();
 
 		// Get GetResponse from Reader
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3]);		
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4]);	
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);
+		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);
 		strLCD[5] = 0;	
 
 		Led1On();
@@ -603,14 +683,16 @@ void TestSCDTerminal()
  *
  * It powers the ICC, expects the ATR and sends a select
  * command, waiting also for the answer
+ *
+ * @param logger the log structure or NULL if no log is desired
  */
-void TestSCDICC()
+void TestSCDICC(log_struct_t *logger)
 {
 	uint8_t inverse, proto, TC1, TA3, TB3;
 	uint8_t byte;
 
 	// Power ICC and get ATR
-	if(ResetICC(0, &inverse, &proto, &TC1, &TA3, &TB3)) return;
+	if(ResetICC(0, &inverse, &proto, &TC1, &TA3, &TB3, logger)) return;
  
 	// Send SELECT command (no data yet)
 	LoopICCETU(5);

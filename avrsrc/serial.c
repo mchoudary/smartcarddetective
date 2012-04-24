@@ -1,28 +1,38 @@
-/** \file
- *	\brief	serial.c source file
+/**
+ * \file
+ * \brief serial.c source file
  *
- *  This file implements the methods for serial communication between
- *  the SCD and a host.
+ * This file implements the methods for serial communication between
+ * the SCD and a host.
  *
- *  These functions are not microcontroller dependent but they are intended
- *  for the AVR 8-bit architecture
+ * These functions are not microcontroller dependent but they are intended
+ * for the AVR 8-bit architecture
  *
- *  Copyright (C) 2011 Omar Choudary (osc22@cam.ac.uk)
+ * Copyright (C) 2012 Omar Choudary (omar.choudary@cl.cam.ac.uk)
  *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
  *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
+
 
 #include <avr/sleep.h>
 #include <util/delay.h>
@@ -69,11 +79,12 @@ static const char strAT_ROK[] = "AT OK\r\n";
  *
  * @param data a NUL ('\0') terminated string representing the data to be
  * processed by the SCD, as sent by the serial host
+ * @param logger the log structure or NULL if no log is desired
  * @return a NUL ('\0') terminated string representing the response of this
  * method if success, or NULL if any error occurs. The caller is responsible for
  * eliberating the space ocuppied by the response.
  */
-char* ProcessSerialData(const char* data)
+char* ProcessSerialData(const char* data, log_struct_t *logger)
 {   
     uint8_t tmp;
     char *atparams = NULL;
@@ -94,11 +105,11 @@ char* ProcessSerialData(const char* data)
     }
     else if(atcmd == AT_CTERM)
     {
-        Terminal(1);
+        Terminal(logger);
     }
     else if(atcmd == AT_CLET)
     {
-        ForwardData();
+        ForwardData(logger);
     }
     else if(atcmd == AT_CGEE)
     {
@@ -107,7 +118,7 @@ char* ProcessSerialData(const char* data)
     }
     else if(atcmd == AT_CEEE)
     {
-        EraseEEPROM();
+        ResetEEPROM();
     }
     else if(atcmd == AT_CGBM)
     {
@@ -115,7 +126,7 @@ char* ProcessSerialData(const char* data)
     }
     else if(atcmd == AT_CCINIT)
     {
-        TerminalVSerial();
+        TerminalVSerial(logger);
     }
     else
     {
@@ -296,8 +307,9 @@ uint8_t SendEEPROMHexVSerial()
  *
  * This function never returns, after completion it will restart the SCD.
  *
+ * @param logger the log structure or NULL if a log is not desired
  */
-void TerminalVSerial()
+void TerminalVSerial(log_struct_t *logger)
 {
     uint8_t convention, proto, TC1, TA3, TB3;
     uint8_t tmp, i, lparams, ldata, result;
@@ -319,7 +331,7 @@ void TerminalVSerial()
         while(1);
     }
 
-    result = ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3);
+    result = ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3, logger);
     if(result)
     {
         fprintf(stderr, "ICC reset failed\n");
@@ -387,7 +399,7 @@ void TerminalVSerial()
         }
 
         // Send the command
-        response = TerminalSendT0Command(command, convention, TC1);
+        response = TerminalSendT0Command(command, convention, TC1, logger);
         FreeCAPDU(command);
         if(response == NULL)
         {

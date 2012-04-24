@@ -1,29 +1,35 @@
-The files provided along with this README are part of the Smart Card Detective (SCD).
-The SCD is meant to provide an open framework for EMV research, enabling users to
-analyze transactions. The software is given under the GPL v3 license (see file
-gpl-3.0.txt). The rights of this code or its license can be modified in future
-versions.
+The files provided along with this README are part of the Smart Card Detective
+(SCD). The SCD is meant to provide an open framework for EMV research and
+digital forensics, enabling users to analyze transactions.
+
+The software is given under the BSD 2-clause license (FreeBSD):
+http://www.opensource.org/licenses/bsd-license.php
 
 VERSION
-Current version of the software is 2.3.4.
-Last updated: 02 May 2011.
+Current version of the software is 2.4.0
+Last updated: 24 April 2012.
 
-The current version of the software uses the LUFA library for USB communication
-to the AVR:
-http://www.fourwalledcubicle.com/LUFA.php
+See the CHANGELOG file for comments on what's new (there are many updates!).
 
 REQUIREMENTS
-In order to compile this project you need the avr-libc and avr-gcc tools.
-Please use avr-libc version 1.7.0 or higher as the previous versions have problems
-with the malloc functions. See http://www.nongnu.org/avr-libc/ for more information.
 
-I recommend using my script (for any linux distribution) to install all the
-necessary tools and the correct versions.
-The script is available under the tools/ folder.
+In order to compile this project you need the avr-libc and avr-gcc tools.
+Please use avr-libc version 1.7.0 or higher as the previous versions have
+problems with the malloc functions. See http://www.nongnu.org/avr-libc/ for more
+information.
+
+To install all the necessary tools I recommend using either
+
+a) my script (for any linux distribution):
+http://www.cl.cam.ac.uk/~osc22/files/install_avr_tools.sh
 (please see the comments at the start of the script for additional requirements)
 
+b) The latest AVR-GCC debian packages:
+http://www.wrightflyer.co.uk/avr-gcc/
+
 Alternatively you can use your distro installation of avr tools but make sure
-you are using the required avr-libc version (1.7.0).
+you are using the required avr-libc version (1.7.0). Unfortunately the
+distribution versions are generally outdated.
 
 On Windows you can try using WinAVR and/or AVR Studio. However if you want to
 build and debug the project I highly recommend working under Unix.
@@ -56,6 +62,7 @@ rule files under /etc/udev/rules.d (ubuntu, probably similar on other distros):
     BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="*", MODE="666", GROUP="root"
 
 DEBUG/PROGRAM
+
 I recommend using an AVR Dragon for programming and debugging of your chip. Use
 avrdude to program your chip. 
 
@@ -69,6 +76,18 @@ Use the following commands to debug:
     "make debug": connect avr-gdb to avarice (once avarice is running).
     "make debug-insight": similar to "make debug" but using the INSIGHT interface of GDB.
 
+HARDWARE CHANGES IN NEWER VERSIONS OF SCD
+
+The new hardware version sold by Smart Architects has the smart card detector
+switch inverted. If you have one of this boards (from 2012 onwards), then
+remove the comments on this line of the Makefile:
+
+## CFLAGS += -D INVERT_ICC_SWITCH
+
+and recompile and build the source code. Then program the SCD with the
+modified code.
+
+
 SET FUSES
 For the first time using the board you might need to set up the fuses for correct operation of the SCD.
 This can be done easily typing the following command:
@@ -79,7 +98,8 @@ DOCUMENTATION
 You can find the documentation in HTML format for the source code in the doc/ folder.
 Point your browser to the doc/html/index.html file.
 
-For more information about the software and how to get the SCD check the forum of the Smart Card Detective at:
+For more information about the software and how to get the SCD check the forum
+of the Smart Card Detective at:
 http://www.smartcarddetective.com/forum/
 
 Copyright (C) Omar Choudary (omar.choudary@cl.cam.ac.uk)
