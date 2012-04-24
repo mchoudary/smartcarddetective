@@ -1,25 +1,29 @@
-The files provided along with this README are part of the Smart Card Detective (SCD).
-The SCD is meant to provide an open framework for EMV research, enabling users to
-analyze transactions. The software is given under the GPL v3 license (see file
-gpl-3.0.txt). The rights of this code or its license can be modified in future
-versions.
+The files provided along with this README are part of the Smart Card Detective
+(SCD).  The SCD is meant to provide an open framework for EMV research and digital
+forensics, enabling users to analyze transactions.
+
+The software is given under the 2-clause BSD (new BSD, or FreeBSD) license:
+http://www.opensource.org/licenses/bsd-license.php
 
 VERSION
-Current version of the software is 2.3.2.
-Last updated: 19 April 2011.
+Current version of the software is 2.4.0.
+Last updated: 24 April 2012.
 
 SCD SOFTWARE
-The software for the SCD board is located in the avrsrc/ folder. Please see the avrsrc/README
-for information about how to build, program and debug the SCD application.
+
+The software for the SCD board is located in the avrsrc/ folder. Please see the
+avrsrc/README for information about how to build, program and debug the SCD
+application.
 
 SCD TOOLS
-There are several tools useful for use with the SCD in the tools/ folder. Please see the
-tools/README file for more information.
+There are several tools useful for use with the SCD in the tools/ folder.
+Please see the tools/README file for more information.
 
 DOCUMENTATION
-For more information about the software and how to get the SCD check the forum of the Smart Card Detective at:
+For more information about the software and how to get the SCD check the forum
+of the Smart Card Detective at:
 http://www.smartcarddetective.com/forum/
 
-Copyright (C) Omar Choudary (osc22@cam.ac.uk)
+Copyright (C) Omar Choudary (omar.choudary@cl.cam.ac.uk)
 http://cl.cam.ac.uk/~osc22/scd/
 

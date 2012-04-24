@@ -5,7 +5,8 @@
 import string
 import sys
 from binascii import b2a_hex, a2b_hex
-from tlv import TLV, ParsingError
+from tlv import T
+import emv_commands
 
 class CAPDU:
     def __init__(self, hexstring):
@@ -35,103 +36,86 @@ class RAPDU:
 
 
 class SCDTrace:
-    def __init__(self, hexstring, verbose=False):
-        self.hexstring = hexstring
-        self.errors = []
-        self.warnings = []
+    """
+    Class defining a log trace of the Smart Card Detective.
 
-        # List of (command, response instance) 
-        self.items = []
+    @Methods:
+        __init__: constructor
+        parse_data: not sure yet
+        process_data: performs all the necessary parsing of a file. Use this!
+        parse_intel_hex: parse a file in Intel Hex format (such as SCD EEPROM)
+        extract_log_data: get log data from the larger parsed EEPROM contents
+        split_events: split bytes into clusters of events
+        print_events: print event information on standard output
+    """
 
-        try:
-            self.parse(hexstring, verbose)
-        except Exception, e:
-            raise ParsingError(str(e))
-
-    def parse(self, hexstring, verbose=False):
+    def __init__(self, filename):
         """
-        Parse the trace and get the different commands and responses
+        Constructor for the SCDTrace class.
+
+        @Args:
+            filename: the name of the file containing the SCD EEPROM data to be
+            parsed
+
+        @Return:
+            None
         """
-        startstr = "DDDDDDDDDD"
-        commandstr = "CCCCCCCCCC"
-        response_1 = "AAAAAAAAAA6"
-        response_2 = "AAAAAAAAAA9"
-        endstr = "BBBBBBBBBB"
-        end = len(hexstring)
+        self.filename = filename
+        self.event_dict = {
+                0x00: "ATR Byte from ICC",
+                0x01: "ATR Byte to Terminal",
+                0x02: "Byte to Terminal",
+                0x03: "Byte from Terminal",
+                0x04: "Byte to ICC",
+                0x05: "Byte from ICC",
+                0x10: "Terminal clock active",
+                0x11: "Terminal reset low",
+                0x12: "Terminal timed out",
+                0x13: "Error receiving byte from terminal",
+                0x14: "Error sending byte to terminal",
+                0x20: "ICC activated",
+                0x21: "ICC deactivated",
+                0x22: "ICC reset high",
+                0x23: "Error receiving byte from ICC",
+                0x24: "Error sending byte to ICC",
+                0x25: "ICC inserted",
+                0x30: "Time data sent to ICC",
+                0x31: "Time for a general event",
+                0x32: "Error allocating memory",
+                0x33: "Watchdog timer reset",
+                }
+        #self.errors = []
+        #self.warnings = []
+        #self.bigtrace = self.parse_intel_hex(filename)
+        # List of (command, t_command, response, t_response instance) 
+        # self.items = []
+        #try:
+        #    self.parse(hexstring, verbose)
+        #except Exception, e:
+        #    raise ParsingError(str(e))
+        #command = CAPDU(result_string)
+        #response = RAPDU(result_string)
 
-        # Find the beginning of the transaction (DDDDDDDDDD)
-        start = hexstring.find(startstr, 0, end)
-        if start >= 0 and start % 2 != 0:
-            start = hexstring.find(startstr, start + 1, end)
-        if start < 0:
-            return
-
-        pos = hexstring.find(commandstr, start + len(startstr), end)
-        if pos >= 0 and pos % 2 != 0:
-            pos = hexstring.find(commandstr, pos + 1, end)
-        if pos < 0:
-            return
-
-        done = 0
-        pos2 = 0
-        pos2a = 0
-        pos2b = 0
-        if verbose:
-            print "Parsing trace: ", hexstring
-
-        while done == 0:
-            # get command and response pairs
-            pos2a = hexstring.find(response_1, pos, end)
-            pos2b = hexstring.find(response_2, pos, end)
-            if pos2a > 0 and pos2b > 0:
-                pos2 = min(pos2a, pos2b)
-            else:
-                pos2 = max(pos2a, pos2b)
-            if pos2 < 0:
-                return
-            if verbose:
-                print("at pos: ",
-                        pos + len(commandstr),
-                        "command: ",
-                        hexstring[pos + len(commandstr):pos2])
-            command = CAPDU(hexstring[pos + len(commandstr):pos2])
-
-            pos = hexstring.find(commandstr, pos2, end)
-            if pos >= 0 and pos % 2 != 0:
-                pos = hexstring.find(commandstr, pos + 1, end)
-            if pos < 0:
-                pos = hexstring.find(endstr, pos2, end)
-                if pos >= 0 and pos % 2 != 0:
-                    pos = hexstring.find(endstr, pos + 1, end)
-                if pos < 0:
-                    return
-                else:
-                    done = 1
-            if verbose:
-                print("at pos: ",
-                        pos2 + len(response_1) - 1,
-                        "response: ",
-                        hexstring[pos2 + len(response_1) - 1:pos])
-            response = RAPDU(hexstring[pos2 + len(response_1) - 1:pos])
-            self.items.append((command, response))
-
-    def pretty_print(self, indent="", increment="    ", verbose=False):
+    def pretty_print(self, indent="", increment="    ", verbose=True):
         k = 1
         result_string = "%s"%"\n".join(self.errors)
-        for command, response in self.items:
+        for command, t_command, response, t_response in self.items:
             result_string += indent + "message %d:\n"%(k)
             
-            result_string += indent + "command: " + command.hexstring + "\n"
+            print "here"
+            result_string += indent + "time: " + str(t_command) + "\n"
+            result_string += increment + "command: " + command.hexstring + "\n"
             result_string += increment + "header: " + command.header + "\n"
             result_string += increment + "data: " + command.data + "\n"
 
-            result_string += indent + "response: " + response.hexstring + "\n"
+            result_string += indent + "time: " + str(t_response) + "\n"
+            result_string += increment + "response: " + response.hexstring + "\n"
             result_string += increment + "status: " + response.status + "\n"
             result_string += increment + "data: " + response.data + "\n"
             if len(response.data) > 0:
-                tlv = TLV(response.data, False)
                 if verbose:
                     print "response data: ", response.data
+                tlv = TLV(response.data, False)
                 result_string += tlv.pretty_print(
                         increment + increment,
                         increment,
@@ -141,48 +125,180 @@ class SCDTrace:
                 
         return result_string
 
-def parseSCDHexTrace(filename):
-    '''Parses an Intel Hex file containing an SCD trace and returns a list with all the
-    different transaction bytes, removing starting and trailing Intel Hex bytes'''
-    tracelist = []
-    bigtrace = ""
-    start = "DDDDDDDDDD"
-    end = "BBBBBBBBBB"
+    def process_data(self, verbose=False):
+        """
+        Performs all the necessary processing for the given file and then
+        prints the result to standard output.
 
-    f = open(filename, 'r')
+        @Args:
+            verbose: set to true to get more verbose output
 
-    #first we get the bytes, removing format
-    for line in f:
-        if line[0] != ':':
-            break
-        if line[1] == '1':
-            llen = 43
-        else:
-            llen = 75
-        if len(line) < llen:
-            break
+        @Returns:
+            None
+        """
+        self.bigtrace = self.parse_intel_hex(self.filename)
+        self.log_data = self.extract_log_data(self.bigtrace)
+        if len(self.log_data) < 2:
+            print "No data available"
+            return
+        if verbose:
+            print "Log bytes: \n", self.log_data
+        self.events_list = self.split_events(self.log_data)
+        self.print_events(self.events_list, verbose)
 
-        line = line[9:llen - 2]
-        bigtrace = bigtrace + line
+    def parse_intel_hex(self, filename):
+        """
+        Parses an Intel Hex file containing an SCD trace and returns a
+        string of bytes, removing starting and trailing Intel Hex bytes.
 
-    i = 0
-    while i < len(bigtrace):
-        j = bigtrace.find(start, i)
-        if j < 0:
-            break
-        if j % 2 != 0:
-            j += 1
-        k = bigtrace.find(end, j)
-        if k < 0:
-            break
-        if k % 2 != 0:
-            k += 1
-        tracelist.append(bigtrace[j: k + len(end)])
-        i = k + len(end)
+        @Args:
+            filename: the name of the file to be parsed
 
-    f.close()
+        @Returns:
+            a string of bytes representing the parsed file.
+        """
+        bigtrace = ""
 
-    return tracelist
+        f = open(filename, 'r')
+
+        #first we get the bytes, removing format
+        for line in f:
+            if line[0] != ':':
+                break
+            if line[1] == '1':
+                llen = 43
+            else:
+                llen = 75
+            if len(line) < llen:
+                break
+
+            line = line[9:llen - 2]
+            bigtrace = bigtrace + line
+
+        f.close()
+
+        return bigtrace
+
+    def extract_log_data(self, bigtrace):
+        """
+        Extracts the log data bytes from the parsed full log trace.
+        This method checks the length of the current log and then extracts just
+        the bytes that actually contain log data.
+
+        The EEPROM of the SCD has 4K. The first 128 bytes contain metadata, with
+        the following important fields (starting from 0):
+        bytes 4-7: last counter value
+        bytes 72-73: address of last log byte
+        byte 128: start of log data
+        
+        In the following take in consideration that each character in the
+        bigtrace string actually represents a nibble (i.e. half a byte).
+
+        @Args:
+            bigtrace: the string of bytes representing the parsed EEPROM data
+
+        @Returns:
+            a string of bytes representing the log data
+        """
+        last_byte = int(bigtrace[72*2:74*2], 16)
+        return bigtrace[128*2:last_byte*2]
+
+    def split_events(self, data):
+        """
+        Split a string of bytes representing a parsed log from the SCD and
+        clusters the bytes into separate events. Consecutive bytes of the same
+        event type are added together.
+
+        Each entry in the log is composed of at least 2 bytes: L1 L2 ....
+        L1 = XXXXXXYY defines what the next byte(s) mean, where XXXXXX is
+        used for the encoding of the type (6 bits) and YY (2 bits) to specify
+        how many bytes follow (b'00 -> 1, b'01 -> 2, b'10 -> 3 or b'11 -> 4).
+        
+        @Args:
+            data: string of bytes containing a log from the SCD.
+
+        @Returns:
+            list of (type, data) items
+
+        @Throws:
+            None
+        """
+
+        events_list = []
+        data_len = len(data)
+        last_type = 0xFF
+        event_data = ""
+        i = 0
+        while i < data_len:
+            byte_value = int(data[i:i+2], 16)
+            i += 2
+            byte_type = (byte_value & 0xFF) >> 2
+            bytes_following = (byte_value & 0x03) + 1
+
+            # If this happens then either the file is corrupted or we have
+            # reached the end of the log data. In either case we stop.
+            if bytes_following * 2 > data_len - i:
+                break
+
+            if last_type == 0xFF:
+                last_type = byte_type
+
+            if byte_type != last_type:
+                events_list.append((last_type, event_data))
+                last_type = byte_type
+                event_data = ""
+
+            for k in range(bytes_following):
+                event_data += data[i:i+2]
+                i += 2
+        #end while
+
+        # append also the last type
+        events_list.append((last_type, event_data))
+
+        return events_list
+        
+    def print_events(self, events_list, verbose=False):
+        """
+        Prints the contents of an events_list. 
+        
+        This list should have been generated
+        by a call to split_events
+
+        @Args:
+            events_list: list of (events, data) tuples, as that generated by a
+            call to to split_events()
+            verbose: set to True to get more verbose output
+
+        @Returns:
+            None
+
+        @Throws:
+            None
+        """
+        for event_type, data in events_list:
+            len_data = len(data)
+            print("event: ", hex(event_type), self.event_dict[event_type])
+            print("data: ", data)
+            if event_type == 0x30 or event_type == 0x31:
+                time = data[6:8] + data[4:6] + data[2:4] + data[0:2]
+                print("time in ms: ", int(time, 16) * 1024 / 1000)
+            if event_type == 0x02 or event_type == 0x05:
+                if len_data > 6:
+                    try:
+                        t = T(data[2:len_data-4])
+                        print t.dump()
+                    except Exception as (e):
+                        print e
+                        pass
+                elif len_data == 4:
+                    print emv_commands.response_name(data[0:4].lower())
+            if event_type == 0x03 or event_type == 0x04:
+                if len_data == 10:
+                    print emv_commands.command_name(data[0:4].lower())
+
+            print("\n")
+
 
 def main():
 
@@ -191,16 +307,8 @@ def main():
         return
 
     fname = sys.argv[1]
-    traces = parseSCDHexTrace(fname)
-
-    count = 0
-    for trace in traces:
-        print "\nTransaction %d"%(count)
-        strace = SCDTrace(trace, False)
-        print "Number of messages: %d"%(len(strace.items))
-        print strace.pretty_print()
-        count = count + 1
-
+    trace = SCDTrace(fname)
+    trace.process_data(True)
 
 if __name__ == "__main__":
     main()
