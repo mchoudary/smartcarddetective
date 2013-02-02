@@ -63,8 +63,8 @@ CFLAGS += -gdwarf-2
 CFLAGS += -MD -MP -MT $(*F).o -MF $(DEPFOLDER)/$(@F).d 
 CFLAGS += $(LUFA_DEFS)
 
-## Use the following flag if the smartcard reader has inverted card detector
-## CFLAGS += -D INVERT_ICC_SWITCH
+## The following line should be uncommented IFF the smartcard reader has inverted card detector
+CFLAGS += -D INVERT_ICC_SWITCH
 
 ## Assembly specific flags
 ASMFLAGS = $(COMMON)

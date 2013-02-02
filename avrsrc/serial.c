@@ -86,54 +86,68 @@ static const char strAT_ROK[] = "AT OK\r\n";
  */
 char* ProcessSerialData(const char* data, log_struct_t *logger)
 {   
-    uint8_t tmp;
     char *atparams = NULL;
     AT_CMD atcmd;
+    uint8_t result = 0;
+    char *str_ret = NULL;
     
-    //fprintf(stderr, "%s\n", data);
-    //_delay_ms(500);
-    
-    tmp = ParseATCommand(data, &atcmd, &atparams);
-    if(tmp != 0)
+    result = ParseATCommand(data, &atcmd, &atparams);
+    if(result != 0)
         return strdup(strAT_RBAD);
 
     if(atcmd == AT_CRST)
     {
         // Reset the SCD within 1S so that host can reset connection
+        StopVS();
         wdt_enable(WDTO_1S);
         while(1);
     }
     else if(atcmd == AT_CTERM)
     {
-        Terminal(logger);
+        result = Terminal(logger);
+        if (result == 0)
+            str_ret = strdup(strAT_ROK);
+        else
+            str_ret = strdup(strAT_RBAD);
     }
     else if(atcmd == AT_CLET)
     {
-        ForwardData(logger);
+        result = ForwardData(logger);
+        if (result == 0)
+            str_ret = strdup(strAT_ROK);
+        else
+            str_ret = strdup(strAT_RBAD);
     }
     else if(atcmd == AT_CGEE)
     {
         // Return EEPROM contents in Intel HEX format
         SendEEPROMHexVSerial();
+        str_ret = strdup(strAT_ROK);
     }
     else if(atcmd == AT_CEEE)
     {
         ResetEEPROM();
+        str_ret = strdup(strAT_ROK);
     }
     else if(atcmd == AT_CGBM)
     {
         RunBootloader();
+        str_ret = strdup(strAT_ROK);
     }
     else if(atcmd == AT_CCINIT)
     {
-        TerminalVSerial(logger);
+        result = TerminalVSerial(logger);
+        if (result == 0)
+            str_ret = NULL;
+        else
+            str_ret = strdup(strAT_RBAD);
     }
     else
     {
-        return strdup(strAT_RBAD);
+        str_ret = strdup(strAT_RBAD);
     }
-    
-    return strdup(strAT_ROK);
+
+    return str_ret;
 } 
 
 /**
@@ -303,13 +317,14 @@ uint8_t SendEEPROMHexVSerial()
  *
  * The SCD receives CAPDUs from the Virtual Serial host and transmits
  * back the RAPDUs received from the card. This method should be called
- * upon reciving the AT+CINIT serial command.
+ * upon reciving the AT+CCINIT serial command.
  *
  * This function never returns, after completion it will restart the SCD.
  *
  * @param logger the log structure or NULL if a log is not desired
+ * @return zero if success, non-zero otherwise
  */
-void TerminalVSerial(log_struct_t *logger)
+uint8_t TerminalVSerial(log_struct_t *logger)
 {
     uint8_t convention, proto, TC1, TA3, TB3;
     uint8_t tmp, i, lparams, ldata, result;
@@ -326,9 +341,7 @@ void TerminalVSerial(log_struct_t *logger)
     {
         fprintf(stderr, "ICC not inserted\n");
          _delay_ms(500);
-        SendHostData(strAT_RBAD);
-        wdt_enable(WDTO_60MS);
-        while(1);
+        return RET_ERROR;
     }
 
     result = ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3, logger);
@@ -338,20 +351,17 @@ void TerminalVSerial(log_struct_t *logger)
          _delay_ms(500);
         fprintf(stderr, "result: %2X\n", result);
          _delay_ms(500);
-        SendHostData(strAT_RBAD);
-        wdt_enable(WDTO_60MS);
-        while(1);
+        goto enderror;
     }
-    if(proto != 0) // Not implemented yet, perhaps someone will...
+
+    if(proto != 0) // Not implemented yet ...
     {
         fprintf(stderr, "bad ICC proto\n");
          _delay_ms(500);
-        SendHostData(strAT_RBAD);
-        wdt_enable(WDTO_60MS);
-        while(1);
+        goto enderror;
     }
 
-    // If all is well so far announce the host
+    // If all is well so far announce the host so we get more data
     SendHostData(strAT_ROK);
 
     // Loop continuously until the host ends the transaction or
@@ -370,9 +380,8 @@ void TerminalVSerial(log_struct_t *logger)
 
         if(atcmd == AT_CCEND)
         {
-            SendHostData(strAT_ROK);
-            wdt_enable(WDTO_60MS);
-            while(1);
+            result = 0;
+            break;
         }
         else if(atcmd != AT_CCAPDU || atparams == NULL || lparams < 10 || (lparams % 2) != 0)
         {
@@ -423,6 +432,19 @@ void TerminalVSerial(log_struct_t *logger)
         FreeRAPDU(response);
         SendHostData(reply);
     } // end while(1)
+
+enderror:
+    DeactivateICC();
+    if(logger)
+    {
+        LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
+        if(lcdAvailable)
+            fprintf(stderr, "Writing Log\n");
+        WriteLogEEPROM(logger);
+        ResetLogger(logger);
+    }
+
+    return result;
 }
 
 

@@ -73,7 +73,7 @@ uint8_t ParseATCommand(const char *data, AT_CMD *command, char **atparams);
 uint8_t SendEEPROMHexVSerial();
     
 /// Virtual Serial Terminal application
-void TerminalVSerial(log_struct_t *logger);
+uint8_t TerminalVSerial(log_struct_t *logger);
 
 /// Convert two hex digit characters into a byte
 uint8_t hexCharsToByte(char c1, char c2);

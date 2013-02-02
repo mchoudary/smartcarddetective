@@ -83,29 +83,33 @@ static char* strPINBAD = "PIN BAD";
 /**
  * Virtual Serial Port application
  *
- * @param logger the log structure. If this is NULL the function
+ * @param logger the log structure.
  */
 uint8_t VirtualSerial(log_struct_t *logger)
 {
     char *buf;
     char *response = NULL;
 
-    InitLCD();
+    if(GetLCDState() == 0)
+        InitLCD();
     fprintf(stderr, "\n");
 
     fprintf(stderr, "Set up  VS\n");
-     _delay_ms(500);
+    _delay_ms(500);
     power_usb_enable();
     SetupHardware();
-
-    LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
     sei();
+
+    // Signal that VS is ready
+    Led1On();
+    Led2On();
+    Led3On();
+    Led4On();
+    fprintf(stderr, "VS Ready\n");
+    _delay_ms(100);
 
     for (;;)
     {
-        fprintf(stderr, "VS Ready\n");
-        _delay_ms(100);
-
         buf = GetHostData(255);
         if(buf == NULL)
         {
@@ -122,6 +126,13 @@ uint8_t VirtualSerial(log_struct_t *logger)
             free(response);
             response = NULL;
         }
+
+        // Need to switch back leds as some apps switch them off
+        Led1On();
+        Led2On();
+        Led3On();
+        Led4On();
+        fprintf(stderr, "VS Ready\n");
     }
 }
 
@@ -347,18 +358,27 @@ uint8_t Terminal(log_struct_t *logger)
    GENERATE_AC_PARAMS acParams;
    const TLV *cdol = NULL;
 
+    // Visual signal for this app
+    Led1Off();
+    Led2On();
+    Led3Off();
+    Led4Off();
+
    if(!lcdAvailable) 
    {
+       Led2Off();
+       _delay_ms(500);
        Led2On();
-       _delay_ms(1000);
+       _delay_ms(500);
        Led2Off();
        return RET_ERROR;
    }
 
-   InitLCD();
+   if(GetLCDState() == 0)
+       InitLCD();
    fprintf(stderr, "\n");
    fprintf(stderr, "Terminal\n");
-   _delay_ms(1000);
+   _delay_ms(500);
 
    DisableWDT();
    DisableTerminalResetInterrupt();
@@ -535,6 +555,7 @@ uint8_t Terminal(log_struct_t *logger)
    {
       error = RET_ERROR;
       fprintf(stderr, "Error:  %d\n", error);
+      _delay_ms(500);
       goto endpin;
    }
 
@@ -545,6 +566,7 @@ uint8_t Terminal(log_struct_t *logger)
    {
        error = RET_EMV_GENERATE_AC;
        fprintf(stderr, "Error:  %d\n", error);
+       _delay_ms(500);
        goto endpin;
    }
 
@@ -1179,12 +1201,19 @@ uint8_t ForwardData(log_struct_t *logger)
 	uint8_t cInverse, cProto, cTC1, cTA3, cTB3;
     CRP *crp = NULL;
 
+    // Visual signal for this app
+    Led1On();
+    Led2Off();
+    Led3Off();
+    Led4Off();
+
     if(lcdAvailable)
     {
-        InitLCD();
+        if(GetLCDState() == 0)
+            InitLCD();
         fprintf(stderr, "\n");
-		fprintf(stderr, "Forward Data\n");
-        _delay_ms(1000);
+		fprintf(stderr, "Forward data\n");
+        _delay_ms(500);
     }
 
     DisableWDT();
@@ -1196,12 +1225,12 @@ uint8_t ForwardData(log_struct_t *logger)
         fprintf(stderr, "%s\n", strInsertCard);
     while(IsICCInserted() == 0);
     if(lcdAvailable)
-        fprintf(stderr, "%s\n", strCardInserted);
+        fprintf(stderr, "Connect terminal\n");
     if(logger)
        LogByte1(logger, LOG_ICC_INSERTED, 0);
     while(GetTerminalResetLine() != 0);
     if(lcdAvailable)
-        fprintf(stderr, "%s\n", strTerminalReset);
+		fprintf(stderr, "Working ...\n");
     if(logger)
        LogByte1(logger, LOG_TERMINAL_RST_LOW, 0);
 
@@ -1393,7 +1422,11 @@ void WriteLogEEPROM(log_struct_t *logger)
     if(logger == NULL)
         return;
 
+    // Visual signal for this app
+    Led1Off();
+    Led2Off();
     Led3On();
+    Led4Off();
 
 	// Update transaction counter in case it was modified
     eeprom_write_byte((uint8_t*)EEPROM_COUNTER, nCounter);

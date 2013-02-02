@@ -783,7 +783,7 @@ uint8_t IsICCPowered()
  */
 uint8_t PowerUpICC()
 {
-	if(bit_is_clear(PIND, PD1))
+	if(!IsICCInserted())
 		return 1;
 
 	PORTD &= ~(_BV(PD7));

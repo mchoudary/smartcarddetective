@@ -168,9 +168,13 @@ def main():
         except:
             print "Error sending command"
     elif args.terminal == True:
-        print "Ready for terminal application, please insert card..."
+        print "Ready for terminal application, follow SCD screen..."
         try:
-            serial_command(args.port, AT_CMD.AT_CTERM)
+            result = serial_command(args.port, AT_CMD.AT_CTERM, True)
+            if result == True:
+                print "All done"
+            else:
+                print "Some error ocurred during transaction, check log"
         except:
             print "Error sending command"
     elif args.userterminal != False:
@@ -183,8 +187,12 @@ def main():
             raise
     elif args.logt == True:
         try:
-            serial_command(args.port, AT_CMD.AT_CLET)
-            print "SCD ready to log transaction..."
+            print "Preparing to log transaction, follow SCD screen..."
+            result = serial_command(args.port, AT_CMD.AT_CLET, True)
+            if result == True:
+                print "All done"
+            else:
+                print "Some error ocurred during transaction, check log"
         except:
             print "Error sending command"
     elif args.geteepromhex != False:

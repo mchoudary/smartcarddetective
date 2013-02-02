@@ -69,6 +69,7 @@
 
 	/* Function Prototypes: */
 		void SetupHardware(void);
+		void StopVS(void);
 		void CDC_Task(void);
         char* GetHostData(uint8_t len);
         uint8_t SendHostData(const char *data);

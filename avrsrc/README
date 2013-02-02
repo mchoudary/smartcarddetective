@@ -6,8 +6,8 @@ The software is given under the BSD 2-clause license (FreeBSD):
 http://www.opensource.org/licenses/bsd-license.php
 
 VERSION
-Current version of the software is 2.4.0
-Last updated: 24 April 2012.
+Current version of the software is 2.4.2
+Last updated: 2 February 2013.
 
 See the CHANGELOG file for comments on what's new (there are many updates!).
 
@@ -18,21 +18,15 @@ Please use avr-libc version 1.7.0 or higher as the previous versions have
 problems with the malloc functions. See http://www.nongnu.org/avr-libc/ for more
 information.
 
-To install all the necessary tools I recommend using either
+To install all the necessary tools I recommend using the AVR GNU toolchains
+provided by Atmel:
+http://www.atmel.com/tools/atmelavrtoolchainforlinux.aspx
+http://www.atmel.com/tools/ATMELAVRTOOLCHAINFORWINDOWS.aspx
 
-a) my script (for any linux distribution):
-http://www.cl.cam.ac.uk/~osc22/files/install_avr_tools.sh
-(please see the comments at the start of the script for additional requirements)
+On Windows you can try using AVR Studio:
+http://www.atmel.com/tools/ATMELSTUDIO.aspx
 
-b) The latest AVR-GCC debian packages:
-http://www.wrightflyer.co.uk/avr-gcc/
-
-Alternatively you can use your distro installation of avr tools but make sure
-you are using the required avr-libc version (1.7.0). Unfortunately the
-distribution versions are generally outdated.
-
-On Windows you can try using WinAVR and/or AVR Studio. However if you want to
-build and debug the project I highly recommend working under Unix.
+However most of the testing is done under Linux, so I recommend it.
 
 
 BUILD
@@ -42,24 +36,14 @@ In order to program via JTAG or USB without root access you must create the foll
 rule files under /etc/udev/rules.d (ubuntu, probably similar on other distros):
 
 45-atmel.rules:
-    ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2103", MODE="0660", GROUP="plugdev"
-    ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2107", MODE="0660", GROUP="plugdev"
+    SUBSYSTEM=="usb", ACTION=="add", ATTR{idVendor}=="03eb", ATTR{idProduct}=="2104", MODE="0660", GROUP="plugdev" 
+    SUBSYSTEM=="usb", ACTION=="add", ATTR{idVendor}=="03eb", ATTR{idProduct}=="2107", MODE="0660", GROUP="plugdev"
 
 98-lufa-virtualserial.rules:
-    SUBSYSTEM=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="204b", MODE="660", GROUP="plugdev"
-    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="204b", MODE="660", GROUP="plugdev"
-
-    SUBSYSTEM=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="2044", MODE="660", GROUP="plugdev"
-    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="2044", MODE="660", GROUP="plugdev"
-
-    SUBSYSTEM=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="204f", MODE="660", GROUP="plugdev"
-    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="204f", MODE="660", GROUP="plugdev"
-
-    SUBSYSTEM=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="206f", MODE="660", GROUP="plugdev"
-    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="206f", MODE="660", GROUP="plugdev"
+    SUBSYSTEMS=="usb", ACTION=="add", ENV{ID_MODEL_ID}=="2044", ENV{ID_VENDOR_ID}=="03eb", MODE="660", GROUP="plugdev"
 
 99-dfu_programmer.rules:
-    BUS=="usb", ACTION=="add", SYSFS{idVendor}=="03eb", SYSFS{idProduct}=="*", MODE="666", GROUP="root"
+    SUBSYSTEM=="usb", ACTION=="add", ATTR{idVendor}=="03eb", ATTR{idProduct}=="*", MODE="0660", GROUP="plugdev"
 
 DEBUG/PROGRAM
 

@@ -63,7 +63,7 @@ CDC_LineEncoding_t LineEncoding = { .BaudRateBPS = 0,
  */
 //int main(void)
 
-/** Configures the board hardware and chip peripherals for the demo's functionality. */
+/** Configures the board hardware and chip peripherals */
 void SetupHardware(void)
 {
 	/* Disable watchdog if enabled by bootloader/fuses */
@@ -77,6 +77,16 @@ void SetupHardware(void)
 	Joystick_Init();
 	LEDs_Init();
 	USB_Init();
+}
+
+/**
+ * Stops the USB Virtual Serial interface, deallocating any necessary
+ * structures. This method should be called after using the Virtual Serial
+ * interface.
+ */
+void StopVS(void)
+{
+    USB_ShutDown();
 }
 
 /** Event handler for the USB_Connect event. This indicates that the device is enumerating via the status LEDs and
@@ -332,7 +342,7 @@ uint8_t SendHostData(const char *data)
 {
     uint8_t full;
 
-    if (data == NULL || (USB_DeviceState != DEVICE_STATE_Configured))
+    if (data == NULL || USB_DeviceState != DEVICE_STATE_Configured)
         return 1;
 
     /* Select the Serial Tx Endpoint */

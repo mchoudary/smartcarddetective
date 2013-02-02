@@ -2,6 +2,7 @@
 ## Script to decode EEPROM SCD traces
 ##
 
+import argparse
 import string
 import sys
 from binascii import b2a_hex, a2b_hex
@@ -301,12 +302,20 @@ class SCDTrace:
 
 
 def main():
+    """Command line tool to parse SCD log files in Intel hex format."""
 
-    if len(sys.argv) == 1:
-        print "Please give the name of a trace file to parse. Exiting..."
-        return
+    parser = argparse.ArgumentParser(description='SCD log parser')
+    parser.add_argument(
+            'log_file',
+            help='the file containing the log (Intel hex format)')
+    parser.add_argument('-v',
+            '--verbose',
+            action = 'store_true',
+            help='be more verbose')
+    args = parser.parse_args()
+    
 
-    fname = sys.argv[1]
+    fname = args.log_file
     trace = SCDTrace(fname)
     trace.process_data(True)
 
