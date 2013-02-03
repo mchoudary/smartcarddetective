@@ -7,9 +7,10 @@ http://www.opensource.org/licenses/bsd-license.php
 
 VERSION
 Current version of the software is 2.4.2
-Last updated: 2 February 2013.
+Last updated: February 2013.
 
-See the CHANGELOG file for comments on what's new (there are many updates!).
+See the CHANGELOG file for comments on what's new.
+See the ISSUES file for comments on some current known issues.
 
 REQUIREMENTS
 
@@ -47,8 +48,8 @@ rule files under /etc/udev/rules.d (ubuntu, probably similar on other distros):
 
 DEBUG/PROGRAM
 
-I recommend using an AVR Dragon for programming and debugging of your chip. Use
-avrdude to program your chip. 
+I recommend using an AVR Dragon for programming and debugging your SCD.
+The avrdude program is useful for programming.
 
 Use the following commands to program:
     "make program-dragon": program the SCD using avrdude and the AVR Dragon.
@@ -60,15 +61,17 @@ Use the following commands to debug:
     "make debug": connect avr-gdb to avarice (once avarice is running).
     "make debug-insight": similar to "make debug" but using the INSIGHT interface of GDB.
 
-HARDWARE CHANGES IN NEWER VERSIONS OF SCD
+HARDWARE CHANGES IN VERSION 4 OF SCD
 
-The new hardware version sold by Smart Architects has the smart card detector
-switch inverted. If you have one of this boards (from 2012 onwards), then
-remove the comments on this line of the Makefile:
+The version 4 of the SCD sold by Smart Architects has the smart card detector
+switch inverted. If you have one of these boards (from 2012 onwards), then
+leave the following line of the Makefile uncommented:
+CFLAGS += -D INVERT_ICC_SWITCH
 
-## CFLAGS += -D INVERT_ICC_SWITCH
+If you have the older versions then comment the line as follows:
+# CFLAGS += -D INVERT_ICC_SWITCH
 
-and recompile and build the source code. Then program the SCD with the
+Then recompile and build the source code. Then program the SCD with the
 modified code.
 
 

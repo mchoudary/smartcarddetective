@@ -53,7 +53,7 @@
 #define PULL_UP_HIZ_ICC	1		        // Set to 1 to enable pull-ups when setting
 								        // the I/O-ICC line to Hi-Z
 #define F_CPU 16000000UL                // Change this to the correct frequency (generally CLK = CLK_IO)
-#define MAX_WAIT_TERMINAL (30 * F_CPU)  // How many cycles to wait for a terminal response
+#define MAX_WAIT_TERMINAL (1 * F_CPU)   // How many cycles to wait for a terminal response
 
 /* Hardcoded values for ICC clock - selected based on ICC_CLK_MODE above */
 #if (ICC_CLK_MODE == 0)
@@ -119,6 +119,9 @@ void DisableTerminalResetInterrupt();
 
 /// Returns the frequency of the terminal clock in khz, zero if there is no clock 
 uint16_t GetTerminalFreq();
+
+/// Checks if we have terminal clock or not
+uint16_t IsTerminalClock();
 
 /// Returns the status of the terminal I/O line
 uint8_t GetTerminalIOLine();

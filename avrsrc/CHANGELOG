@@ -1,9 +1,22 @@
 Changelog file for The Smart Card Detective.
 
 Author: Omar Choudary (omar.choudary@cl.cam.ac.uk)
-Copyright @ 2012
+Copyright @ 2013
 
-Current version: 2.4.0
+Current software version: 2.4.2
+
+******************************************
+CHANGES from 2.4.0:
+******************************************
+- Fixed bug that made not possible the update of the software with version 4 of
+  the SCD sold by Smart Architects (release 2012). There was an incomplete
+  handling of the inverted card detector.
+- Fixed problems that required the SCD to be restarted between recording logs
+  and acquiring traces using the Python tools. Now you can use the Python tool
+  to start recording logs (i.e. running the Forward Data application) and then
+  immediately retrieving them without having to restart the SCD.
+- Removed Serial Iface and Forward LogAC applications from menu as they are
+  either incomplete or buggy and not generally useful.
 
 ******************************************
 CHANGES from 2.3.4:

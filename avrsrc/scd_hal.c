@@ -184,6 +184,47 @@ uint8_t WaitTerminalResetIOLow(uint32_t max_wait)
 }
 
 /**
+ * @return non-zero if we have some terminal clock, zero otherwise.
+ *
+ * Assumes the terminal counter is already started (Timer 3)
+ */
+uint16_t IsTerminalClock()
+{
+	uint8_t sreg;
+	uint16_t time, result;
+
+	sreg = SREG;
+	cli();	
+	TCNT3 = 1;		// We need to be sure it will not restart in the process	
+	asm volatile("nop\n\t"		
+             	 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 "nop\n\t"
+				 ::);
+	time = TCNT3;	
+	result = time - 1;
+	SREG = sreg;
+
+	return result;
+}
+
+/**
  * @return the frequency of the terminal clock in khz, zero if there is no clock
  *
  * Assumes the terminal counter is already started (Timer 3)
@@ -610,21 +651,25 @@ uint8_t GetByteTerminalNoParity(
 	DDRC &= ~(_BV(PC4));								// Set PC4 (OC3C) as input	
 	PORTC |= _BV(PC4);									// enable pull-up	
 	
-	// wait for start bit or reset
+	// wait for reset or start bit
     cnt = 0;
     while(1)
     {
         cnt = cnt + 1;
 
-        // check for start bit (Terminal I/O low)
-        tio = bit_is_clear(PINC, PC4);
-        if(tio)
-            break;
+		// check we have clock from terminal
+		if(!IsTerminalClock())
+			return RET_TERMINAL_NO_CLOCK;
 
         // check for terminal reset (reset low)
         treset = bit_is_clear(PIND, PD0);
         if(treset)
             return RET_TERMINAL_RESET_LOW;
+
+        // check for start bit (Terminal I/O low)
+        tio = bit_is_clear(PINC, PC4);
+        if(tio)
+            break;
 
 		if(max_wait != 0 && cnt == max_wait)
             return RET_TERMINAL_TIME_OUT;
@@ -634,6 +679,7 @@ uint8_t GetByteTerminalNoParity(
 	Write16bitRegister(&OCR3A, ETU_HALF(ETU_TERMINAL));	// OCR3A approx. 0.5 ETU
 	TIFR3 |= _BV(OCF3A);								// Reset OCR3A compare flag		
 
+    // Wait until the timer/counter 3 reaches the value in OCR3A
 	while(bit_is_clear(TIFR3, OCF3A));
 	TIFR3 |= _BV(OCF3A);
 
@@ -665,6 +711,7 @@ uint8_t GetByteTerminalNoParity(
 	}
 
 	*r_byte = byte;
+
 
 	// read the parity bit
 	while(bit_is_clear(TIFR3, OCF3A));

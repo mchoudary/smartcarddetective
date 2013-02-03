@@ -66,6 +66,7 @@ typedef enum retstat{
     RET_TERMINAL_GET_CMD =               0x22,
     RET_TERMINAL_SEND_RESPONSE =         0x22,
     RET_TERMINAL_ENCRYPTED_PIN =         0x23,
+    RET_TERMINAL_NO_CLOCK =              0x24,
 
     // EMV protocol/command errors
     RET_EMV_SELECT =                     0x30,

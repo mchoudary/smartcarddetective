@@ -1069,6 +1069,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
 {
 	uint8_t tdelay, result;
 	EMVCommandHeader *cmdHeader;
+    uint32_t time;
 
 	cmdHeader = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
 	if(cmdHeader == NULL)
@@ -1125,6 +1126,15 @@ enderror:
     free(cmdHeader);
     if(logger)
     {
+        time = GetCounter();
+        LogByte4(
+                logger,
+                LOG_TIME_GENERAL,
+                (time & 0xFF),
+                ((time >> 8) & 0xFF),
+                ((time >> 16) & 0xFF),
+                ((time >> 24) & 0xFF));
+
         if(result == RET_TERMINAL_RESET_LOW)
         {
             LogByte1(logger, LOG_TERMINAL_RST_LOW, 0);
@@ -1132,6 +1142,10 @@ enderror:
         else if(result == RET_TERMINAL_TIME_OUT)
         {
             LogByte1(logger, LOG_TERMINAL_TIME_OUT, 0);
+        }
+        else if(result == RET_TERMINAL_NO_CLOCK)
+        {
+            LogByte1(logger, LOG_TERMINAL_NO_CLOCK, 0);
         }
         else if(result == RET_ERROR)
         {
@@ -1904,6 +1918,7 @@ uint8_t SendT0Response(
 		return RET_ERROR;	
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_TERMINAL, response->repStatus->sw2);
+	LoopTerminalETU(2);
 
 	return 0;
 }

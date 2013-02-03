@@ -73,6 +73,7 @@ typedef enum {
   LOG_TERMINAL_TIME_OUT = (0x12 << 2 | 0x00),             // 0x48
   LOG_TERMINAL_ERROR_RECEIVE = (0x13 << 2 | 0x00),        // 0x4C
   LOG_TERMINAL_ERROR_SEND = (0x14 << 2 | 0x00),           // 0x50
+  LOG_TERMINAL_NO_CLOCK = (0x15 << 2 | 0x00),             // 0x54
 
   // ICC events
   LOG_ICC_ACTIVATED = (0x20 << 2 | 0x00),                 // 0x80
@@ -80,7 +81,7 @@ typedef enum {
   LOG_ICC_RST_HIGH = (0x22 << 2 | 0x00),                  // 0x88
   LOG_ICC_ERROR_RECEIVE = (0x23 << 2 | 0x00),             // 0x8C
   LOG_ICC_ERROR_SEND = (0x24 << 2 | 0x00),                // 0x90
-  LOG_ICC_INSERTED = (0x25 << 2 | 0x00),                  // 0x9C
+  LOG_ICC_INSERTED = (0x25 << 2 | 0x00),                  // 0x94
 
   // General events
   // The time should be saved as little endian using 4 bytes

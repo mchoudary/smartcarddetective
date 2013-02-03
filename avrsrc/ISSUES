@@ -1,0 +1,15 @@
+Known issues for The Smart Card Detective.
+
+Author: Omar Choudary (omar.choudary@cl.cam.ac.uk)
+Copyright @ 2013
+
+Current software version: 2.4.2
+
+Issue 1: There is no implementation for the T=1 communication protocol.
+I just don't have time to do that yet. Any volunteers welcome.
+
+Issue 2: Some readers (e.g. Barclays CAP reader) do not properly deactivate
+the smartcard contacts. The current implementation of the SCD waits forever
+for a terminal reset when using the ForwardData app.
+Current solution: disconnect and re-connect the reader to complete the
+data recording.

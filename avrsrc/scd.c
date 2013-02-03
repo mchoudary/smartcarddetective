@@ -172,15 +172,6 @@ int main(void)
              Terminal(&scd_logger);
            break;
 
-           case APP_LOG_GENERATE_AC:
-             ForwardDataLogAC(&scd_logger);
-           break;
-
-           case APP_SERIAL_PORT:
-             SerialInterface(103); // at 9600 bps
-           break;
-
-
            default:
              selected = APP_VIRTUAL_SERIAL_PORT;
              eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);

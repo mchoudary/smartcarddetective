@@ -58,15 +58,11 @@
 #define APP_FILTER_GENERATEAC 0x03
 /// Terminal application
 #define APP_TERMINAL 0x04
-/// Forward data and log from Generate AC only
-#define APP_LOG_GENERATE_AC 0x05
 /// Erase EEPROM
-#define APP_ERASE_EEPROM 0x06
-/// Serial Port
-#define APP_SERIAL_PORT 0x07
+#define APP_ERASE_EEPROM 0x05
 
 /// Number of existing applications
-#define APPLICATION_COUNT 7
+#define APPLICATION_COUNT 5
 
 /// Application strings shown in the user menu
 // These should be in the order of their IDs
@@ -75,9 +71,7 @@ static char* appStrings[] = {
 		"Forward and Log", 
 		"Filter  amount",
 		"Terminal",
-		"Forward Log AC", 
 		"Erase   EEPROM",
-        "Serial  Iface",
 		};
 
 
