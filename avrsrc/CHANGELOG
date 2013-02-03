@@ -17,6 +17,9 @@ CHANGES from 2.4.0:
   immediately retrieving them without having to restart the SCD.
 - Removed Serial Iface and Forward LogAC applications from menu as they are
   either incomplete or buggy and not generally useful.
+- Changed default card inserted switch flag in Makefile for SCD v4. Recompile
+  the code with the Makefile line commented for previous versions or use
+  the *prev4.hex files provided in the tgz file.
 
 ******************************************
 CHANGES from 2.3.4:
