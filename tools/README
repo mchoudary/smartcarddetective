@@ -4,4 +4,7 @@ Currently there are the following tools:
     - pytools/: several python scripts useful in using the SCD and
       visualising the EEPROM data.
       See pytools/README for more details.
+    - lufa_cdc_driver_windows.inf: driver needed for the Virtual Serial to work in Windows.
+      If you are using Windows you should install this driver to communicate with the
+      SCD after selecting the Virtual Serial application.
 
