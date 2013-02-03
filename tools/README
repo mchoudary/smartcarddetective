@@ -5,7 +5,3 @@ Currently there are the following tools:
       visualising the EEPROM data.
       See pytools/README for more details.
 
-    - install_avr_tools.sh: a script to install all the necessary
-      tools for programming/debugging the SCD in linux. Make sure to
-      look at the requirements mentioned in the header of this script.
-
