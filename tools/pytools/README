@@ -47,7 +47,11 @@ TOOLS AND USAGE
         where the file terminal.txt must contain lines of command+data and end
         with the string "0000000000" as in the example terminal.txt provided.
 
-        To program 
+        To program the device using dfu-programmer:
+        "python clis.py --programhex ../../avrsrc/scd.hex /dev/ttyACM0"
+        where you can pass an arbitrary file containing the .hex SCD software.
+        Note: this should not contain the bootloader code, which can only
+        be programmed using the AVR Dragon.
 
         To capture a card-reader transaction:
         "python clis.py --logt /dev/ttyACM0"
