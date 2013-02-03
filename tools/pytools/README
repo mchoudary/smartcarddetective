@@ -1,7 +1,7 @@
 This folder contains several python script tools that can be used with the SCD.
 
 /**
- * Copyright (C) 2012 Omar Choudary (omar.choudary@cl.cam.ac.uk)
+ * Copyright (C) 2013 Omar Choudary (omar.choudary@cl.cam.ac.uk)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -33,7 +33,7 @@ TOOLS AND USAGE
 
         EXAMPLES
 
-        To read the EEPROM:
+        To read the EEPROM (containing the log data):
         "python clis.py --geteepromhex file.hex /dev/ttyACM0"
 
         To visualize the EEPROM contents directly (on stdout):
@@ -41,6 +41,13 @@ TOOLS AND USAGE
 
         To start the terminal application:
         "python clis.py --terminal /dev/ttyACM0"
+
+        To send user-defined commands to a smartcard:
+        "python clis.py --userterminal terminal.txt /dev/ttyACM0"
+        where the file terminal.txt must contain lines of command+data and end
+        with the string "0000000000" as in the example terminal.txt provided.
+
+        To program 
 
         To capture a card-reader transaction:
         "python clis.py --logt /dev/ttyACM0"
@@ -56,8 +63,38 @@ TOOLS AND USAGE
         You need to install Python 2.7 or later as well as the PySerial module.
         
 
-    - scdtrace.py: parses the contents of an EEPROM dump (i.e. the .hex file that you get
-        from the SCD) and shows the details of the EMV commands and responses. See the
-        clis.py "--vet" option for a similar tool.
+    - scdtrace.py: parses the contents of an EEPROM dump (i.e. the .hex file
+      containing the log that you get from the SCD) and shows the details of
+      the EMV commands and responses. See the clis.py "--vet" option as well.
+
+    Note 1: the limited EEPROM size restricts the log to one or two full
+    transactions only. However, since the last version of the software (2.4.2)
+    you can create a script that automatically records logs, transfers them to
+    a PC and then erases the EEPROM in order to start again recording. That is,
+    you can write a script with something similar to this:
+
+    python clis.py --eraseeeprom /dev/ttyACM0
+    python clis.py --logt /dev/ttyACM0
+    python clis.py --geteepromhex trace1.hex /dev/ttyACM0
+    python clis.py --eraseeeprom /dev/ttyACM0
+    python clis.py --logt /dev/ttyACM0
+    python clis.py --geteepromhex trace2.hex /dev/ttyACM0
+    ....
+
+    Then you can examine the trace files (trace1.hex, ...) by using the
+    scdtrace.py tool:
+
+    python scdtrace.py trace1.hex
+    ...
+
+    Note 2: some readers perform two consecutive transactions. First they
+    retrieve only the ATR from the card and then perform a reset before
+    commencing the transaction. In these cases it is necessary to execute
+    the "logt" command twice:
+    python clis.py --logt /dev/ttyACM0 (first)
+    ... (wait for ATR, you should see an "All done" message
+    python clis.py --logt /dev/ttyACM0 (second)
+
+    then you can continue the processing (storing trace, etc.).
 
 
