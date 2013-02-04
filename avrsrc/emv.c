@@ -821,12 +821,27 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
     uint8_t error;
     uint8_t index;
     uint8_t history;
+    uint8_t done = 0, i;
 
-	// start timer for terminal
-	StartCounterTerminal();	
+    // start timer for terminal
+    StartCounterTerminal();	
 	
-	// wait for terminal CLK
-	while(ReadCounterTerminal() < 10); // this will be T0
+    // wait for terminal CLK
+    for(i = 0; i < MAX_WAIT_TERMINAL; i++)
+    {
+        if(ReadCounterTerminal() >=  10) // this will be T0
+	{
+            done = 1;
+            break;
+        }
+    }
+
+    if(!done)
+    {
+        error = RET_TERMINAL_TIME_OUT;
+        goto enderror;
+    }
+
     time = GetCounter();
     if(logger)
     {
@@ -840,16 +855,39 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
         LogByte1(logger, LOG_TERMINAL_CLK_ACTIVE, 0);
     }
 
-	// get the terminal frequency
-	tfreq = GetTerminalFreq();
-	tdelay = 10 * tfreq;
-	
-	// activate ICC after (60000 - 10500*tfreq) terminal clocks
-	// so that we rise ICC RST to high just after sending the 
-	// TS byte to the terminal
-	tmp = (uint8_t)((60000 - tdelay) / 372);
-	LoopTerminalETU(tmp);
-	if(ActivateICC(0))
+   // get the terminal frequency
+   tfreq = GetTerminalFreq();
+   tdelay = 10 * tfreq;
+
+    //Wait for terminal reset to go high within 45000 terminal clocks
+    tmp = (uint8_t)(45400 / 372);
+    error = LoopTerminalETU(tmp);
+    if(error)
+        goto enderror;
+
+    // Check terminal reset line
+    if(GetTerminalResetLine() == 0)
+    {
+        error = RET_ERROR;
+        goto enderror;
+    }
+
+    // Send the TS byte now
+    if(t_inverse)
+    {
+        SendByteTerminalNoParity(0x3F, t_inverse);
+        if(logger)
+            LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3F);
+    }
+    else
+    {
+	SendByteTerminalNoParity(0x3B, t_inverse);
+        if(logger)
+            LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3B);
+    }
+
+    // activate ICC after sending TS
+    if(ActivateICC(0))
     {
         error = RET_ERROR;
         goto enderror;
@@ -857,26 +895,9 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
     if(logger)
         LogByte1(logger, LOG_ICC_ACTIVATED, 0);
 	
-	// Send TS to terminal when RST line should be high	
-	tmpi = (int8_t)((tdelay - 10000) / 372);
-	if(tmpi < 0) tmpi = 0;
-	LoopTerminalETU(tmpi);
-	if(t_inverse)
-    {
-		SendByteTerminalNoParity(0x3F, t_inverse);
-        if(logger)
-            LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3F);
-    }
-	else
-    {
-		SendByteTerminalNoParity(0x3B, t_inverse);
-        if(logger)
-            LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3B);
-    }
-
-	// Set ICC RST line to high and receive ATR from ICC
-	LoopTerminalETU(12);
-	PORTD |= _BV(PD4);		
+    // Wait for 40000 ICC clocks and put reset to high, then get ATR
+    LoopICCETU(41000 / 372);
+    PORTD |= _BV(PD4);		
     if(logger)
         LogByte1(logger, LOG_ICC_RST_HIGH, 0);
 	
@@ -934,7 +955,7 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
     error = 0;
 
 enderror:
-	return 0;	
+	return error;	
 }
 
 

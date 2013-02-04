@@ -175,7 +175,7 @@ uint8_t GetByteTerminalNoParity(
         uint32_t max_wait);
 
 /// Waits (loops) for a number of nEtus based on the Terminal clock
-void LoopTerminalETU(uint8_t nEtus);
+uint8_t LoopTerminalETU(uint32_t nEtus);
 
 
 /** SCD to ICC functions **/

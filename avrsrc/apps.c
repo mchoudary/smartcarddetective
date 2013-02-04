@@ -1234,6 +1234,7 @@ uint8_t ForwardData(log_struct_t *logger)
     if(logger)
        LogByte1(logger, LOG_TERMINAL_RST_LOW, 0);
 
+    while(1) {
     error = InitSCDTransaction(t_inverse, t_TC1, &cInverse,
             &cProto, &cTC1, &cTA3, &cTB3, logger);
 	if(error)
@@ -1243,7 +1244,7 @@ uint8_t ForwardData(log_struct_t *logger)
             fprintf(stderr, "Error:  %d\n", error);
             _delay_ms(1000);
         }
-		goto enderror;
+        goto enderror;
     }
 
 	// update transaction counter
@@ -1257,7 +1258,7 @@ uint8_t ForwardData(log_struct_t *logger)
             break;
         FreeCRP(crp);
 	}
-
+}
     error = 0;
 
 enderror:
@@ -1271,7 +1272,10 @@ enderror:
         ResetLogger(logger);
     }
 
-	return error;
+    if(error == RET_TERMINAL_TIME_OUT)
+       error = 0;  // Just for now, check if needs to be changed
+
+    return error;
 }
 
 /**

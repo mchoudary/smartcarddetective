@@ -434,12 +434,14 @@ void PauseCounterTerminal()
  * Waits (loops) for a number of nEtus based on the Terminal clock
  * 
  * @param nEtus the number of ETUs to loop
+ * @return zero if completed, non-zero if there is no more terminal clock
  * 
  * Assumes the terminal clock counter is already started
  */
-void LoopTerminalETU(uint8_t nEtus)
+uint8_t LoopTerminalETU(uint32_t nEtus)
 {
-	uint8_t i;
+	uint32_t i, k;
+        uint8_t done;
 	
 	Write16bitRegister(&OCR3A, ETU_TERMINAL);	// set ETU
 	TCCR3A = 0x0C;								// set OC3C to 1
@@ -448,9 +450,21 @@ void LoopTerminalETU(uint8_t nEtus)
 
 	for(i = 0; i < nEtus; i++)
 	{
-		while(bit_is_clear(TIFR3, OCF3A));
-		TIFR3 |= _BV(OCF3A);
+             done = 0;
+             for(k = 0; k < MAX_WAIT_TERMINAL / 10; k++)
+             {
+                if(bit_is_set(TIFR3, OCF3A))
+                {
+                    done = 1;
+                    break;
+                }
+             }
+	     TIFR3 |= _BV(OCF3A);
+             if(done == 0)
+                 return RET_TERMINAL_TIME_OUT;
 	}
+
+        return 0;
 }
 
 
