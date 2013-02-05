@@ -1622,6 +1622,7 @@ uint8_t SendT0Command(
  * with the ICC
  * @param tTC1 the N parameter from byte TC1 of ATR used with terminal
  * @param cTC1 the N parameter from byte TC1 of ATR received from ICC
+ * @param log_dir specifies the direction of the log
  * @param logger a pointer to a log structure or NULL if no log is desired
  * @return the command that has been forwarded if successful. If this
  * method is not successful then it will return NULL
@@ -1631,14 +1632,24 @@ CAPDU* ForwardCommand(
         uint8_t cInverse,
         uint8_t tTC1,
         uint8_t cTC1,
+        uint8_t log_dir,
         log_struct_t *logger)
 {
     CAPDU* cmd;
+    uint8_t err;
 
-    cmd = ReceiveT0Command(tInverse, tTC1, logger);
+    if((log_dir & LOG_DIR_TERMINAL) > 0)
+        cmd = ReceiveT0Command(tInverse, tTC1, logger);
+    else
+        cmd = ReceiveT0Command(tInverse, tTC1, NULL);
     if(cmd == NULL) return NULL;
 
-    if(SendT0Command(cInverse, cTC1, cmd, logger))
+    if((log_dir & LOG_DIR_ICC) > 0)
+        err = SendT0Command(cInverse, cTC1, cmd, logger);
+    else
+        err = SendT0Command(cInverse, cTC1, cmd, NULL);
+    
+    if(err != 0)
     {
         FreeCAPDU(cmd);
         return NULL;
@@ -1943,6 +1954,7 @@ uint8_t SendT0Response(
  * @param cInverse different than 0 if inverse convention is to be used
  * with the ICC
  * @param cmdHeader the header of the command for which response is expected
+ * @param log_dir specifies the direction of the log
  * @param logger a pointer to a log structure or NULL if no log is desired.
  * @return the response that has been forwarded if successful. If this
  * method is not successful then it will return NULL
@@ -1951,16 +1963,26 @@ RAPDU* ForwardResponse(
         uint8_t tInverse,
         uint8_t cInverse,
         EMVCommandHeader *cmdHeader,
+        uint8_t log_dir,
         log_struct_t *logger)
 {
     RAPDU* response;
+    uint8_t err;
 
     if(cmdHeader == NULL) return NULL;
 
-    response = ReceiveT0Response(cInverse, cmdHeader, logger);
+    if((log_dir & LOG_DIR_ICC) > 0)
+        response = ReceiveT0Response(cInverse, cmdHeader, logger);
+    else
+        response = ReceiveT0Response(cInverse, cmdHeader, NULL);
     if(response == NULL) return NULL;
 
-    if(SendT0Response(tInverse, cmdHeader, response, logger))
+    if((log_dir & LOG_DIR_TERMINAL) > 0)
+        err = SendT0Response(tInverse, cmdHeader, response, logger);
+    else 
+        err = SendT0Response(tInverse, cmdHeader, response, NULL);
+
+    if(err)
     {
         FreeRAPDU(response);		
         return NULL;
@@ -2019,6 +2041,7 @@ uint8_t* SerializeResponse(RAPDU *response, uint8_t *len)
  * with the ICC
  * @param tTC1 byte TC1 of ATR used with terminal
  * @param cTC1 byte TC1 of ATR received from ICC
+ * @param log_dir specifies which part to log
  * @param logger a pointer to a log structure or NULL if no log is desired.
  * @return the command and response pair if successful. If this method
  * is not successful then it will return NULL
@@ -2029,6 +2052,7 @@ CRP* ExchangeData(
         uint8_t cInverse,
         uint8_t tTC1,
         uint8_t cTC1,
+        uint8_t log_dir,
         log_struct_t *logger)
 {
     CRP* data;
@@ -2041,7 +2065,7 @@ CRP* ExchangeData(
         return NULL;
     }
 
-    data->cmd = ForwardCommand(tInverse, cInverse, tTC1, cTC1, logger);
+    data->cmd = ForwardCommand(tInverse, cInverse, tTC1, cTC1, log_dir, logger);
     if(data->cmd == NULL)
     {
         free(data);
@@ -2049,7 +2073,7 @@ CRP* ExchangeData(
     }
 
     data->response = ForwardResponse(
-            tInverse, cInverse, data->cmd->cmdHeader, logger);
+            tInverse, cInverse, data->cmd->cmdHeader, log_dir, logger);
     if(data->response == NULL)
     {
         FreeCAPDU(data->cmd);
@@ -2073,6 +2097,7 @@ CRP* ExchangeData(
  * with the ICC
  * @param tTC1 byte TC1 of ATR used with terminal
  * @param cTC1 byte TC1 of ATR received from ICC
+ * @param log_dir specifies which part to log
  * @param logger a pointer to a log structure or NULL if no log is desired
  * @return the command and response pair if successful. If this method
  * is not successful then it will return NULL. The caller is responsible
@@ -2084,6 +2109,7 @@ CRP* ExchangeCompleteData(
         uint8_t cInverse,
         uint8_t tTC1,
         uint8_t cTC1,
+        uint8_t log_dir,
         log_struct_t *logger)
 {
     CRP *data, *tmp;
@@ -2100,7 +2126,7 @@ CRP* ExchangeCompleteData(
     data->response = NULL;
 
     // store command from first exchange
-    tmp = ExchangeData(tInverse, cInverse, tTC1, cTC1, logger);
+    tmp = ExchangeData(tInverse, cInverse, tTC1, cTC1, log_dir, logger);
     if(tmp == NULL)
     {
         FreeCRP(data);
@@ -2115,7 +2141,7 @@ CRP* ExchangeCompleteData(
 
     while(cont)
     {
-        tmp = ExchangeData(tInverse, cInverse, tTC1, cTC1, logger);
+        tmp = ExchangeData(tInverse, cInverse, tTC1, cTC1, log_dir, logger);
         if(tmp == NULL)
         {
             FreeCRP(data);

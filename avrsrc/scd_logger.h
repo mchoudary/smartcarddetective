@@ -30,7 +30,7 @@
 
 #include <stdint.h>
 
-#define LOG_BUFFER_SIZE 3000    // static for simplicity
+#define LOG_BUFFER_SIZE 3900    // static for simplicity
 // we are restricted here by the memory capacity
 
 /** Structure used to keep the log **/
@@ -39,6 +39,16 @@ struct log_struct {
     uint32_t position;
 };
 typedef struct log_struct log_struct_t;
+
+/**
+  * Definition of log direction bits, used in some methods to select
+  * which part of a transaction to log
+  */
+typedef enum {
+    LOG_DIR_TERMINAL = 1,
+    LOG_DIR_ICC = 2,
+    LOG_DIR_BOTH = 3,
+} SCD_LOG_DIR;
 
 
 /**

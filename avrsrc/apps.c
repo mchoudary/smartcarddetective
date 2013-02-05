@@ -723,7 +723,7 @@ uint8_t FilterGenerateAC(log_struct_t *logger)
                 goto enderror;
             }
 
-            response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, logger);
+            response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, LOG_DIR_BOTH, logger);
             if(response == NULL)
             {
                 error = RET_ERROR;
@@ -854,7 +854,7 @@ uint8_t FilterGenerateAC(log_struct_t *logger)
             goto enderror;
         }		
 
-        response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, logger);
+        response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, LOG_DIR_BOTH, logger);
         FreeCAPDU(cmd);	
 
         if(response == NULL)
@@ -870,7 +870,7 @@ uint8_t FilterGenerateAC(log_struct_t *logger)
     // continue rest of transaction until SCD is restarted by terminal reset
     while(1)
     {
-        crp = ExchangeCompleteData(t_inverse, cInverse, t_TC1, cTC1, logger);
+        crp = ExchangeCompleteData(t_inverse, cInverse, t_TC1, cTC1, LOG_DIR_TERMINAL, logger);
         if(crp == NULL)
         {
             error = RET_ERROR;
@@ -954,7 +954,7 @@ uint8_t StorePIN(log_struct_t *logger)
 
     while(1)
     {
-        crp = ExchangeCompleteData(t_inverse, cInverse, t_TC1, cTC1, logger);
+        crp = ExchangeCompleteData(t_inverse, cInverse, t_TC1, cTC1, LOG_DIR_TERMINAL, logger);
         if(crp == NULL)
         {
             break;
@@ -1120,7 +1120,7 @@ uint8_t ForwardAndChangePIN(log_struct_t *logger)
                 goto enderror;
             }		
 
-            response = ForwardResponse(t_inverse, cInverse, tcmd->cmdHeader, logger);
+            response = ForwardResponse(t_inverse, cInverse, tcmd->cmdHeader, LOG_DIR_BOTH, logger);
             if(response == NULL)
             {
                 error = RET_ERROR;
@@ -1142,7 +1142,7 @@ uint8_t ForwardAndChangePIN(log_struct_t *logger)
                 goto enderror;
             }
 
-            response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, logger);
+            response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, LOG_DIR_BOTH, logger);
             if(response == NULL)
             {
                 error = RET_ERROR;
@@ -1229,14 +1229,7 @@ uint8_t ForwardData(log_struct_t *logger)
         error = InitSCDTransaction(t_inverse, t_TC1, &cInverse,
                 &cProto, &cTC1, &cTA3, &cTB3, logger);
         if(error)
-        {
-            if(lcdAvailable)
-            {
-                fprintf(stderr, "Error:  %d\n", error);
-                _delay_ms(1000);
-            }
             goto enderror;
-        }
 
         // update transaction counter
         nCounter++;
@@ -1244,7 +1237,7 @@ uint8_t ForwardData(log_struct_t *logger)
         while(1)
         {
             crp = ExchangeCompleteData(
-                    t_inverse, cInverse, t_TC1, cTC1, logger);
+                    t_inverse, cInverse, t_TC1, cTC1, LOG_DIR_TERMINAL, logger);
             if(crp == NULL)
                 break;
             FreeCRP(crp);
@@ -1359,9 +1352,9 @@ uint8_t ForwardDataLogAC(log_struct_t *logger)
         }
 
         if(gotAC)
-            response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, logger);
+            response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, LOG_DIR_TERMINAL, logger);
         else
-            response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, NULL);
+            response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, LOG_DIR_TERMINAL, NULL);
         if(response == NULL)
         {
             error = RET_ERROR;
@@ -1377,7 +1370,7 @@ uint8_t ForwardDataLogAC(log_struct_t *logger)
     while(1)
     {
         crp = ExchangeCompleteData(
-                t_inverse, cInverse, t_TC1, cTC1, logger);
+                t_inverse, cInverse, t_TC1, cTC1, LOG_DIR_TERMINAL, logger);
         if(crp == NULL)
             break;
         FreeCRP(crp);	

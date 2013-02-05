@@ -209,6 +209,7 @@ CAPDU* ForwardCommand(
         uint8_t cInverse,
         uint8_t tTC1,
         uint8_t cTC1,
+        uint8_t log_dir,
         log_struct_t *logger);
 
 /// Serialize a CAPDU structure
@@ -232,6 +233,7 @@ RAPDU* ForwardResponse(
         uint8_t tInverse,
         uint8_t cInverse,
         EMVCommandHeader *cmdHeader,
+        uint8_t log_dir,
         log_struct_t *logger);
 
 /// Serialize a RAPDU structure
@@ -243,6 +245,7 @@ CRP* ExchangeData(
         uint8_t cInverse,
         uint8_t tTC1,
         uint8_t cTC1,
+        uint8_t log_dir,
         log_struct_t *logger);
 
 /// Makes a complete command-response exchange between terminal and ICC
@@ -251,6 +254,7 @@ CRP* ExchangeCompleteData(
         uint8_t cInverse,
         uint8_t tTC1,
         uint8_t cTC1,
+        uint8_t log_dir,
         log_struct_t *logger);
 
 /// Encapsulates data in a ByteArray structure

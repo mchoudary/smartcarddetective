@@ -32,6 +32,7 @@ def serial_command(port, command, wait = False):
 
     ser = serial.Serial(port)
     ser.write(command)
+    ser.flush()
     if wait == True:
         line = ser.readline()
         ser.close();
@@ -56,6 +57,7 @@ def serial_geteepromhex(port, filename):
     fid = open(filename, 'w')
     ser = serial.Serial(port)
     ser.write(AT_CMD.AT_CGEE)
+    ser.flush()
 
     while True:
         line = ser.readline()
@@ -63,6 +65,7 @@ def serial_geteepromhex(port, filename):
             break
         line.rstrip('\r\n')
         fid.write(line)
+        fid.flush()
 
     fid.close()
     ser.close()
@@ -73,6 +76,7 @@ def serial_terminal(port, fid = sys.stdin):
 
     ser = serial.Serial(port)
     ser.write(AT_CMD.AT_CCINIT)
+    ser.flush()
     line = ser.readline()
     if line.find('AT OK') < 0:
         print 'Error initialising card'
@@ -85,6 +89,7 @@ def serial_terminal(port, fid = sys.stdin):
         if line.find('0000000000') == 0:
             print 'End of transaction'
             ser.write(AT_CMD.AT_CCEND)
+            ser.flush()
             ser.close()
             fid.close()
             return
@@ -92,6 +97,7 @@ def serial_terminal(port, fid = sys.stdin):
             print 'Sending CAPDU: ', line.rstrip('\n')
             cmd = 'AT+CCAPDU=' + line.rstrip('\n') + "\r\n"
             ser.write(cmd)
+            ser.flush()
             line = ser.readline()
             print 'Response: ', line
 
