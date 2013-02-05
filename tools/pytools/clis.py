@@ -101,6 +101,37 @@ def serial_terminal(port, fid = sys.stdin):
             line = ser.readline()
             print 'Response: ', line
 
+def serial_card(port, fid = sys.stdin):
+    """Requests the SCD to act as an interactive card. A terminal should be connected when requested."""
+    """fid is the file descriptor for the file containing the sequence of responses"""
+
+    ser = serial.Serial(port)
+    ser.write(AT_CMD.AT_CTUSB)
+    ser.flush()
+    line = ser.readline()
+    if line.find('AT OK') < 0:
+        print 'Error initialising communication'
+        ser.close()
+        fid.close()
+        return
+
+    while True:
+        line = fid.readline()
+        if line.find('0000000000') == 0:
+            print 'End of transaction'
+            ser.write(AT_CMD.AT_CCEND)
+            ser.flush()
+            ser.close()
+            fid.close()
+            return
+        else:
+            print 'Sending data: ', line.rstrip('\n')
+            cmd = 'AT+UDATA=' + line.rstrip('\n') + "\r\n"
+            ser.write(cmd)
+            ser.flush()
+            line = ser.readline()
+            print 'Data from Terminal: ', line
+
 def visualise_scd_eeprom(port, filename):
     """
     Retrieves the EEPROM trace from the SCD and parses the information
@@ -148,6 +179,20 @@ def main():
             Example:                         \n\
             00A4040007A0000000048002  (SELECT) \n\
             80A80000028300            (GET PROCESSING OPTS)\n\
+            .... \n\
+            0000000000'),
+    parser.add_argument(
+            '--usercard',
+            nargs = '?',
+            type = argparse.FileType('r'),
+            const = sys.stdin,
+            default = False, metavar = 'filename',
+            help='Requests the SCD to act as a card and send the commands (ATR and RAPDUs) from the given filename (default stdin).\
+            The RAPDUs must be complete responses (header + data) with no spaces in between; one per line.\n\
+            The file must start with the ATR, then a sequence of commands and should end with the string "0000000000".\n\
+            Example:                         \n\
+            3B6D00000031C071D66419160100849000  (ATR) \n\
+            6122            (More data available)\n\
             .... \n\
             0000000000'),
     parser.add_argument(
@@ -204,6 +249,14 @@ def main():
         try:
             print "Starting user terminal...\n"
             serial_terminal(args.port, args.userterminal)
+            print "Done"
+        except:
+            print "Error occurred"
+            raise
+    elif args.usercard != False:
+        try:
+            print "Starting user card...\n"
+            serial_card(args.port, args.usercard)
             print "Done"
         except:
             print "Error occurred"

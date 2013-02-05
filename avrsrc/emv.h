@@ -213,7 +213,7 @@ CAPDU* ForwardCommand(
         log_struct_t *logger);
 
 /// Serialize a CAPDU structure
-uint8_t* SerializeCommand(CAPDU *cmd, uint8_t *len);
+uint8_t* SerializeCommand(CAPDU *cmd, uint32_t *len);
 
 /// Receive response from ICC for T=0
 RAPDU* ReceiveT0Response(

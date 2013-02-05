@@ -31,6 +31,8 @@
 
 #include "scd_logger.h"
 
+#define USB_BUF_SIZE    512
+
 extern uint8_t lcdAvailable;                // if LCD is available
 extern uint16_t revision;                   // current SVN revision in BCD
 extern uint8_t selected;             // ID of application selected
@@ -43,6 +45,7 @@ typedef enum {
     AT_NONE,        // No command, used for errors
     AT_CRST,        // Reset the SCD
     AT_CTERM,       // Start the terminal application
+    AT_CTUSB,       // Start the USB to terminal application
     AT_CLET,        // Log an EMV transaction
     AT_CGEE,        // Get EEPROM contents
     AT_CEEE,        // Erase EEPROM contents
@@ -50,6 +53,7 @@ typedef enum {
     AT_CCINIT,      // Initialise a card transaction
     AT_CCAPDU,      // Send raw terminal CAPDU
     AT_CCEND,       // Ends the current card transaction
+    AT_UDATA,       // Send USB data to SCD
     AT_DUMMY
 }AT_CMD;
 
@@ -65,6 +69,9 @@ uint8_t SendEEPROMHexVSerial();
 
 /// Virtual Serial Terminal application
 uint8_t TerminalVSerial(log_struct_t *logger);
+
+/// USB to Terminal communication
+uint8_t TerminalUSB(log_struct_t *logger);
 
 /// Convert two hex digit characters into a byte
 uint8_t hexCharsToByte(char c1, char c2);

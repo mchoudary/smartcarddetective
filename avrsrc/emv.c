@@ -1669,7 +1669,7 @@ CAPDU* ForwardCommand(
  * method will allocate the necessary space and will write into len
  * the length of the stream. The method returns NULL if unsuccessful. 
  */
-uint8_t* SerializeCommand(CAPDU *cmd, uint8_t *len)
+uint8_t* SerializeCommand(CAPDU *cmd, uint32_t *len)
 {
     uint8_t *stream, i = 0;
 

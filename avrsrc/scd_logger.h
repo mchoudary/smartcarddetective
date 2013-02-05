@@ -67,6 +67,7 @@ typedef enum {
     LOG_BYTE_FROM_TERMINAL = (0x03 << 2 | 0x00),            // 0x0C
     LOG_BYTE_TO_ICC = (0x04 << 2 | 0x00),                   // 0x10
     LOG_BYTE_FROM_ICC = (0x05 << 2 | 0x00),                 // 0x14
+    LOG_BYTE_ATR_FROM_USB = (0x06 << 2 | 0x00),             // 0x18
 
     // Terminal events
     LOG_TERMINAL_CLK_ACTIVE = (0x10 << 2 | 0x00),           // 0x40

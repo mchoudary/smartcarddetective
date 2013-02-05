@@ -48,12 +48,14 @@
 /** AT command and response strings **/
 static const char strAT_CRST[] = "AT+CRST";
 static const char strAT_CTERM[] = "AT+CTERM";
+static const char strAT_CTUSB[] = "AT+CTUSB";
 static const char strAT_CLET[] = "AT+CLET";
 static const char strAT_CGEE[] = "AT+CGEE";
 static const char strAT_CEEE[] = "AT+CEEE";
 static const char strAT_CGBM[] = "AT+CGBM";
 static const char strAT_CCINIT[] = "AT+CCINIT";
 static const char strAT_CCAPDU[] = "AT+CCAPDU";
+static const char strAT_UDATA[] = "AT+UDATA";
 static const char strAT_CCEND[] = "AT+CCEND";
 static const char strAT_RBAD[] = "AT BAD\r\n";
 static const char strAT_ROK[] = "AT OK\r\n";
@@ -96,6 +98,14 @@ char* ProcessSerialData(const char* data, log_struct_t *logger)
     else if(atcmd == AT_CTERM)
     {
         result = Terminal(logger);
+        if (result == 0)
+            str_ret = strdup(strAT_ROK);
+        else
+            str_ret = strdup(strAT_RBAD);
+    }
+    else if(atcmd == AT_CTUSB)
+    {
+        result = TerminalUSB(logger);
         if (result == 0)
             str_ret = strdup(strAT_ROK);
         else
@@ -179,6 +189,11 @@ uint8_t ParseATCommand(const char *data, AT_CMD *atcmd, char **atparams)
             *atcmd = AT_CTERM;
             return 0;
         }
+        else if(strstr(data, strAT_CTUSB) == data)
+        {
+            *atcmd = AT_CTUSB;
+            return 0;
+        }
         else if(strstr(data, strAT_CLET) == data)
         {
             *atcmd = AT_CLET;
@@ -208,6 +223,14 @@ uint8_t ParseATCommand(const char *data, AT_CMD *atcmd, char **atparams)
         {
             *atcmd = AT_CCAPDU;
             pos = strlen(strAT_CCAPDU);
+            if((strlen(data) > pos + 1) && data[pos] == '=')
+                *atparams = &data[pos + 1];
+            return 0;
+        }
+        else if(strstr(data, strAT_UDATA) == data)
+        {
+            *atcmd = AT_UDATA;
+            pos = strlen(strAT_UDATA);
             if((strlen(data) > pos + 1) && data[pos] == '=')
                 *atparams = &data[pos + 1];
             return 0;
@@ -302,6 +325,151 @@ uint8_t SendEEPROMHexVSerial()
     return 0;
 }
 
+/**
+ * This method implements communication between USB and Terminal
+ *
+ * The SCD receives instructions from the Virtual Serial host and communicates
+ * with the Terminal. This can be used to forward the data from the terminal
+ * over a host and then getting back RAPDUs that are sent to the terminal.
+ * This method should be called upon reciving the AT+CCINIT serial command.
+ *
+ * This function never returns, after completion it will restart the SCD.
+ *
+ * @param logger the log structure or NULL if a log is not desired
+ * @return zero if success, non-zero otherwise
+ */
+uint8_t TerminalUSB(log_struct_t *logger)
+{
+    //uint8_t convention, proto, TC1, TA3, TB3;
+    uint8_t t_inverse = 0, t_TC1 = 0;
+    uint8_t tmp, i, lparams, ldata, error, done;
+    char *buf, *atparams = NULL;
+    char reply[USB_BUF_SIZE];
+    uint32_t time;
+    uint32_t len;
+    AT_CMD atcmd;
+    RAPDU *response = NULL;
+    CAPDU *command = NULL;
+
+    // Send OK to host to get ATR
+    SendHostData(strAT_ROK);
+    Led2Off(); // Remove me
+    Led4Off(); // Remove me
+
+    // Get the ATR from host
+    //buf = GetHostData(USB_BUF_SIZE);
+    buf = GetHostData(255);
+    if(buf == NULL)
+    {
+        error = RET_ERROR;
+        goto enderror;
+    }
+
+    tmp = ParseATCommand(buf, &atcmd, &atparams);
+    lparams = strlen(atparams);
+    if(atcmd != AT_UDATA)
+    {
+        error = RET_ERROR;
+        goto enderror;
+    }
+
+    // Now we have the ATR, wait for start of transaction from Terminal
+    if(lcdAvailable)
+        fprintf(stderr, "Connect terminal\n");
+    if(logger)
+        LogByte1(logger, LOG_BYTE_ATR_FROM_USB, 0);
+    while(GetTerminalResetLine() != 0);
+    StartCounterTerminal();	
+
+    // wait for terminal CLK
+    done = 0;
+    for(i = 0; i < MAX_WAIT_TERMINAL; i++)
+    {
+        if(ReadCounterTerminal() >=  10) // this will be T0
+        {
+            done = 1;
+            break;
+        }
+    }
+
+    if(!done)
+    {
+        error = RET_TERMINAL_TIME_OUT;
+        goto enderror;
+    }
+
+    time = GetCounter();
+    
+    {
+        LogByte4(
+                logger,
+                LOG_TIME_GENERAL,
+                (time & 0xFF),
+                ((time >> 8) & 0xFF),
+                ((time >> 16) & 0xFF),
+                ((time >> 24) & 0xFF));
+        LogByte1(logger, LOG_TERMINAL_CLK_ACTIVE, 0);
+    }
+
+    //Wait for terminal reset to go high within 45000 terminal clocks
+    tmp = (uint8_t)(45400 / 372);
+    error = LoopTerminalETU(tmp);
+    if(error)
+        goto enderror;
+
+    // Check terminal reset line
+    if(GetTerminalResetLine() == 0)
+    {
+        error = RET_ERROR;
+        goto enderror;
+    }
+
+    // Send the ATR to the terminal
+    for(i = 0; i < lparams/2; i++)
+    {
+        tmp = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
+        SendByteTerminalNoParity(tmp, t_inverse);
+        if(logger)
+            LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, tmp);
+        LoopTerminalETU(2);
+    }
+    free(buf);
+
+    command = ReceiveT0Command(t_inverse, t_TC1, logger);
+    if(command == NULL)
+    {
+        error = RET_ERROR;
+        goto enderror;
+    }
+    memset(reply, 0, USB_BUF_SIZE);
+    buf = SerializeCommand(command, &len);
+    memcpy(reply, buf, len);
+    if(len > 8)
+    {
+        Led4On(); // Remove me
+        _delay_ms(1000);
+    }
+    fprintf(stderr,  "%s\n", buf);
+    _delay_ms(1000);
+    reply[tmp] = '\r';
+    reply[tmp + 1] = '\n';
+    SendHostData(reply);
+    free(buf);
+
+
+enderror:
+    DeactivateICC();
+    if(logger)
+    {
+        LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
+        if(lcdAvailable)
+            fprintf(stderr, "Writing Log\n");
+        WriteLogEEPROM(logger);
+        ResetLogger(logger);
+    }
+
+    return error;
+}
 
 /**
  * This method implements a virtual serial terminal application.

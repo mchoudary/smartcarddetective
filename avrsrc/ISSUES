@@ -13,3 +13,7 @@ the smartcard contacts. The current implementation of the SCD waits forever
 for a terminal reset when using the ForwardData app.
 Current solution: disconnect and re-connect the reader to complete the
 data recording.
+
+Issue 3: Need to rewrite SendHostData method so that it automatically adds the return characters and makes the buffer copy.
+
+
