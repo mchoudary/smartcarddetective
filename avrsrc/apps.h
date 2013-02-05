@@ -58,12 +58,12 @@
 /// Application strings shown in the user menu
 // These should be in the order of their IDs
 static char* appStrings[] = {
-        "Virtual Serial",
-		"Forward and Log", 
-		"Filter  amount",
-		"Terminal",
-		"Erase   EEPROM",
-		};
+    "Virtual Serial",
+    "Forward and Log", 
+    "Filter  amount",
+    "Terminal",
+    "Erase   EEPROM",
+};
 
 
 /* Global external variables */

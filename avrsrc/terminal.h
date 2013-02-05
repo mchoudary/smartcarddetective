@@ -41,83 +41,83 @@ extern uint8_t nCounter;                        // number of transactions
  * using the GET DATA command
  */
 typedef enum {
-   PDO_ATC = 0x36,
-   PDO_LAST_ATC = 0x13,
-   PDO_PIN_TRY_COUNTER = 0x17,
-   PDO_LOG_FORMAT = 0x4F
+    PDO_ATC = 0x36,
+    PDO_LAST_ATC = 0x13,
+    PDO_PIN_TRY_COUNTER = 0x17,
+    PDO_LOG_FORMAT = 0x4F
 } CARD_PDO;
 
 /**
  * Enum defining the types of GENERATE AC requests available
  */
 typedef enum{
-   AC_REQ_AAC = 0,
-   AC_REQ_ARQC = 0x80,
-   AC_REQ_TC = 0x40
+    AC_REQ_AAC = 0,
+    AC_REQ_ARQC = 0x80,
+    AC_REQ_TC = 0x40
 } AC_REQ_TYPE;
 
 /**
  * Structure defining a BER-TLV object
  */
 typedef struct {
-        uint8_t tag1;
-        uint8_t tag2;
-        uint8_t len;
-        uint8_t *value;
+    uint8_t tag1;
+    uint8_t tag2;
+    uint8_t len;
+    uint8_t *value;
 } TLV;
-   
+
 /**
  * Structure defining a record (constructed BER-TLV object)
  */
 typedef struct {
-        uint8_t count;
-        TLV **objects;
+    uint8_t count;
+    TLV **objects;
 } RECORD;
 
 /**
  * Structure representing a FCI template
  */
 typedef struct {
-   uint8_t lenDFName;
-   uint8_t* dfName;
-   RECORD* fciData;
+    uint8_t lenDFName;
+    uint8_t* dfName;
+    RECORD* fciData;
 } FCITemplate;
-   
+
 /**
  * Structure to hold multiple FCI Template objects
  */
 typedef struct {
-   uint8_t count;
-   FCITemplate** objects;
+    uint8_t count;
+    FCITemplate** objects;
 } FCIList;
 
 /**
  * Structure used to hold multiple RECORD objects
  */
 typedef struct {
-   uint8_t count;
-   RECORD** objects;
+    uint8_t count;
+    RECORD** objects;
 } RECORDList;
 
 /**
  * Structure representing an Application File Locator (AFL)
  */
 typedef struct {
-   uint8_t sfi;
-   uint8_t recordStart;
-   uint8_t recordEnd;
-   uint8_t recordsOfflineAuth;
+    uint8_t sfi;
+    uint8_t recordStart;
+    uint8_t recordEnd;
+    uint8_t recordsOfflineAuth;
 } AFL;
 
 /**
  * Structure representing the AFL list and AIP
  */
 typedef struct {
-   uint8_t count;
-   uint8_t aip[2];
-   AFL** aflList;
+    uint8_t count;
+    uint8_t aip[2];
+    AFL** aflList;
 } APPINFO;
-   
+
 /**
  * Structure used to transmit data to a GENERATE AC
  * command (based on CDOL1 and CDOL2).
@@ -127,20 +127,20 @@ typedef struct {
  * and of course in the EMV specification.
  */
 typedef struct {
-   uint8_t amount[6];                  // tag 0x9F02
-   uint8_t amountOther[6];             // tag 0x9F03
-   uint8_t terminalCountryCode[2];     // tag 0x9F1A
-   uint8_t tvr[5];                     // tag 95
-   uint8_t terminalCurrencyCode[2];    // tag 0x5F2A
-   uint8_t transactionDate[3];         // tag 0x9A
-   uint8_t transactionType;            // tag 0x9C
-   uint8_t unpredictableNumber[4];     // tag 0x9F37
-   uint8_t terminalType;               // tag 0x9F35
-   uint8_t dataAuthCode[2];            // tag 0x9F45
-   uint8_t iccDynamicNumber[8];        // tag 0x9F4C
-   uint8_t cvmResults[3];              // tag 0x9F34
-   uint8_t arc[2];                     // tag 0x8A
-   uint8_t IssuerAuthData[8];          // tag 0x91
+    uint8_t amount[6];                  // tag 0x9F02
+    uint8_t amountOther[6];             // tag 0x9F03
+    uint8_t terminalCountryCode[2];     // tag 0x9F1A
+    uint8_t tvr[5];                     // tag 95
+    uint8_t terminalCurrencyCode[2];    // tag 0x5F2A
+    uint8_t transactionDate[3];         // tag 0x9A
+    uint8_t transactionType;            // tag 0x9C
+    uint8_t unpredictableNumber[4];     // tag 0x9F37
+    uint8_t terminalType;               // tag 0x9F35
+    uint8_t dataAuthCode[2];            // tag 0x9F45
+    uint8_t iccDynamicNumber[8];        // tag 0x9F4C
+    uint8_t cvmResults[3];              // tag 0x9F34
+    uint8_t arc[2];                     // tag 0x8A
+    uint8_t IssuerAuthData[8];          // tag 0x91
 } GENERATE_AC_PARAMS;
 
 

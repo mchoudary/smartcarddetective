@@ -30,19 +30,19 @@
 
 
 #define ICC_CLK_MODE 0                   // Set to:
-                                         // 0 for ICC_CLK = 4 MHz
-                                         // 1 for ICC_CLK = 2 MHz
-                                         // 2 for ICC_CLK = 1 MHz
-                                         // 3 for ICC_CLK = 800 KHz
-                                         // 4 for ICC_CLK = 500 KHz
-                                         // 5 for external clock - update parameters below as necessary!
+// 0 for ICC_CLK = 4 MHz
+// 1 for ICC_CLK = 2 MHz
+// 2 for ICC_CLK = 1 MHz
+// 3 for ICC_CLK = 800 KHz
+// 4 for ICC_CLK = 500 KHz
+// 5 for external clock - update parameters below as necessary!
 #define ETU_TERMINAL 372
 #define ETU_HALF(X) ((unsigned int) ((X)/2))
 #define ETU_LESS_THAN_HALF(X) ((unsigned int) ((X)*0.46))
 #define ETU_EXTENDED(X) ((unsigned int) ((X)*1.075))
 #define ICC_VCC_DELAY_US 50   
 #define PULL_UP_HIZ_ICC	1		        // Set to 1 to enable pull-ups when setting
-								        // the I/O-ICC line to Hi-Z
+// the I/O-ICC line to Hi-Z
 #define F_CPU 16000000UL                // Change this to the correct frequency (generally CLK = CLK_IO)
 #define MAX_WAIT_TERMINAL (1 * F_CPU)   // How many cycles to wait for a terminal response
 

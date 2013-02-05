@@ -38,19 +38,19 @@
  * Structure defining an array of bytes
  */
 typedef struct {
-   uint8_t len;
-   uint8_t *bytes;
+    uint8_t len;
+    uint8_t *bytes;
 } ByteArray;
 
 /**
  * Structure defining an EMV header command 
  */
 typedef struct {
-   uint8_t cla;
-   uint8_t ins;
-   uint8_t p1;
-   uint8_t p2;
-   uint8_t p3;          
+    uint8_t cla;
+    uint8_t ins;
+    uint8_t p1;
+    uint8_t p2;
+    uint8_t p3;          
 } EMVCommandHeader;
 
 
@@ -58,17 +58,17 @@ typedef struct {
  * Structure defining a command APDU
  */
 typedef struct {
-	uint8_t lenData;
-	EMVCommandHeader *cmdHeader;
-	uint8_t *cmdData;
+    uint8_t lenData;
+    EMVCommandHeader *cmdHeader;
+    uint8_t *cmdData;
 } CAPDU;
 
 /**
  * Structure defining the status bytes
  */
 typedef struct {
-	uint8_t sw1;
-	uint8_t sw2;
+    uint8_t sw1;
+    uint8_t sw2;
 } EMVStatus;
 
 
@@ -76,32 +76,32 @@ typedef struct {
  * Structure defining the response APDU
  */
 typedef struct {
-	uint8_t lenData;
-	EMVStatus *repStatus;
-	uint8_t *repData;
+    uint8_t lenData;
+    EMVStatus *repStatus;
+    uint8_t *repData;
 } RAPDU;
 
 /**
  * Structure defining a command-response pair
  */
 typedef struct {
-	CAPDU *cmd;
-	RAPDU *response;	
+    CAPDU *cmd;
+    RAPDU *response;	
 } CRP;
 
 /**
  * Enum defining the different types of commands supported
  */
 typedef enum {
-   CMD_SELECT = 0,
-   CMD_GET_RESPONSE,
-   CMD_READ_RECORD,
-   CMD_GET_PROCESSING_OPTS,
-   CMD_VERIFY,
-   CMD_GENERATE_AC,
-   CMD_GET_DATA,
-   CMD_INTERNAL_AUTHENTICATE,
-   CMD_PIN_CHANGE_UNBLOCK
+    CMD_SELECT = 0,
+    CMD_GET_RESPONSE,
+    CMD_READ_RECORD,
+    CMD_GET_PROCESSING_OPTS,
+    CMD_VERIFY,
+    CMD_GENERATE_AC,
+    CMD_GET_DATA,
+    CMD_INTERNAL_AUTHENTICATE,
+    CMD_PIN_CHANGE_UNBLOCK
 }EMV_CMD;
 
 
@@ -120,44 +120,44 @@ uint8_t ResetICC(
 
 /// Sends default ATR for T=0 to terminal
 void SendT0ATRTerminal(
-    uint8_t inverse_convention,
-    uint8_t TC1,
-    log_struct_t *logger);
+        uint8_t inverse_convention,
+        uint8_t TC1,
+        log_struct_t *logger);
 
 /// Receives the ATR from ICC after a successful activation
 uint8_t GetATRICC(
-    uint8_t *inverse_convention,
-    uint8_t *proto,
-    uint8_t *TS,
-    uint8_t *T0,
-    uint16_t *selection,
-    uint8_t bytes[32],
-    uint8_t *tck,
-    log_struct_t *logger);
+        uint8_t *inverse_convention,
+        uint8_t *proto,
+        uint8_t *TS,
+        uint8_t *T0,
+        uint16_t *selection,
+        uint8_t bytes[32],
+        uint8_t *tck,
+        log_struct_t *logger);
 
 /// This function will return a command header structure
 EMVCommandHeader* MakeCommandHeader(uint8_t cla, uint8_t ins, uint8_t p1, 
-						uint8_t p2, uint8_t p3);
+        uint8_t p2, uint8_t p3);
 
 /// This function will return a command header structure
 EMVCommandHeader* MakeCommandHeaderC(EMV_CMD command);
 
 /// This function will return a command APDU (CAPDU) structure
 CAPDU* MakeCommand(uint8_t cla, uint8_t ins, uint8_t p1, 
-      uint8_t p2, uint8_t p3, const uint8_t cmdData[], uint8_t lenData);
+        uint8_t p2, uint8_t p3, const uint8_t cmdData[], uint8_t lenData);
 
 /// This function will return a command APDU (CAPDU) structure
 CAPDU* MakeCommandP(const EMVCommandHeader *cmdHdr, const uint8_t cmdData[],
-      uint8_t lenData);
+        uint8_t lenData);
 
 /// This function will return a command APDU (CAPDU) structure
 CAPDU* MakeCommandC(EMV_CMD command, const uint8_t cmdData[],
-      uint8_t lenData);
+        uint8_t lenData);
 
 /// Initiates the communication with both the ICC and terminal for T=0
 uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1, 
-	uint8_t *inverse_convention, uint8_t *proto, uint8_t *TC1, 
-	uint8_t *TA3, uint8_t *TB3, log_struct_t *logger);
+        uint8_t *inverse_convention, uint8_t *proto, uint8_t *TC1, 
+        uint8_t *TA3, uint8_t *TB3, log_struct_t *logger);
 
 /// Returns the command case from the command header
 uint8_t GetCommandCase(uint8_t cla, uint8_t ins);

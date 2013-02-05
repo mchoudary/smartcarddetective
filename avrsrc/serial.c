@@ -81,7 +81,7 @@ char* ProcessSerialData(const char* data, log_struct_t *logger)
     AT_CMD atcmd;
     uint8_t result = 0;
     char *str_ret = NULL;
-    
+
     result = ParseATCommand(data, &atcmd, &atparams);
     if(result != 0)
         return strdup(strAT_RBAD);
@@ -269,7 +269,7 @@ uint8_t SendEEPROMHexVSerial()
             t = eedata[i] & 0x0F;
             eestr[10 + i * 2] = (t < 0x0A) ? (t + '0') : (t + '7');
         }
-        
+
         eesum = (uint8_t)((eesum ^ 0xFF) + 1);
         t = (eesum >> 4) & 0x0F;
         eestr[73] = (t < 0x0A) ? (t + '0') : (t + '7');
@@ -298,7 +298,7 @@ uint8_t SendEEPROMHexVSerial()
     eestr[12] = '\n';
     if(SendHostData(eestr))
         return RET_ERROR;
-    
+
     return 0;
 }
 
@@ -331,7 +331,7 @@ uint8_t TerminalVSerial(log_struct_t *logger)
     if(!IsICCInserted())
     {
         fprintf(stderr, "ICC not inserted\n");
-         _delay_ms(500);
+        _delay_ms(500);
         return RET_ERROR;
     }
 
@@ -339,16 +339,16 @@ uint8_t TerminalVSerial(log_struct_t *logger)
     if(result)
     {
         fprintf(stderr, "ICC reset failed\n");
-         _delay_ms(500);
+        _delay_ms(500);
         fprintf(stderr, "result: %2X\n", result);
-         _delay_ms(500);
+        _delay_ms(500);
         goto enderror;
     }
 
     if(proto != 0) // Not implemented yet ...
     {
         fprintf(stderr, "bad ICC proto\n");
-         _delay_ms(500);
+        _delay_ms(500);
         goto enderror;
     }
 
@@ -485,7 +485,7 @@ uint8_t hexCharsToByte(char c1, char c2)
 char nibbleToHexChar(uint8_t b, uint8_t high)
 {
     char result = '0';
-    
+
     if(high)
         b = (b & 0xF0) >> 4;
     else

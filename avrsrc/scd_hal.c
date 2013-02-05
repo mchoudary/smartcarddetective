@@ -88,7 +88,7 @@ uint8_t GetTerminalIOLine()
  */
 uint8_t GetTerminalResetLine()
 {
-	return bit_is_set(PIND, PD0);
+    return bit_is_set(PIND, PD0);
 }
 
 /**
@@ -105,7 +105,7 @@ uint8_t GetTerminalResetLine()
  */
 void EnableWDT(uint16_t ms)
 {
-	if(ms <= 15)
+    if(ms <= 15)
         wdt_enable(WDTO_15MS);
     else if(ms <= 30)
         wdt_enable(WDTO_30MS);
@@ -167,11 +167,11 @@ uint8_t WaitTerminalResetIOLow(uint32_t max_wait)
         treset = bit_is_clear(PIND, PD0);
         result = (tio << 1) | treset;
 
-		if(max_wait != 0 && cnt == max_wait)
+        if(max_wait != 0 && cnt == max_wait)
             break;
     }while(result == 0);
-    
-	return result;
+
+    return result;
 }
 
 /**
@@ -181,38 +181,38 @@ uint8_t WaitTerminalResetIOLow(uint32_t max_wait)
  */
 uint16_t IsTerminalClock()
 {
-	uint8_t sreg;
-	uint16_t time, result;
+    uint8_t sreg;
+    uint16_t time, result;
 
-	sreg = SREG;
-	cli();	
-	TCNT3 = 1;		// We need to be sure it will not restart in the process	
-	asm volatile("nop\n\t"		
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 ::);
-	time = TCNT3;	
-	result = time - 1;
-	SREG = sreg;
+    sreg = SREG;
+    cli();	
+    TCNT3 = 1;		// We need to be sure it will not restart in the process	
+    asm volatile("nop\n\t"		
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            ::);
+    time = TCNT3;	
+    result = time - 1;
+    SREG = sreg;
 
-	return result;
+    return result;
 }
 
 /**
@@ -222,72 +222,72 @@ uint16_t IsTerminalClock()
  */
 uint16_t GetTerminalFreq()
 {
-	uint8_t sreg;
-	uint16_t time, result;
+    uint8_t sreg;
+    uint16_t time, result;
 
-	sreg = SREG;
-	cli();	
-	TCNT3 = 1;		// We need to be sure it will not restart in the process	
-	asm volatile("nop\n\t"		
-             	 "nop\n\t"
-             	 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-             	 "nop\n\t"
-				 "nop\n\t"
-				 "nop\n\t"
-				 ::);
-	time = TCNT3;	
+    sreg = SREG;
+    cli();	
+    TCNT3 = 1;		// We need to be sure it will not restart in the process	
+    asm volatile("nop\n\t"		
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            "nop\n\t"
+            ::);
+    time = TCNT3;	
 
-	if(time == 1)
-		result = 0;
-	else
-		result = (uint16_t)(((F_CPU/1000) * time) / 50);
+    if(time == 1)
+        result = 0;
+    else
+        result = (uint16_t)(((F_CPU/1000) * time) / 50);
 
-	SREG = sreg;
+    SREG = sreg;
 
-	return result;
+    return result;
 }
 
 /**
@@ -299,7 +299,7 @@ uint16_t GetTerminalFreq()
  */
 uint8_t ReadTimerT2()
 {
-	return TCNT2;	
+    return TCNT2;	
 }
 
 
@@ -317,8 +317,8 @@ void StartTimerT2()
     TIMSK2 |= _BV(OCIE2A);
 
     TCNT2 = 0;
-	TCCR2A = _BV(WGM21);			// CTC mode, No toggle on OC2X pins, no PWM
-	TCCR2B = _BV(CS22) | _BV(CS21) | _BV(CS20);  // F_CLK_T2 = F_CLK_IO / 1024
+    TCCR2A = _BV(WGM21);			// CTC mode, No toggle on OC2X pins, no PWM
+    TCCR2B = _BV(CS22) | _BV(CS21) | _BV(CS20);  // F_CLK_T2 = F_CLK_IO / 1024
 }
 
 /**
@@ -326,8 +326,8 @@ void StartTimerT2()
  */
 void StopTimerT2()
 {
-	TCCR2B = 0;
-	TCCR2A = 0;
+    TCCR2B = 0;
+    TCCR2A = 0;
     TIMSK2 = 0;
     OCR2A = 0;
 }
@@ -370,18 +370,18 @@ void StopTimerT2()
  */
 uint16_t ReadCounterTerminal()
 {
-	uint16_t i;
-	uint8_t sreg;
+    uint16_t i;
+    uint8_t sreg;
 
-	// do the reading (16-bit via 2 x 8-bit reads) with interrupts disabled	
-	sreg = SREG;
-	cli();	
-	i = TCNT3;
-	SREG = sreg;
+    // do the reading (16-bit via 2 x 8-bit reads) with interrupts disabled	
+    sreg = SREG;
+    cli();	
+    i = TCNT3;
+    SREG = sreg;
 
-	return i;	
+    return i;	
 
-	//or just: return Read16bitRegister(&TCNT3); but it might add more code
+    //or just: return Read16bitRegister(&TCNT3); but it might add more code
 }
 
 
@@ -394,14 +394,14 @@ uint16_t ReadCounterTerminal()
  */
 void StartCounterTerminal()
 {
-	//TCCR3A = 0;							// No toggle on OC3X pins
-	TCCR3A = 0x0C;						// set OC3C to 1 on compare match
-	// This is needed because by some misterious hardware bug (i.e. not
-	// as in the specs) the OC3C line (I/O for terminal) is changed
-	// even if TCCR3A = 0
+    //TCCR3A = 0;							// No toggle on OC3X pins
+    TCCR3A = 0x0C;						// set OC3C to 1 on compare match
+    // This is needed because by some misterious hardware bug (i.e. not
+    // as in the specs) the OC3C line (I/O for terminal) is changed
+    // even if TCCR3A = 0
 
-	Write16bitRegister(&OCR3A, ETU_TERMINAL);
-	TCCR3B = 0x0F;						// CTC, timer external source
+    Write16bitRegister(&OCR3A, ETU_TERMINAL);
+    TCCR3B = 0x0F;						// CTC, timer external source
 }
 
 /**
@@ -409,8 +409,8 @@ void StartCounterTerminal()
  */
 void StopCounterTerminal()
 {
-	TCCR3B = 0;
-	Write16bitRegister(&TCNT3, 0); 		//TCNT3 = 0;	
+    TCCR3B = 0;
+    Write16bitRegister(&TCNT3, 0); 		//TCNT3 = 0;	
 }
 
 /** 
@@ -418,7 +418,7 @@ void StopCounterTerminal()
  */
 void PauseCounterTerminal()
 {
-	TCCR3B = 0;
+    TCCR3B = 0;
 }
 
 /**
@@ -431,31 +431,31 @@ void PauseCounterTerminal()
  */
 uint8_t LoopTerminalETU(uint32_t nEtus)
 {
-	uint32_t i, k;
-        uint8_t done;
-	
-	Write16bitRegister(&OCR3A, ETU_TERMINAL);	// set ETU
-	TCCR3A = 0x0C;								// set OC3C to 1
-	Write16bitRegister(&TCNT3, 1);				// TCNT3 = 1	
-	TIFR3 |= _BV(OCF3A);						// Reset OCR3A compare flag		
+    uint32_t i, k;
+    uint8_t done;
 
-	for(i = 0; i < nEtus; i++)
-	{
-             done = 0;
-             for(k = 0; k < MAX_WAIT_TERMINAL / 10; k++)
-             {
-                if(bit_is_set(TIFR3, OCF3A))
-                {
-                    done = 1;
-                    break;
-                }
-             }
-	     TIFR3 |= _BV(OCF3A);
-             if(done == 0)
-                 return RET_TERMINAL_TIME_OUT;
-	}
+    Write16bitRegister(&OCR3A, ETU_TERMINAL);	// set ETU
+    TCCR3A = 0x0C;								// set OC3C to 1
+    Write16bitRegister(&TCNT3, 1);				// TCNT3 = 1	
+    TIFR3 |= _BV(OCF3A);						// Reset OCR3A compare flag		
 
-        return 0;
+    for(i = 0; i < nEtus; i++)
+    {
+        done = 0;
+        for(k = 0; k < MAX_WAIT_TERMINAL / 10; k++)
+        {
+            if(bit_is_set(TIFR3, OCF3A))
+            {
+                done = 1;
+                break;
+            }
+        }
+        TIFR3 |= _BV(OCF3A);
+        if(done == 0)
+            return RET_TERMINAL_TIME_OUT;
+    }
+
+    return 0;
 }
 
 
@@ -470,86 +470,86 @@ uint8_t LoopTerminalETU(uint32_t nEtus)
  */
 void SendByteTerminalNoParity(uint8_t byte, uint8_t inverse_convention)
 {
-	uint8_t bitval, i, parity;
-	volatile uint8_t tmp;	
+    uint8_t bitval, i, parity;
+    volatile uint8_t tmp;	
 
-	// check we have clock from terminal to avoid damage
-	// assuming the counter is started
-	if(!GetTerminalFreq())
-		return;	
+    // check we have clock from terminal to avoid damage
+    // assuming the counter is started
+    if(!GetTerminalFreq())
+        return;	
 
-	// this code is needed to be sure that the I/O line will not
-	// toggle to low when we set DDRC4 as output
-	TCCR3A = 0x0C;								// Set OC3C on compare
+    // this code is needed to be sure that the I/O line will not
+    // toggle to low when we set DDRC4 as output
+    TCCR3A = 0x0C;								// Set OC3C on compare
 
-	PORTC |= _BV(PC4);							// Put to high	
-	DDRC |= _BV(PC4);							// Set PC4 (OC3C) as output	
-	Write16bitRegister(&OCR3A, ETU_TERMINAL);	// set ETU
-	Write16bitRegister(&TCNT3, 1);				// TCNT3 = 1	
-	TIFR3 |= _BV(OCF3A);						// Reset OCR3A compare flag		
+    PORTC |= _BV(PC4);							// Put to high	
+    DDRC |= _BV(PC4);							// Set PC4 (OC3C) as output	
+    Write16bitRegister(&OCR3A, ETU_TERMINAL);	// set ETU
+    Write16bitRegister(&TCNT3, 1);				// TCNT3 = 1	
+    TIFR3 |= _BV(OCF3A);						// Reset OCR3A compare flag		
 
-	// send each bit using OC3C (connected to the terminal I/O line)
-	// each TCCR3A value will be visible after the next compare match
+    // send each bit using OC3C (connected to the terminal I/O line)
+    // each TCCR3A value will be visible after the next compare match
 
-	// start bit
-	TCCR3A = 0x08;
+    // start bit
+    TCCR3A = 0x08;
 
-	// while sending the start bit convert the byte if necessary
-	// to match inverse conversion	
-	if(inverse_convention)
-	{	
-		tmp = ~byte;	
-		byte = 0;	
-		for(i = 0; i < 8; i++)
-		{
-			bitval = tmp & _BV((7-i));
-			if(bitval) byte = byte | _BV(i);
-		}
-	}
+    // while sending the start bit convert the byte if necessary
+    // to match inverse conversion	
+    if(inverse_convention)
+    {	
+        tmp = ~byte;	
+        byte = 0;	
+        for(i = 0; i < 8; i++)
+        {
+            bitval = tmp & _BV((7-i));
+            if(bitval) byte = byte | _BV(i);
+        }
+    }
 
-	
-	while(bit_is_clear(TIFR3, OCF3A));
-	TIFR3 |= _BV(OCF3A);
 
-	// byte value
-	parity = 0;
-	for(i = 0; i < 8; i++)
-	{
-		bitval = (uint8_t) (byte & (uint8_t)(1 << i));
+    while(bit_is_clear(TIFR3, OCF3A));
+    TIFR3 |= _BV(OCF3A);
 
-		if(bitval != 0)
-		{
-			TCCR3A = 0x0C;
-			if(!inverse_convention) parity = parity ^ 1;
-		}
-		else
-		{
-			TCCR3A = 0x08;		
-			if(inverse_convention) parity = parity ^ 1;
-		}
-					
-		while(bit_is_clear(TIFR3, OCF3A));
-		TIFR3 |= _BV(OCF3A);
-	}
+    // byte value
+    parity = 0;
+    for(i = 0; i < 8; i++)
+    {
+        bitval = (uint8_t) (byte & (uint8_t)(1 << i));
 
-	// parity bit
-	if((!inverse_convention && parity != 0) || 
-		(inverse_convention && parity == 0))
-		TCCR3A = 0x0C;		
-	else
-		TCCR3A = 0x08;
+        if(bitval != 0)
+        {
+            TCCR3A = 0x0C;
+            if(!inverse_convention) parity = parity ^ 1;
+        }
+        else
+        {
+            TCCR3A = 0x08;		
+            if(inverse_convention) parity = parity ^ 1;
+        }
 
-	// wait for the last bit to be sent (need to toggle and
-	// keep for ETU_TERMINAL clocks)
-	while(bit_is_clear(TIFR3, OCF3A));
-	TIFR3 |= _BV(OCF3A);	
-	while(bit_is_clear(TIFR3, OCF3A));
-	TIFR3 |= _BV(OCF3A);	
+        while(bit_is_clear(TIFR3, OCF3A));
+        TIFR3 |= _BV(OCF3A);
+    }
 
-	// reset OC3C and put I/O to high (input)
-	TCCR3A = 0x0C;						// set OC3C to 1
-	DDRC &= ~(_BV(PC4));
-	PORTC |= _BV(PC4);		 
+    // parity bit
+    if((!inverse_convention && parity != 0) || 
+            (inverse_convention && parity == 0))
+        TCCR3A = 0x0C;		
+    else
+        TCCR3A = 0x08;
+
+    // wait for the last bit to be sent (need to toggle and
+    // keep for ETU_TERMINAL clocks)
+    while(bit_is_clear(TIFR3, OCF3A));
+    TIFR3 |= _BV(OCF3A);	
+    while(bit_is_clear(TIFR3, OCF3A));
+    TIFR3 |= _BV(OCF3A);	
+
+    // reset OC3C and put I/O to high (input)
+    TCCR3A = 0x0C;						// set OC3C to 1
+    DDRC &= ~(_BV(PC4));
+    PORTC |= _BV(PC4);		 
 }	
 
 /**
@@ -564,41 +564,41 @@ void SendByteTerminalNoParity(uint8_t byte, uint8_t inverse_convention)
  */
 uint8_t SendByteTerminalParity(uint8_t byte, uint8_t inverse_convention)
 {
-	uint8_t i;
-	volatile uint8_t tmp;
+    uint8_t i;
+    volatile uint8_t tmp;
 
-	SendByteTerminalNoParity(byte, inverse_convention);
+    SendByteTerminalNoParity(byte, inverse_convention);
 
-	// wait for one ETU to read I/O line
-	LoopTerminalETU(1);	
+    // wait for one ETU to read I/O line
+    LoopTerminalETU(1);	
 
-	// if there is a parity error try 4 times to resend
-	if(bit_is_clear(PINC, PC4))
-	{
-		Write16bitRegister(&OCR3A, ETU_TERMINAL);	// set ETU
-		Write16bitRegister(&TCNT3, 1);				// TCNT3 = 1	
-		TIFR3 |= _BV(OCF3A);						// Reset OCR3A compare flag		
-		TCCR3A = 0x0C;								// set OC3C to 1
-		i = 0;
+    // if there is a parity error try 4 times to resend
+    if(bit_is_clear(PINC, PC4))
+    {
+        Write16bitRegister(&OCR3A, ETU_TERMINAL);	// set ETU
+        Write16bitRegister(&TCNT3, 1);				// TCNT3 = 1	
+        TIFR3 |= _BV(OCF3A);						// Reset OCR3A compare flag		
+        TCCR3A = 0x0C;								// set OC3C to 1
+        i = 0;
 
-		do{
-			i++;
+        do{
+            i++;
 
-			// wait 2 ETUs before resending
-			LoopTerminalETU(2);	
-			
-			SendByteTerminalNoParity(byte, inverse_convention);			
+            // wait 2 ETUs before resending
+            LoopTerminalETU(2);	
 
-			// wait for one ETU and read I/O line
-			LoopTerminalETU(1);	
-			tmp = bit_is_clear(PINC, PC4);
-		}while(i<4 && tmp != 0);
+            SendByteTerminalNoParity(byte, inverse_convention);			
 
-		if(tmp != 0)
-			return 1;		
-	}
+            // wait for one ETU and read I/O line
+            LoopTerminalETU(1);	
+            tmp = bit_is_clear(PINC, PC4);
+        }while(i<4 && tmp != 0);
 
-	return 0;
+        if(tmp != 0)
+            return 1;		
+    }
+
+    return 0;
 }
 
 /**
@@ -609,23 +609,23 @@ uint8_t SendByteTerminalParity(uint8_t byte, uint8_t inverse_convention)
  */
 uint8_t WaitForTerminalData(uint16_t max_cycles)
 {
-	uint8_t result = 0;
-	uint16_t c = 0;
-	volatile uint8_t bit;
+    uint8_t result = 0;
+    uint16_t c = 0;
+    volatile uint8_t bit;
 
-	do{
-		bit = bit_is_set(PINC, PC4);		
-		c = c + 1;
+    do{
+        bit = bit_is_set(PINC, PC4);		
+        c = c + 1;
 
-		if(max_cycles != 0 && c == max_cycles) break;
-	}while(bit != 0);
-		
+        if(max_cycles != 0 && c == max_cycles) break;
+    }while(bit != 0);
 
-	if(bit != 0) result = 1;
 
-	return result;	
+    if(bit != 0) result = 1;
+
+    return result;	
 }
-		
+
 
 /**
  * Receives a byte from the terminal without parity checking.
@@ -647,24 +647,24 @@ uint8_t GetByteTerminalNoParity(
         uint8_t *r_byte,
         uint32_t max_wait)
 {
-	volatile uint8_t bit;
+    volatile uint8_t bit;
     volatile uint8_t tio, treset;
-	uint8_t i, byte, parity;
+    uint8_t i, byte, parity;
     uint32_t cnt;
 
-	TCCR3A = 0x0C;										// set OC3C because of chip behavior
-	DDRC &= ~(_BV(PC4));								// Set PC4 (OC3C) as input	
-	PORTC |= _BV(PC4);									// enable pull-up	
-	
-	// wait for reset or start bit
+    TCCR3A = 0x0C;										// set OC3C because of chip behavior
+    DDRC &= ~(_BV(PC4));								// Set PC4 (OC3C) as input	
+    PORTC |= _BV(PC4);									// enable pull-up	
+
+    // wait for reset or start bit
     cnt = 0;
     while(1)
     {
         cnt = cnt + 1;
 
-		// check we have clock from terminal
-		if(!IsTerminalClock())
-			return RET_TERMINAL_NO_CLOCK;
+        // check we have clock from terminal
+        if(!IsTerminalClock())
+            return RET_TERMINAL_NO_CLOCK;
 
         // check for terminal reset (reset low)
         treset = bit_is_clear(PIND, PD0);
@@ -676,71 +676,71 @@ uint8_t GetByteTerminalNoParity(
         if(tio)
             break;
 
-		if(max_wait != 0 && cnt == max_wait)
+        if(max_wait != 0 && cnt == max_wait)
             return RET_TERMINAL_TIME_OUT;
     }
 
-	Write16bitRegister(&TCNT3, 1);						// TCNT3 = 1		
-	Write16bitRegister(&OCR3A, ETU_HALF(ETU_TERMINAL));	// OCR3A approx. 0.5 ETU
-	TIFR3 |= _BV(OCF3A);								// Reset OCR3A compare flag		
+    Write16bitRegister(&TCNT3, 1);						// TCNT3 = 1		
+    Write16bitRegister(&OCR3A, ETU_HALF(ETU_TERMINAL));	// OCR3A approx. 0.5 ETU
+    TIFR3 |= _BV(OCF3A);								// Reset OCR3A compare flag		
 
     // Wait until the timer/counter 3 reaches the value in OCR3A
-	while(bit_is_clear(TIFR3, OCF3A));
-	TIFR3 |= _BV(OCF3A);
+    while(bit_is_clear(TIFR3, OCF3A));
+    TIFR3 |= _BV(OCF3A);
 
-	// check result and set timer for next bit
-	bit = bit_is_set(PINC, PC4);	
-	Write16bitRegister(&OCR3A, ETU_TERMINAL);			// OCR3A = 1 ETU => next bit at 1.5 ETU
-	*r_byte = 0;
-	byte = 0;
-	parity = 0;	
-	if(bit)	return 1;	
+    // check result and set timer for next bit
+    bit = bit_is_set(PINC, PC4);	
+    Write16bitRegister(&OCR3A, ETU_TERMINAL);			// OCR3A = 1 ETU => next bit at 1.5 ETU
+    *r_byte = 0;
+    byte = 0;
+    parity = 0;	
+    if(bit)	return 1;	
 
-	// read the byte in correct conversion mode
-	for(i = 0; i < 8; i++)
-	{
-		while(bit_is_clear(TIFR3, OCF3A));
-		TIFR3 |= _BV(OCF3A);
-		bit = bit_is_set(PINC, PC4);
+    // read the byte in correct conversion mode
+    for(i = 0; i < 8; i++)
+    {
+        while(bit_is_clear(TIFR3, OCF3A));
+        TIFR3 |= _BV(OCF3A);
+        bit = bit_is_set(PINC, PC4);
 
-		if(inverse_convention && bit == 0)
-		{
-			byte = byte | _BV(7-i);
-			parity = parity ^ 1;
-		}
-		else if(inverse_convention == 0 && bit != 0)
-		{
-			byte = byte | _BV(i);
-			parity = parity ^ 1;
-		}
-	}
+        if(inverse_convention && bit == 0)
+        {
+            byte = byte | _BV(7-i);
+            parity = parity ^ 1;
+        }
+        else if(inverse_convention == 0 && bit != 0)
+        {
+            byte = byte | _BV(i);
+            parity = parity ^ 1;
+        }
+    }
 
-	*r_byte = byte;
+    *r_byte = byte;
 
 
-	// read the parity bit
-	while(bit_is_clear(TIFR3, OCF3A));
-	TIFR3 |= _BV(OCF3A);
-	bit = bit_is_set(PINC, PC4);
-	
-	// wait 0.5 ETUs to for parity bit to be completely received
-	//Write16bitRegister(&OCR3A, 186);	
-	Write16bitRegister(&OCR3A, ETU_HALF(ETU_TERMINAL));	
-	while(bit_is_clear(TIFR3, OCF3A));
-	TIFR3 |= _BV(OCF3A);	
+    // read the parity bit
+    while(bit_is_clear(TIFR3, OCF3A));
+    TIFR3 |= _BV(OCF3A);
+    bit = bit_is_set(PINC, PC4);
 
-	if(inverse_convention)
-	{ 
-		if(parity && bit) return 1;
-		if(!parity && !bit) return 1;		
-	}
-	else
-	{
-		if(parity && !bit) return 1;
-		if(!parity && bit) return 1;		
-	}
+    // wait 0.5 ETUs to for parity bit to be completely received
+    //Write16bitRegister(&OCR3A, 186);	
+    Write16bitRegister(&OCR3A, ETU_HALF(ETU_TERMINAL));	
+    while(bit_is_clear(TIFR3, OCF3A));
+    TIFR3 |= _BV(OCF3A);	
 
-	return 0;	
+    if(inverse_convention)
+    { 
+        if(parity && bit) return 1;
+        if(!parity && !bit) return 1;		
+    }
+    else
+    {
+        if(parity && !bit) return 1;
+        if(!parity && bit) return 1;		
+    }
+
+    return 0;	
 }
 
 /**
@@ -762,47 +762,47 @@ uint8_t GetByteTerminalParity(
         uint8_t *r_byte,
         uint32_t max_wait)
 {
-	uint8_t result;
-	
-	result = GetByteTerminalNoParity(inverse_convention, r_byte, max_wait);
-	if(result == RET_ERROR)
-	{
-		// check we have clock from terminal to avoid damage
-		if(!GetTerminalFreq())
-			return result;
+    uint8_t result;
 
-		// set I/O low for at least 1 ETU starting at 10.5 ETU from start bit	
-		TCCR3A = 0x0C;							// OC3C set to 1 on compare		
-		DDRC |= _BV(PC4);						// Set PC4 (OC3C) as output
-		//Write16bitRegister(&OCR3A, 170);		// OCR3A ~= 0.5 ETU
-		Write16bitRegister(&OCR3A, 
-			ETU_LESS_THAN_HALF(ETU_TERMINAL));	// OCR3A ~= 0.5 ETU
-		Write16bitRegister(&TCNT3, 1);			// TCNT3 = 1	
-		TIFR3 |= _BV(OCF3A);					// Reset OCR3A compare flag	
-		
-		TCCR3A = 0x08;							// OC3C toggles to low on compare
+    result = GetByteTerminalNoParity(inverse_convention, r_byte, max_wait);
+    if(result == RET_ERROR)
+    {
+        // check we have clock from terminal to avoid damage
+        if(!GetTerminalFreq())
+            return result;
 
-		while(bit_is_clear(TIFR3, OCF3A));
-		TIFR3 |= _BV(OCF3A);
-		//Write16bitRegister(&OCR3A, 400);		// OCR3A > 1 ETU
-		Write16bitRegister(&OCR3A, 
-			ETU_EXTENDED(ETU_TERMINAL));		// OCR3A > 1 ETU		
-		while(bit_is_clear(TIFR3, OCF3A));
-		TIFR3 |= _BV(OCF3A);
+        // set I/O low for at least 1 ETU starting at 10.5 ETU from start bit	
+        TCCR3A = 0x0C;							// OC3C set to 1 on compare		
+        DDRC |= _BV(PC4);						// Set PC4 (OC3C) as output
+        //Write16bitRegister(&OCR3A, 170);		// OCR3A ~= 0.5 ETU
+        Write16bitRegister(&OCR3A, 
+                ETU_LESS_THAN_HALF(ETU_TERMINAL));	// OCR3A ~= 0.5 ETU
+        Write16bitRegister(&TCNT3, 1);			// TCNT3 = 1	
+        TIFR3 |= _BV(OCF3A);					// Reset OCR3A compare flag	
 
-		// set I/O to high (input)
-		TCCR3A = 0x0C;						
-		DDRC &= ~(_BV(PC4));
-		PORTC |= _BV(PC4);
+        TCCR3A = 0x08;							// OC3C toggles to low on compare
 
-		// wait for the last ETU to complete
-		//Write16bitRegister(&OCR3A, 158);
-		Write16bitRegister(&OCR3A, ETU_LESS_THAN_HALF(ETU_TERMINAL));
-		while(bit_is_clear(TIFR3, OCF3A));
-		TIFR3 |= _BV(OCF3A);
-	}
+        while(bit_is_clear(TIFR3, OCF3A));
+        TIFR3 |= _BV(OCF3A);
+        //Write16bitRegister(&OCR3A, 400);		// OCR3A > 1 ETU
+        Write16bitRegister(&OCR3A, 
+                ETU_EXTENDED(ETU_TERMINAL));		// OCR3A > 1 ETU		
+        while(bit_is_clear(TIFR3, OCF3A));
+        TIFR3 |= _BV(OCF3A);
 
-	return result;
+        // set I/O to high (input)
+        TCCR3A = 0x0C;						
+        DDRC &= ~(_BV(PC4));
+        PORTC |= _BV(PC4);
+
+        // wait for the last ETU to complete
+        //Write16bitRegister(&OCR3A, 158);
+        Write16bitRegister(&OCR3A, ETU_LESS_THAN_HALF(ETU_TERMINAL));
+        while(bit_is_clear(TIFR3, OCF3A));
+        TIFR3 |= _BV(OCF3A);
+    }
+
+    return result;
 }
 
 /* SCD to ICC functions */
@@ -813,9 +813,9 @@ uint8_t GetByteTerminalParity(
 uint8_t IsICCInserted()
 {
 #ifdef INVERT_ICC_SWITCH
-	return bit_is_clear(PIND, PD1);
+    return bit_is_clear(PIND, PD1);
 #else
-	return bit_is_set(PIND, PD1);
+    return bit_is_set(PIND, PD1);
 #endif
 }
 
@@ -825,7 +825,7 @@ uint8_t IsICCInserted()
  */
 uint8_t IsICCPowered()
 {
-	return bit_is_clear(PIND, PD7);
+    return bit_is_clear(PIND, PD7);
 }
 
 /**
@@ -835,13 +835,13 @@ uint8_t IsICCPowered()
  */
 uint8_t PowerUpICC()
 {
-	if(!IsICCInserted())
-		return 1;
+    if(!IsICCInserted())
+        return 1;
 
-	PORTD &= ~(_BV(PD7));
-	DDRD |= _BV(PD7);	
+    PORTD &= ~(_BV(PD7));
+    DDRD |= _BV(PD7);	
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -849,8 +849,8 @@ uint8_t PowerUpICC()
  */
 void PowerDownICC()
 {
-	DDRD |= _BV(PD7);
-	PORTD |= _BV(PD7);
+    DDRD |= _BV(PD7);
+    PORTD |= _BV(PD7);
 }
 
 
@@ -863,18 +863,18 @@ void PowerDownICC()
  */
 void LoopICCETU(uint8_t nEtus)
 {
-	uint8_t i;
-	
-	Write16bitRegister(&OCR1A, ETU_ICC);	// set ETU
-	TCCR1A = 0x30;							// set OC1B to 1 on compare match
-	Write16bitRegister(&TCNT1, 1);			// TCNT1 = 1	
-	TIFR1 |= _BV(OCF1A);					// Reset OCR1A compare flag		
+    uint8_t i;
 
-	for(i = 0; i < nEtus; i++)
-	{
-		while(bit_is_clear(TIFR1, OCF1A));
-		TIFR1 |= _BV(OCF1A);
-	}
+    Write16bitRegister(&OCR1A, ETU_ICC);	// set ETU
+    TCCR1A = 0x30;							// set OC1B to 1 on compare match
+    Write16bitRegister(&TCNT1, 1);			// TCNT1 = 1	
+    TIFR1 |= _BV(OCF1A);					// Reset OCR1A compare flag		
+
+    for(i = 0; i < nEtus; i++)
+    {
+        while(bit_is_clear(TIFR1, OCF1A));
+        TIFR1 |= _BV(OCF1A);
+    }
 }
 
 /**
@@ -886,21 +886,21 @@ void LoopICCETU(uint8_t nEtus)
  */
 uint8_t WaitForICCData(uint32_t max_cycles)
 {
-	uint8_t result = 0;
-	uint32_t c = 0;
-	volatile uint8_t bit;
+    uint8_t result = 0;
+    uint32_t c = 0;
+    volatile uint8_t bit;
 
-	do{
-		bit = bit_is_set(PINB, PB6);		
-		c = c + 1;
+    do{
+        bit = bit_is_set(PINB, PB6);		
+        c = c + 1;
 
-		if(max_cycles != 0 && c == max_cycles) break;
-	}while(bit != 0);
-		
+        if(max_cycles != 0 && c == max_cycles) break;
+    }while(bit != 0);
 
-	if(bit != 0) result = 1;
 
-	return result;	
+    if(bit != 0) result = 1;
+
+    return result;	
 }
 
 /**
@@ -915,79 +915,79 @@ uint8_t WaitForICCData(uint32_t max_cycles)
  */
 uint8_t GetByteICCNoParity(uint8_t inverse_convention, uint8_t *r_byte)
 {
-	volatile uint8_t bit;
-	uint8_t i, byte, parity;
+    volatile uint8_t bit;
+    uint8_t i, byte, parity;
 
-	TCCR1A = 0x30;									// set OC1B to 1 on compare match
-	DDRB &= ~(_BV(PB6));							// Set I/O (PB6) to reception mode
+    TCCR1A = 0x30;									// set OC1B to 1 on compare match
+    DDRB &= ~(_BV(PB6));							// Set I/O (PB6) to reception mode
 
 #if PULL_UP_HIZ_ICC
-	PORTB |= _BV(PB6);	
+    PORTB |= _BV(PB6);	
 #else
-	PORTB &= ~(_BV(PB6));				
+    PORTB &= ~(_BV(PB6));				
 #endif	
 
-	// wait for start bit		
-	while(bit_is_set(PINB, PB6));	
+    // wait for start bit		
+    while(bit_is_set(PINB, PB6));	
 
-	Write16bitRegister(&TCNT1, 1);					// TCNT1 = 1		
-	Write16bitRegister(&OCR1A, ETU_HALF(ETU_ICC));	// OCR1A 0.5 ETU
-	TIFR1 |= _BV(OCF1A);							// Reset OCR1A compare flag		
+    Write16bitRegister(&TCNT1, 1);					// TCNT1 = 1		
+    Write16bitRegister(&OCR1A, ETU_HALF(ETU_ICC));	// OCR1A 0.5 ETU
+    TIFR1 |= _BV(OCF1A);							// Reset OCR1A compare flag		
 
-	while(bit_is_clear(TIFR1, OCF1A));
-	TIFR1 |= _BV(OCF1A);
+    while(bit_is_clear(TIFR1, OCF1A));
+    TIFR1 |= _BV(OCF1A);
 
-	// check result and set timer for next bit
-	bit = bit_is_set(PINB, PB6);	
-	Write16bitRegister(&OCR1A, ETU_ICC);			// OCR1A = 1 ETU => next bit at 1.5 ETU
-	*r_byte = 0;
-	byte = 0;
-	parity = 0;	
-	if(bit)	return 1;	
+    // check result and set timer for next bit
+    bit = bit_is_set(PINB, PB6);	
+    Write16bitRegister(&OCR1A, ETU_ICC);			// OCR1A = 1 ETU => next bit at 1.5 ETU
+    *r_byte = 0;
+    byte = 0;
+    parity = 0;	
+    if(bit)	return 1;	
 
-	// read the byte in correct conversion mode
-	for(i = 0; i < 8; i++)
-	{
-		while(bit_is_clear(TIFR1, OCF1A));
-		TIFR1 |= _BV(OCF1A);
-		bit = bit_is_set(PINB, PB6);
+    // read the byte in correct conversion mode
+    for(i = 0; i < 8; i++)
+    {
+        while(bit_is_clear(TIFR1, OCF1A));
+        TIFR1 |= _BV(OCF1A);
+        bit = bit_is_set(PINB, PB6);
 
-		if(inverse_convention && bit == 0)
-		{
-			byte = byte | _BV(7-i);
-			parity = parity ^ 1;
-		}
-		else if(inverse_convention == 0 && bit != 0)
-		{
-			byte = byte | _BV(i);
-			parity = parity ^ 1;
-		}
-	}
+        if(inverse_convention && bit == 0)
+        {
+            byte = byte | _BV(7-i);
+            parity = parity ^ 1;
+        }
+        else if(inverse_convention == 0 && bit != 0)
+        {
+            byte = byte | _BV(i);
+            parity = parity ^ 1;
+        }
+    }
 
-	*r_byte = byte;
+    *r_byte = byte;
 
-	// read the parity bit
-	while(bit_is_clear(TIFR1, OCF1A));
-	TIFR1 |= _BV(OCF1A);
-	bit = bit_is_set(PINB, PB6);
-	
-	// wait 0.5 ETUs to for parity bit to be completely received
-	Write16bitRegister(&OCR1A, ETU_HALF(ETU_ICC));	
-	while(bit_is_clear(TIFR1, OCF1A));
-	TIFR1 |= _BV(OCF1A);		
+    // read the parity bit
+    while(bit_is_clear(TIFR1, OCF1A));
+    TIFR1 |= _BV(OCF1A);
+    bit = bit_is_set(PINB, PB6);
 
-	if(inverse_convention)
-	{ 
-		if(parity && bit) return 1;
-		if(!parity && !bit) return 1;		
-	}
-	else
-	{
-		if(parity && !bit) return 1;
-		if(!parity && bit) return 1;		
-	}
+    // wait 0.5 ETUs to for parity bit to be completely received
+    Write16bitRegister(&OCR1A, ETU_HALF(ETU_ICC));	
+    while(bit_is_clear(TIFR1, OCF1A));
+    TIFR1 |= _BV(OCF1A);		
 
-	return 0;	
+    if(inverse_convention)
+    { 
+        if(parity && bit) return 1;
+        if(!parity && !bit) return 1;		
+    }
+    else
+    {
+        if(parity && !bit) return 1;
+        if(!parity && bit) return 1;		
+    }
+
+    return 0;	
 }
 
 
@@ -1003,43 +1003,43 @@ uint8_t GetByteICCNoParity(uint8_t inverse_convention, uint8_t *r_byte)
  */
 uint8_t GetByteICCParity(uint8_t inverse_convention, uint8_t *r_byte)
 {
-	uint8_t result;
-	
-	result = GetByteICCNoParity(inverse_convention, r_byte);
-	if(result != 0)
-	{
-		// check the card is still inserted
-		if(!IsICCInserted())
-			return result;
+    uint8_t result;
 
-		// set I/O low for at least 1 ETU starting at 10.5 ETU from start bit			
-		TCCR1A = 0x30;							// set OC1B on compare match
-		DDRB |= _BV(PB6);						// Set PB6 (OC1B) as output		
-		Write16bitRegister(&OCR1A, 
-			ETU_LESS_THAN_HALF(ETU_ICC));		
-		Write16bitRegister(&TCNT1, 1);					
-		TIFR1 |= _BV(OCF1A);					// Reset OCF1A compare flag	
-		TCCR1A = 0x20;							// clear OC1B on compare match
+    result = GetByteICCNoParity(inverse_convention, r_byte);
+    if(result != 0)
+    {
+        // check the card is still inserted
+        if(!IsICCInserted())
+            return result;
 
-		while(bit_is_clear(TIFR1, OCF1A));
-		TIFR1 |= _BV(OCF1A);		
-		Write16bitRegister(&OCR1A, 
-			ETU_EXTENDED(ETU_ICC));				// OCR1A > 1 ETU		
-		while(bit_is_clear(TIFR1, OCF1A));
-		TIFR1 |= _BV(OCF1A);
+        // set I/O low for at least 1 ETU starting at 10.5 ETU from start bit			
+        TCCR1A = 0x30;							// set OC1B on compare match
+        DDRB |= _BV(PB6);						// Set PB6 (OC1B) as output		
+        Write16bitRegister(&OCR1A, 
+                ETU_LESS_THAN_HALF(ETU_ICC));		
+        Write16bitRegister(&TCNT1, 1);					
+        TIFR1 |= _BV(OCF1A);					// Reset OCF1A compare flag	
+        TCCR1A = 0x20;							// clear OC1B on compare match
 
-		// set I/O to high (input)
-		TCCR1A = 0x30;						
-		DDRB &= ~(_BV(PB6));
-		PORTB |= _BV(PB6);
+        while(bit_is_clear(TIFR1, OCF1A));
+        TIFR1 |= _BV(OCF1A);		
+        Write16bitRegister(&OCR1A, 
+                ETU_EXTENDED(ETU_ICC));				// OCR1A > 1 ETU		
+        while(bit_is_clear(TIFR1, OCF1A));
+        TIFR1 |= _BV(OCF1A);
 
-		// wait for the last ETU to complete
-		Write16bitRegister(&OCR1A, ETU_LESS_THAN_HALF(ETU_ICC));
-		while(bit_is_clear(TIFR1, OCF1A));
-		TIFR1 |= _BV(OCF1A);
-	}
+        // set I/O to high (input)
+        TCCR1A = 0x30;						
+        DDRB &= ~(_BV(PB6));
+        PORTB |= _BV(PB6);
 
-	return result;
+        // wait for the last ETU to complete
+        Write16bitRegister(&OCR1A, ETU_LESS_THAN_HALF(ETU_ICC));
+        while(bit_is_clear(TIFR1, OCF1A));
+        TIFR1 |= _BV(OCF1A);
+    }
+
+    return result;
 }
 
 /**
@@ -1052,83 +1052,83 @@ uint8_t GetByteICCParity(uint8_t inverse_convention, uint8_t *r_byte)
  */
 void SendByteICCNoParity(uint8_t byte, uint8_t inverse_convention)
 {
-	uint8_t bitval, i, parity;
-	volatile uint8_t tmp;	
+    uint8_t bitval, i, parity;
+    volatile uint8_t tmp;	
 
-	if(!IsICCInserted())
-		return;	
+    if(!IsICCInserted())
+        return;	
 
-	// this code is needed to be sure that the I/O line will not
-	// toggle to low when we set DDRB6 as output
-	TCCR1A = 0x30;								// Set OC1B on compare
-	PORTB |= _BV(PB6);							// Put to high	
-	DDRB |= _BV(PB6);							// Set PB6 (OC1B) as output	
-	Write16bitRegister(&OCR1A, ETU_ICC);	
-	Write16bitRegister(&TCNT1, 1);
-	TIFR1 |= _BV(OCF1A);						// Reset OCF1A compare flag		
+    // this code is needed to be sure that the I/O line will not
+    // toggle to low when we set DDRB6 as output
+    TCCR1A = 0x30;								// Set OC1B on compare
+    PORTB |= _BV(PB6);							// Put to high	
+    DDRB |= _BV(PB6);							// Set PB6 (OC1B) as output	
+    Write16bitRegister(&OCR1A, ETU_ICC);	
+    Write16bitRegister(&TCNT1, 1);
+    TIFR1 |= _BV(OCF1A);						// Reset OCF1A compare flag		
 
-	// send each bit using OC1B (connected to the ICC I/O line)
-	// each TCCR1A value will be visible after the next compare match
+    // send each bit using OC1B (connected to the ICC I/O line)
+    // each TCCR1A value will be visible after the next compare match
 
-	// start bit
-	TCCR1A = 0x20;
+    // start bit
+    TCCR1A = 0x20;
 
-	// while sending the start bit convert the byte if necessary
-	// to match inverse conversion	
-	if(inverse_convention)
-	{	
-		tmp = ~byte;	
-		byte = 0;	
-		for(i = 0; i < 8; i++)
-		{
-			bitval = tmp & _BV((7-i));
-			if(bitval) byte = byte | _BV(i);
-		}
-	}
+    // while sending the start bit convert the byte if necessary
+    // to match inverse conversion	
+    if(inverse_convention)
+    {	
+        tmp = ~byte;	
+        byte = 0;	
+        for(i = 0; i < 8; i++)
+        {
+            bitval = tmp & _BV((7-i));
+            if(bitval) byte = byte | _BV(i);
+        }
+    }
 
-	
-	while(bit_is_clear(TIFR1, OCF1A));
-	TIFR1 |= _BV(OCF1A);
 
-	// byte value
-	parity = 0;
-	for(i = 0; i < 8; i++)
-	{
-		bitval = (uint8_t) (byte & (uint8_t)(1 << i));
+    while(bit_is_clear(TIFR1, OCF1A));
+    TIFR1 |= _BV(OCF1A);
 
-		if(bitval != 0)
-		{
-			TCCR1A = 0x30;
-			if(!inverse_convention) parity = parity ^ 1;
-		}
-		else
-		{
-			TCCR1A = 0x20;		
-			if(inverse_convention) parity = parity ^ 1;
-		}
-					
-		while(bit_is_clear(TIFR1, OCF1A));
-		TIFR1 |= _BV(OCF1A);
-	}
+    // byte value
+    parity = 0;
+    for(i = 0; i < 8; i++)
+    {
+        bitval = (uint8_t) (byte & (uint8_t)(1 << i));
 
-	// parity bit
-	if((!inverse_convention && parity != 0) ||
-		(inverse_convention && parity == 0))
-		TCCR1A = 0x30;		
-	else
-		TCCR1A = 0x20;
+        if(bitval != 0)
+        {
+            TCCR1A = 0x30;
+            if(!inverse_convention) parity = parity ^ 1;
+        }
+        else
+        {
+            TCCR1A = 0x20;		
+            if(inverse_convention) parity = parity ^ 1;
+        }
 
-	// wait for the last bit to be sent (need to toggle and
-	// keep for ETU_TERMINAL clocks)
-	while(bit_is_clear(TIFR1, OCF1A));
-	TIFR1 |= _BV(OCF1A);	
-	while(bit_is_clear(TIFR1, OCF1A));
-	TIFR1 |= _BV(OCF1A);	
+        while(bit_is_clear(TIFR1, OCF1A));
+        TIFR1 |= _BV(OCF1A);
+    }
 
-	// reset OC1B and put I/O to high (input)
-	TCCR1A = 0x30;						
-	DDRB &= ~(_BV(PB6));
-	PORTB |= _BV(PB6);		 
+    // parity bit
+    if((!inverse_convention && parity != 0) ||
+            (inverse_convention && parity == 0))
+        TCCR1A = 0x30;		
+    else
+        TCCR1A = 0x20;
+
+    // wait for the last bit to be sent (need to toggle and
+    // keep for ETU_TERMINAL clocks)
+    while(bit_is_clear(TIFR1, OCF1A));
+    TIFR1 |= _BV(OCF1A);	
+    while(bit_is_clear(TIFR1, OCF1A));
+    TIFR1 |= _BV(OCF1A);	
+
+    // reset OC1B and put I/O to high (input)
+    TCCR1A = 0x30;						
+    DDRB &= ~(_BV(PB6));
+    PORTB |= _BV(PB6);		 
 }	
 
 /**
@@ -1143,41 +1143,41 @@ void SendByteICCNoParity(uint8_t byte, uint8_t inverse_convention)
  */
 uint8_t SendByteICCParity(uint8_t byte, uint8_t inverse_convention)
 {
-	uint8_t i;
-	volatile uint8_t tmp;
+    uint8_t i;
+    volatile uint8_t tmp;
 
-	SendByteICCNoParity(byte, inverse_convention);
+    SendByteICCNoParity(byte, inverse_convention);
 
-	// wait for one ETU to read I/O line
-	LoopICCETU(1);	
+    // wait for one ETU to read I/O line
+    LoopICCETU(1);	
 
-	// if there is aparity error try 4 times to resend
-	if(bit_is_clear(PINB, PB6))
-	{
-		Write16bitRegister(&OCR1A, ETU_ICC);	
-		Write16bitRegister(&TCNT1, 1);			
-		TIFR1 |= _BV(OCF1A);					// Reset OCF1A compare flag		
-		TCCR1A = 0x30;							// set OC1B to 1
-		i = 0;
+    // if there is aparity error try 4 times to resend
+    if(bit_is_clear(PINB, PB6))
+    {
+        Write16bitRegister(&OCR1A, ETU_ICC);	
+        Write16bitRegister(&TCNT1, 1);			
+        TIFR1 |= _BV(OCF1A);					// Reset OCF1A compare flag		
+        TCCR1A = 0x30;							// set OC1B to 1
+        i = 0;
 
-		do{
-			i++;
+        do{
+            i++;
 
-			// wait 2 ETUs before resending
-			LoopICCETU(2);	
-			
-			SendByteICCNoParity(byte, inverse_convention);			
+            // wait 2 ETUs before resending
+            LoopICCETU(2);	
 
-			// wait for one ETU and read I/O line
-			LoopICCETU(1);	
-			tmp = bit_is_clear(PINB, PB6);
-		}while(i<4 && tmp != 0);
+            SendByteICCNoParity(byte, inverse_convention);			
 
-		if(tmp != 0)
-			return 1;		
-	}
+            // wait for one ETU and read I/O line
+            LoopICCETU(1);	
+            tmp = bit_is_clear(PINB, PB6);
+        }while(i<4 && tmp != 0);
 
-	return 0;
+        if(tmp != 0)
+            return 1;		
+    }
+
+    return 0;
 }
 
 
@@ -1204,66 +1204,66 @@ void SetICCResetLine(uint8_t high)
  */
 uint8_t ActivateICC(uint8_t warm)
 {
-	if(warm)
-	{
-		// Put RST to low
-		PORTD &= ~(_BV(PD4));	
-		DDRD |= _BV(PD4);	
-	}
-	else{	
-		// Put I/O, CLK and RST lines to 0 and give VCC
-		PORTB &= ~(_BV(PB6));
-		DDRB |= _BV(PB6);	
+    if(warm)
+    {
+        // Put RST to low
+        PORTD &= ~(_BV(PD4));	
+        DDRD |= _BV(PD4);	
+    }
+    else{	
+        // Put I/O, CLK and RST lines to 0 and give VCC
+        PORTB &= ~(_BV(PB6));
+        DDRB |= _BV(PB6);	
 #if ICC_CLK_OCR0A
-		PORTB &= ~(_BV(PB7));
-		DDRB |= _BV(PB7);	
+        PORTB &= ~(_BV(PB7));
+        DDRB |= _BV(PB7);	
 #else
         // In the case of an external clock we don't want the MCU to receive input
-		PORTB &= ~(_BV(PB7));
-		DDRB &= ~(_BV(PB7));	
+        PORTB &= ~(_BV(PB7));
+        DDRB &= ~(_BV(PB7));	
 #endif
-		PORTD &= ~(_BV(PD4));	
-		DDRD |= _BV(PD4);	
-		_delay_us(ICC_VCC_DELAY_US);
-		if(PowerUpICC())
-		{
-			DeactivateICC();
-			return 1;
-		}
-		_delay_us(ICC_VCC_DELAY_US);
-	}
+        PORTD &= ~(_BV(PD4));	
+        DDRD |= _BV(PD4);	
+        _delay_us(ICC_VCC_DELAY_US);
+        if(PowerUpICC())
+        {
+            DeactivateICC();
+            return 1;
+        }
+        _delay_us(ICC_VCC_DELAY_US);
+    }
 
-	// Put I/O to reception mode and then give clock if cold reset
-	DDRB &= ~(_BV(PB6));				// Set I/O to reception mode
+    // Put I/O to reception mode and then give clock if cold reset
+    DDRB &= ~(_BV(PB6));				// Set I/O to reception mode
 #if PULL_UP_HIZ_ICC
-	PORTB |= _BV(PB6);	
+    PORTB |= _BV(PB6);	
 #else
-	PORTB &= ~(_BV(PB6));				
+    PORTB &= ~(_BV(PB6));				
 #endif
 
-	if(warm == 0)
-	{	
-		// I use the Timer 0 (8-bit) to give the clock to the ICC
-		// and the Timer 1 (16-bit) to count the number of clocks
-		// in order to provide the correct ETU reference		
-		OCR0A = ICC_CLK_OCR0A;			    // set F_TIMER0 = CLK_IO / (2 * (ICC_CLK_OCR0A + 1));
-		TCNT0 = 0;
+    if(warm == 0)
+    {	
+        // I use the Timer 0 (8-bit) to give the clock to the ICC
+        // and the Timer 1 (16-bit) to count the number of clocks
+        // in order to provide the correct ETU reference		
+        OCR0A = ICC_CLK_OCR0A;			    // set F_TIMER0 = CLK_IO / (2 * (ICC_CLK_OCR0A + 1));
+        TCNT0 = 0;
 #if ICC_CLK_OCR0A
-		TCCR0A = 0x42;						// toggle OC0A (PB7) on compare match, CTC mode
-		TCCR0B = 0x01;						// Start timer 0, CLK = CLK_IO
+        TCCR0A = 0x42;						// toggle OC0A (PB7) on compare match, CTC mode
+        TCCR0B = 0x01;						// Start timer 0, CLK = CLK_IO
 #else
-		TCCR0A = 0;						    // Timer 0 not used for external clock
-		TCCR0B = 0;						    // Timer 0 not used for external clock
+        TCCR0A = 0;						    // Timer 0 not used for external clock
+        TCCR0B = 0;						    // Timer 0 not used for external clock
 #endif
 
-		TCCR1A = 0x30;						// set OC1B (PB6) to 1 on compare match
-		Write16bitRegister(&OCR1A, ETU_ICC);// ETU = 372 * (F_TIMER1 / F_TIMER0)
-		TCCR1B = ICC_CLK_TCCR1B;		    // Start timer 1, CTC, CLK based on TCCR1B
-		TCCR1C = 0x40;						// Force compare match on OC1B so that
-											// we get the I/O line to high	
-	}
+        TCCR1A = 0x30;						// set OC1B (PB6) to 1 on compare match
+        Write16bitRegister(&OCR1A, ETU_ICC);// ETU = 372 * (F_TIMER1 / F_TIMER0)
+        TCCR1B = ICC_CLK_TCCR1B;		    // Start timer 1, CTC, CLK based on TCCR1B
+        TCCR1C = 0x40;						// Force compare match on OC1B so that
+        // we get the I/O line to high	
+    }
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -1271,29 +1271,29 @@ uint8_t ActivateICC(uint8_t warm)
  */
 void DeactivateICC()
 {
-	// Set reset to low 
-	PORTD &= ~(_BV(PD4));
-	DDRD |= _BV(PD4);	
+    // Set reset to low 
+    PORTD &= ~(_BV(PD4));
+    DDRD |= _BV(PD4);	
 
-	// Stop timers
-	TCCR0A = 0;
-	TCCR0B = 0;
-	TCCR1A = 0;
-	TCCR1B = 0;	
+    // Stop timers
+    TCCR0A = 0;
+    TCCR0B = 0;
+    TCCR1A = 0;
+    TCCR1B = 0;	
 
 #if ICC_CLK_OCR0A
-	// Set CLK line to low to be sure
-	PORTB &= ~(_BV(PB7));
-	DDRB |= _BV(PB7);	
+    // Set CLK line to low to be sure
+    PORTB &= ~(_BV(PB7));
+    DDRB |= _BV(PB7);	
 #endif
 
-	// Set I/O line to low
-	PORTB &= ~(_BV(PB6));
-	DDRB |= _BV(PB6);
+    // Set I/O line to low
+    PORTB &= ~(_BV(PB6));
+    DDRB |= _BV(PB6);
 
-	// Depower VCC
-	PORTD |= _BV(PD7);
-	DDRD |= _BV(PD7);	
+    // Depower VCC
+    PORTD |= _BV(PD7);
+    DDRD |= _BV(PD7);	
 }
 
 /**

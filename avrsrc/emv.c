@@ -149,35 +149,35 @@ enderror:
  * @param logger a pointer to a log structure or NULL if no log is desired.
  */
 void SendT0ATRTerminal(
-    uint8_t inverse_convention,
-    uint8_t TC1,
-    log_struct_t *logger)
+        uint8_t inverse_convention,
+        uint8_t TC1,
+        log_struct_t *logger)
 {
     if(inverse_convention)
     {
         SendByteTerminalNoParity(0x3F, inverse_convention);
         if(logger)
-          LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3F);
+            LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3F);
     }
     else
     {
         SendByteTerminalNoParity(0x3B, inverse_convention);
         if(logger)
-          LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3B);
+            LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3B);
     }
 
     LoopTerminalETU(250);
     SendByteTerminalNoParity(0x60, inverse_convention);
     if(logger)
-      LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x60);
+        LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x60);
     LoopTerminalETU(2);
     SendByteTerminalNoParity(0x00, inverse_convention);
     if(logger)
-      LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x00);
+        LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x00);
     LoopTerminalETU(2);
     SendByteTerminalNoParity(TC1, inverse_convention);
     if(logger)
-      LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, TC1);
+        LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, TC1);
     LoopTerminalETU(2);
 }
 
@@ -514,18 +514,18 @@ enderror:
  * method is not successful it returns NULL
  */
 EMVCommandHeader* MakeCommandHeader(uint8_t cla, uint8_t ins, uint8_t p1, 
-						uint8_t p2, uint8_t p3)
+        uint8_t p2, uint8_t p3)
 {
-	EMVCommandHeader *cmd = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
-	if(cmd == NULL) return NULL;
+    EMVCommandHeader *cmd = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
+    if(cmd == NULL) return NULL;
 
-	cmd->cla = cla;
-	cmd->ins = ins;
-	cmd->p1 = p1;
-	cmd->p2 = p2;
-	cmd->p3 = p3;
+    cmd->cla = cla;
+    cmd->ins = ins;
+    cmd->p1 = p1;
+    cmd->p2 = p2;
+    cmd->p3 = p3;
 
-	return cmd;
+    return cmd;
 }
 
 /**
@@ -542,65 +542,65 @@ EMVCommandHeader* MakeCommandHeader(uint8_t cla, uint8_t ins, uint8_t p1,
  */
 EMVCommandHeader* MakeCommandHeaderC(EMV_CMD command)
 {
-   EMVCommandHeader *cmd = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
-   if(cmd == NULL) return NULL;
+    EMVCommandHeader *cmd = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
+    if(cmd == NULL) return NULL;
 
-   // the default case, modified below where needed
-   cmd->cla = 0;
-   cmd->ins = 0;  
-   cmd->p1 = 0;
-   cmd->p2 = 0;  
-   cmd->p3 = 0;  
+    // the default case, modified below where needed
+    cmd->cla = 0;
+    cmd->ins = 0;  
+    cmd->p1 = 0;
+    cmd->p2 = 0;  
+    cmd->p3 = 0;  
 
-   switch(command)
-   {
-      case CMD_SELECT:
-         cmd->ins = 0xA4;
-         cmd->p1 = 0x04;
-      break;
+    switch(command)
+    {
+        case CMD_SELECT:
+            cmd->ins = 0xA4;
+            cmd->p1 = 0x04;
+            break;
 
-      case CMD_GET_RESPONSE:
-         cmd->ins = 0xC0;
-      break;
+        case CMD_GET_RESPONSE:
+            cmd->ins = 0xC0;
+            break;
 
-      case CMD_READ_RECORD:
-         cmd->ins = 0xB2;
-         cmd->p1 = 0x01;
-      break;
+        case CMD_READ_RECORD:
+            cmd->ins = 0xB2;
+            cmd->p1 = 0x01;
+            break;
 
-      case CMD_GET_PROCESSING_OPTS:
-         cmd->cla = 0x80;
-         cmd->ins = 0xA8;
-      break;
+        case CMD_GET_PROCESSING_OPTS:
+            cmd->cla = 0x80;
+            cmd->ins = 0xA8;
+            break;
 
-      case CMD_VERIFY:
-         cmd->ins = 0x20;
-         cmd->p2 = 0x80;
-      break;
+        case CMD_VERIFY:
+            cmd->ins = 0x20;
+            cmd->p2 = 0x80;
+            break;
 
-      case CMD_GENERATE_AC:
-         cmd->cla = 0x80;
-         cmd->ins = 0xAE;
-      break;
+        case CMD_GENERATE_AC:
+            cmd->cla = 0x80;
+            cmd->ins = 0xAE;
+            break;
 
-      case CMD_GET_DATA:
-         cmd->cla = 0x80;
-         cmd->ins = 0xCA;
-         cmd->p1 = 0x9F;
-         cmd->p2 = 0x17;
-      break;
+        case CMD_GET_DATA:
+            cmd->cla = 0x80;
+            cmd->ins = 0xCA;
+            cmd->p1 = 0x9F;
+            cmd->p2 = 0x17;
+            break;
 
-      case CMD_INTERNAL_AUTHENTICATE:
-         cmd->ins = 0x88;
-      break;
+        case CMD_INTERNAL_AUTHENTICATE:
+            cmd->ins = 0x88;
+            break;
 
-      case CMD_PIN_CHANGE_UNBLOCK:
-         cmd->cla = 0x8C;
-         cmd->ins = 0x24;
-      break;
-   }
+        case CMD_PIN_CHANGE_UNBLOCK:
+            cmd->cla = 0x8C;
+            cmd->ins = 0x24;
+            break;
+    }
 
-   return cmd;
+    return cmd;
 }
 
 
@@ -625,36 +625,36 @@ EMVCommandHeader* MakeCommandHeaderC(EMV_CMD command)
  * @sa MakeCommandC
  */
 CAPDU* MakeCommand(uint8_t cla, uint8_t ins, uint8_t p1,
-      uint8_t p2, uint8_t p3, const uint8_t cmdData[], uint8_t lenData)
+        uint8_t p2, uint8_t p3, const uint8_t cmdData[], uint8_t lenData)
 {
-   CAPDU *cmd = (CAPDU*)malloc(sizeof(CAPDU));
-   if(cmd == NULL) return NULL;
+    CAPDU *cmd = (CAPDU*)malloc(sizeof(CAPDU));
+    if(cmd == NULL) return NULL;
 
-   cmd->cmdHeader = MakeCommandHeader(cla, ins, p1, p2, p3);
-   if(cmd->cmdHeader == NULL)
-   {
-      free(cmd);
-      return NULL;
-   }
+    cmd->cmdHeader = MakeCommandHeader(cla, ins, p1, p2, p3);
+    if(cmd->cmdHeader == NULL)
+    {
+        free(cmd);
+        return NULL;
+    }
 
-   if(cmdData != NULL && lenData != 0)
-   {
-      cmd->cmdData = (uint8_t*)malloc(lenData * sizeof(uint8_t));
-      if(cmd->cmdData == NULL)
-      {
-         FreeCAPDU(cmd);
-         return NULL;
-      }
-      memcpy(cmd->cmdData, cmdData, lenData);
-      cmd->lenData = lenData;
-   }
-   else
-   {
-      cmd->cmdData = NULL;
-      cmd->lenData = 0;
-   }
-   
-   return cmd;
+    if(cmdData != NULL && lenData != 0)
+    {
+        cmd->cmdData = (uint8_t*)malloc(lenData * sizeof(uint8_t));
+        if(cmd->cmdData == NULL)
+        {
+            FreeCAPDU(cmd);
+            return NULL;
+        }
+        memcpy(cmd->cmdData, cmdData, lenData);
+        cmd->lenData = lenData;
+    }
+    else
+    {
+        cmd->cmdData = NULL;
+        cmd->lenData = 0;
+    }
+
+    return cmd;
 }
 
 /**
@@ -676,39 +676,39 @@ CAPDU* MakeCommand(uint8_t cla, uint8_t ins, uint8_t p1,
  * @sa MakeCommand
  */
 CAPDU* MakeCommandP(const EMVCommandHeader *cmdHdr, const uint8_t cmdData[],
-      uint8_t lenData)
+        uint8_t lenData)
 {
-   if(cmdHdr == NULL) return NULL;
+    if(cmdHdr == NULL) return NULL;
 
-   CAPDU *cmd = (CAPDU*)malloc(sizeof(CAPDU));
-   if(cmd == NULL) return NULL;
+    CAPDU *cmd = (CAPDU*)malloc(sizeof(CAPDU));
+    if(cmd == NULL) return NULL;
 
-   cmd->cmdHeader = MakeCommandHeader(cmdHdr->cla, cmdHdr->ins,
-      cmdHdr->p1, cmdHdr->p2, cmdHdr->p3);
-   if(cmd->cmdHeader == NULL)
-   {
-      free(cmd);
-      return NULL;
-   }
+    cmd->cmdHeader = MakeCommandHeader(cmdHdr->cla, cmdHdr->ins,
+            cmdHdr->p1, cmdHdr->p2, cmdHdr->p3);
+    if(cmd->cmdHeader == NULL)
+    {
+        free(cmd);
+        return NULL;
+    }
 
-   if(cmdData != NULL && lenData != 0)
-   {
-      cmd->cmdData = (uint8_t*)malloc(lenData * sizeof(uint8_t));
-      if(cmd->cmdData == NULL)
-      {
-         FreeCAPDU(cmd);
-         return NULL;
-      }
-      memcpy(cmd->cmdData, cmdData, lenData);
-      cmd->lenData = lenData;
-   }
-   else
-   {
-      cmd->cmdData = NULL;
-      cmd->lenData = 0;
-   }
+    if(cmdData != NULL && lenData != 0)
+    {
+        cmd->cmdData = (uint8_t*)malloc(lenData * sizeof(uint8_t));
+        if(cmd->cmdData == NULL)
+        {
+            FreeCAPDU(cmd);
+            return NULL;
+        }
+        memcpy(cmd->cmdData, cmdData, lenData);
+        cmd->lenData = lenData;
+    }
+    else
+    {
+        cmd->cmdData = NULL;
+        cmd->lenData = 0;
+    }
 
-   return cmd;
+    return cmd;
 }
 
 /**
@@ -730,37 +730,37 @@ CAPDU* MakeCommandP(const EMVCommandHeader *cmdHdr, const uint8_t cmdData[],
  * @sa MakeCommand
  */
 CAPDU* MakeCommandC(EMV_CMD command, const uint8_t cmdData[],
-      uint8_t lenData)
+        uint8_t lenData)
 {
-   CAPDU *cmd = (CAPDU*)malloc(sizeof(CAPDU));
-   if(cmd == NULL) return NULL;
+    CAPDU *cmd = (CAPDU*)malloc(sizeof(CAPDU));
+    if(cmd == NULL) return NULL;
 
-   cmd->cmdHeader = MakeCommandHeaderC(command);
-   if(cmd->cmdHeader == NULL)
-   {
-      free(cmd);
-      return NULL;
-   }
+    cmd->cmdHeader = MakeCommandHeaderC(command);
+    if(cmd->cmdHeader == NULL)
+    {
+        free(cmd);
+        return NULL;
+    }
 
-   if(cmdData != NULL && lenData != 0)
-   {
-      cmd->cmdData = (uint8_t*)malloc(lenData * sizeof(uint8_t));
-      if(cmd->cmdData == NULL)
-      {
-         FreeCAPDU(cmd);
-         return NULL;
-      }
-      memcpy(cmd->cmdData, cmdData, lenData);
-      cmd->lenData = lenData;
-      cmd->cmdHeader->p3 = lenData;
-   }
-   else
-   {
-      cmd->cmdData = NULL;
-      cmd->lenData = 0;
-   }
+    if(cmdData != NULL && lenData != 0)
+    {
+        cmd->cmdData = (uint8_t*)malloc(lenData * sizeof(uint8_t));
+        if(cmd->cmdData == NULL)
+        {
+            FreeCAPDU(cmd);
+            return NULL;
+        }
+        memcpy(cmd->cmdData, cmdData, lenData);
+        cmd->lenData = lenData;
+        cmd->cmdHeader->p3 = lenData;
+    }
+    else
+    {
+        cmd->cmdData = NULL;
+        cmd->lenData = 0;
+    }
 
-   return cmd;
+    return cmd;
 }
 
 /**
@@ -798,12 +798,12 @@ CAPDU* MakeCommandC(EMV_CMD command, const uint8_t cmdData[],
  * @sa GetATRICC
  */
 uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1, 
-	uint8_t *inverse_convention, uint8_t *proto, uint8_t *TC1, 
-	uint8_t *TA3, uint8_t *TB3, log_struct_t *logger)
+        uint8_t *inverse_convention, uint8_t *proto, uint8_t *TC1, 
+        uint8_t *TA3, uint8_t *TB3, log_struct_t *logger)
 {
-	uint8_t tmp;
-	uint16_t tfreq, tdelay;
-	int8_t tmpi;
+    uint8_t tmp;
+    uint16_t tfreq, tdelay;
+    int8_t tmpi;
     uint32_t time;
     uint16_t atr_selection;
     uint8_t atr_bytes[32];
@@ -816,12 +816,12 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
 
     // start timer for terminal
     StartCounterTerminal();	
-	
+
     // wait for terminal CLK
     for(i = 0; i < MAX_WAIT_TERMINAL; i++)
     {
         if(ReadCounterTerminal() >=  10) // this will be T0
-	{
+        {
             done = 1;
             break;
         }
@@ -846,9 +846,9 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
         LogByte1(logger, LOG_TERMINAL_CLK_ACTIVE, 0);
     }
 
-   // get the terminal frequency
-   tfreq = GetTerminalFreq();
-   tdelay = 10 * tfreq;
+    // get the terminal frequency
+    tfreq = GetTerminalFreq();
+    tdelay = 10 * tfreq;
 
     //Wait for terminal reset to go high within 45000 terminal clocks
     tmp = (uint8_t)(45400 / 372);
@@ -872,7 +872,7 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
     }
     else
     {
-	SendByteTerminalNoParity(0x3B, t_inverse);
+        SendByteTerminalNoParity(0x3B, t_inverse);
         if(logger)
             LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3B);
     }
@@ -885,44 +885,44 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
     }
     if(logger)
         LogByte1(logger, LOG_ICC_ACTIVATED, 0);
-	
+
     // Wait for 40000 ICC clocks and put reset to high, then get ATR
     LoopICCETU(41000 / 372);
     PORTD |= _BV(PD4);		
     if(logger)
         LogByte1(logger, LOG_ICC_RST_HIGH, 0);
-	
-	// Wait for ATR from ICC for a maximum of 42000 clock cycles + 40 ms
-	// this number is based on the assembler of this function
-	if(WaitForICCData(50000))	
-	{
-		error = RET_ERROR; 				// May be changed with a warm reset
+
+    // Wait for ATR from ICC for a maximum of 42000 clock cycles + 40 ms
+    // this number is based on the assembler of this function
+    if(WaitForICCData(50000))	
+    {
+        error = RET_ERROR; 				// May be changed with a warm reset
         DeactivateICC();
         if(logger)
             LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
         goto enderror;
-	}
+    }
 
     error = GetATRICC(
             inverse_convention, proto, &icc_TS, &icc_T0,
             &atr_selection, atr_bytes, &atr_tck, logger);
-	if(error)
+    if(error)
     {
         DeactivateICC();
         if(logger)
             LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
-		goto enderror;
+        goto enderror;
     }
     *TC1 = atr_bytes[2];
     *TA3 = atr_bytes[8];
     *TB3 = atr_bytes[9];
     history = icc_T0 & 0x0F;
 
-	// Send the rest of the ATR to the terminal
-	SendByteTerminalNoParity(icc_T0, t_inverse);
+    // Send the rest of the ATR to the terminal
+    SendByteTerminalNoParity(icc_T0, t_inverse);
     if(logger)
         LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, icc_T0);
-	LoopTerminalETU(2);
+    LoopTerminalETU(2);
 
     for(index = 0; index < 16; index++)
     {
@@ -934,7 +934,7 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
             LoopTerminalETU(2);
         }
     }
-	
+
     for(index = 0; index < history; index++)
     {
         SendByteTerminalNoParity(atr_bytes[16 + index], t_inverse);
@@ -946,7 +946,7 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
     error = 0;
 
 enderror:
-	return error;	
+    return error;	
 }
 
 
@@ -969,96 +969,96 @@ enderror:
  */
 uint8_t GetCommandCase(uint8_t cla, uint8_t ins)
 {
-	switch(cla)
-	{
-		case 0:
-		{
-			switch(ins)
-			{
-				case 0xC0: // GET RESPONSE
-					return 2;
-				break;
+    switch(cla)
+    {
+        case 0:
+            {
+                switch(ins)
+                {
+                    case 0xC0: // GET RESPONSE
+                        return 2;
+                        break;
 
-				case 0xB2: // READ RECORD
-					return 2;
-				break;
+                    case 0xB2: // READ RECORD
+                        return 2;
+                        break;
 
-				case 0xA4: // SELECT
-					return 4;
-				break;
+                    case 0xA4: // SELECT
+                        return 4;
+                        break;
 
-				case 0x82: // EXTERNAL AUTHENTICATE
-					return 3;
-				break;
+                    case 0x82: // EXTERNAL AUTHENTICATE
+                        return 3;
+                        break;
 
-				case 0x84: // GET CHALLENGE
-					return 2;
-				break;
+                    case 0x84: // GET CHALLENGE
+                        return 2;
+                        break;
 
-				case 0x88: // INTERNAL AUTHENTICATE
-					return 4;
-				break;
+                    case 0x88: // INTERNAL AUTHENTICATE
+                        return 4;
+                        break;
 
-				case 0x20: // VERIFY
-					return 3;
-				break;				
+                    case 0x20: // VERIFY
+                        return 3;
+                        break;				
 
-				default: return 0;
-			}
-		}
-		break;
+                    default: return 0;
+                }
+            }
+            break;
 
-		case 0x8C:
-		case 0x84:
-		{
-			switch(ins)
-			{
-				case 0x1E: // APPLICATION BLOCK
-					return 3;
-				break;
+        case 0x8C:
+        case 0x84:
+            {
+                switch(ins)
+                {
+                    case 0x1E: // APPLICATION BLOCK
+                        return 3;
+                        break;
 
-				case 0x18: // APPLICATION UNBLOCK
-					return 3;
-				break;
+                    case 0x18: // APPLICATION UNBLOCK
+                        return 3;
+                        break;
 
-				case 0x16: // CARD BLOCK
-					return 3;
-				break;
+                    case 0x16: // CARD BLOCK
+                        return 3;
+                        break;
 
-				case 0x24: // PIN CHANGE/UNBLOCK
-					return 3;
-				break;
+                    case 0x24: // PIN CHANGE/UNBLOCK
+                        return 3;
+                        break;
 
-				default: return 0;
-			}
-		}
-		break;
+                    default: return 0;
+                }
+            }
+            break;
 
-		case 0x80:
-		{
-			switch(ins)
-			{
-				case 0xAE: // GENERATE AC
-					return 4;
-				break;
+        case 0x80:
+            {
+                switch(ins)
+                {
+                    case 0xAE: // GENERATE AC
+                        return 4;
+                        break;
 
-				case 0xCA: // GET DATA
-					return 2;
-				break;
+                    case 0xCA: // GET DATA
+                        return 2;
+                        break;
 
-				case 0xA8: // GET PROCESSING OPTS
-					return 4;
-				break;
+                    case 0xA8: // GET PROCESSING OPTS
+                        return 4;
+                        break;
 
-				default: return 0;
-			}			
-		}
-		break;
+                    default: return 0;
+                }			
+            }
+            break;
 
-		default: return 0;
-	}
+        default: return 0;
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -1079,19 +1079,19 @@ EMVCommandHeader* ReceiveT0CmdHeader(
         uint8_t TC1,
         log_struct_t *logger)
 {
-	uint8_t tdelay, result;
-	EMVCommandHeader *cmdHeader;
+    uint8_t tdelay, result;
+    EMVCommandHeader *cmdHeader;
     uint32_t time;
 
-	cmdHeader = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
-	if(cmdHeader == NULL)
+    cmdHeader = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
+    if(cmdHeader == NULL)
     {
         if(logger)
             LogByte1(logger, LOG_ERROR_MEMORY, 0);
         return NULL;
     }
 
-	tdelay = 1 + TC1;
+    tdelay = 1 + TC1;
 
     result = GetByteTerminalParity(
             inverse_convention, &(cmdHeader->cla), MAX_WAIT_TERMINAL);
@@ -1099,7 +1099,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
         goto enderror;
     if(logger)
         LogByte1(logger, LOG_BYTE_FROM_TERMINAL, cmdHeader->cla);
-	LoopTerminalETU(tdelay);	
+    LoopTerminalETU(tdelay);	
 
     result = GetByteTerminalParity(
             inverse_convention, &(cmdHeader->ins), MAX_WAIT_TERMINAL);
@@ -1107,7 +1107,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
         goto enderror;
     if(logger)
         LogByte1(logger, LOG_BYTE_FROM_TERMINAL, cmdHeader->ins);
-	LoopTerminalETU(tdelay);	
+    LoopTerminalETU(tdelay);	
 
     result = GetByteTerminalParity(
             inverse_convention, &(cmdHeader->p1), MAX_WAIT_TERMINAL);
@@ -1115,7 +1115,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
         goto enderror;
     if(logger)
         LogByte1(logger, LOG_BYTE_FROM_TERMINAL, cmdHeader->p1);
-	LoopTerminalETU(tdelay);	
+    LoopTerminalETU(tdelay);	
 
     result = GetByteTerminalParity(
             inverse_convention, &(cmdHeader->p2), MAX_WAIT_TERMINAL);
@@ -1123,7 +1123,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
         goto enderror;
     if(logger)
         LogByte1(logger, LOG_BYTE_FROM_TERMINAL, cmdHeader->p2);
-	LoopTerminalETU(tdelay);	
+    LoopTerminalETU(tdelay);	
 
     result = GetByteTerminalParity(
             inverse_convention, &(cmdHeader->p3), MAX_WAIT_TERMINAL);
@@ -1132,7 +1132,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
     if(logger)
         LogByte1(logger, LOG_BYTE_FROM_TERMINAL, cmdHeader->p3);
 
-	return cmdHeader;
+    return cmdHeader;
 
 enderror:
     free(cmdHeader);
@@ -1188,39 +1188,39 @@ uint8_t* ReceiveT0CmdData(
         uint8_t len,
         log_struct_t *logger)
 {
-	uint8_t tdelay, i, result;
-	uint8_t *cmdData;
+    uint8_t tdelay, i, result;
+    uint8_t *cmdData;
 
-	cmdData = (uint8_t*)malloc(len*sizeof(uint8_t));
-	if(cmdData == NULL)
+    cmdData = (uint8_t*)malloc(len*sizeof(uint8_t));
+    if(cmdData == NULL)
     {
         if(logger)
             LogByte1(logger, LOG_ERROR_MEMORY, 0);
         return NULL;
     }
 
-	tdelay = 1 + TC1;
+    tdelay = 1 + TC1;
 
-	for(i = 0; i < len - 1; i++)
-	{
+    for(i = 0; i < len - 1; i++)
+    {
         result = GetByteTerminalParity(
                 inverse_convention, &(cmdData[i]), MAX_WAIT_TERMINAL);
         if(result != 0)
             goto enderror;
         if(logger)
             LogByte1(logger, LOG_BYTE_FROM_TERMINAL, cmdData[i]);
-		LoopTerminalETU(tdelay);	
-	}
+        LoopTerminalETU(tdelay);	
+    }
 
-	// Do not add a delay after the last byte
+    // Do not add a delay after the last byte
     result = GetByteTerminalParity(
             inverse_convention, &(cmdData[i]), MAX_WAIT_TERMINAL);
     if(result != 0)
         goto enderror;
     if(logger)
         LogByte1(logger, LOG_BYTE_FROM_TERMINAL, cmdData[i]);
-	
-	return cmdData;	
+
+    return cmdData;	
 
 enderror:
     free(cmdData);
@@ -1261,67 +1261,67 @@ CAPDU* ReceiveT0Command(
         uint8_t TC1,
         log_struct_t *logger)
 {
-	uint8_t tdelay, tmp;
-	CAPDU *cmd;
+    uint8_t tdelay, tmp;
+    CAPDU *cmd;
 
-	tdelay = 1 + TC1;
+    tdelay = 1 + TC1;
 
-	cmd = (CAPDU*)malloc(sizeof(CAPDU));
-	if(cmd == NULL)
+    cmd = (CAPDU*)malloc(sizeof(CAPDU));
+    if(cmd == NULL)
     {
         if(logger)
             LogByte1(logger, LOG_ERROR_MEMORY, 0);
         return NULL;
     }
-	cmd->cmdHeader = NULL;
-	cmd->cmdData = NULL;
-	cmd->lenData = 0;
+    cmd->cmdHeader = NULL;
+    cmd->cmdData = NULL;
+    cmd->lenData = 0;
 
-	cmd->cmdHeader = ReceiveT0CmdHeader(inverse_convention, TC1, logger);
-	if(cmd->cmdHeader == NULL)
-	{
-		free(cmd);		
-		return NULL;
-	}	
-	tmp = GetCommandCase(cmd->cmdHeader->cla, cmd->cmdHeader->ins);
-	if(tmp == 0)
-	{
-		FreeCAPDU(cmd);
-		return NULL;
-	}
+    cmd->cmdHeader = ReceiveT0CmdHeader(inverse_convention, TC1, logger);
+    if(cmd->cmdHeader == NULL)
+    {
+        free(cmd);		
+        return NULL;
+    }	
+    tmp = GetCommandCase(cmd->cmdHeader->cla, cmd->cmdHeader->ins);
+    if(tmp == 0)
+    {
+        FreeCAPDU(cmd);
+        return NULL;
+    }
 
-	// for case 1 and case 2 commands there is no command data to receive
-	if(tmp == 1 || tmp == 2)
-		return cmd;
+    // for case 1 and case 2 commands there is no command data to receive
+    if(tmp == 1 || tmp == 2)
+        return cmd;
 
-	// for other cases (3, 4) receive command data
+    // for other cases (3, 4) receive command data
     // wait for terminal to be ready to accept the byte
-	LoopTerminalETU(6);
-	if(SendByteTerminalParity(cmd->cmdHeader->ins, inverse_convention))
-	{
-		free(cmd->cmdHeader);
-		cmd->cmdHeader = NULL;
-		free(cmd);		
+    LoopTerminalETU(6);
+    if(SendByteTerminalParity(cmd->cmdHeader->ins, inverse_convention))
+    {
+        free(cmd->cmdHeader);
+        cmd->cmdHeader = NULL;
+        free(cmd);		
         if(logger)
             LogByte1(logger, LOG_TERMINAL_ERROR_SEND, 0);
-		return NULL;
-	}
+        return NULL;
+    }
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_TERMINAL, cmd->cmdHeader->ins);
 
-	LoopTerminalETU(tdelay);	
-	cmd->lenData = cmd->cmdHeader->p3;
-	cmd->cmdData = ReceiveT0CmdData(
+    LoopTerminalETU(tdelay);	
+    cmd->lenData = cmd->cmdHeader->p3;
+    cmd->cmdData = ReceiveT0CmdData(
             inverse_convention, TC1, cmd->lenData, logger);
-	if(cmd->cmdData == NULL)
-	{
-		free(cmd->cmdHeader);
-		cmd->cmdHeader = NULL;
-		free(cmd);		
-		return NULL;	
-	}
+    if(cmd->cmdData == NULL)
+    {
+        free(cmd->cmdHeader);
+        cmd->cmdHeader = NULL;
+        free(cmd);		
+        return NULL;	
+    }
 
-	return cmd;	
+    return cmd;	
 }
 
 
@@ -1341,13 +1341,13 @@ uint8_t SendT0CmdHeader(
         EMVCommandHeader *cmdHeader,
         log_struct_t *logger)
 {
-	uint8_t tdelay;
+    uint8_t tdelay;
 
-	if(cmdHeader == NULL) return RET_ERROR;
+    if(cmdHeader == NULL) return RET_ERROR;
 
-	tdelay = 1 + TC1;
+    tdelay = 1 + TC1;
 
-	if(SendByteICCParity(cmdHeader->cla, inverse_convention))
+    if(SendByteICCParity(cmdHeader->cla, inverse_convention))
     {
         if(logger)
             LogByte1(logger, LOG_ICC_ERROR_SEND, 0);
@@ -1355,9 +1355,9 @@ uint8_t SendT0CmdHeader(
     }
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_ICC, cmdHeader->cla);
-	LoopICCETU(tdelay);	
+    LoopICCETU(tdelay);	
 
-	if(SendByteICCParity(cmdHeader->ins, inverse_convention))
+    if(SendByteICCParity(cmdHeader->ins, inverse_convention))
     {
         if(logger)
             LogByte1(logger, LOG_ICC_ERROR_SEND, 0);
@@ -1365,9 +1365,9 @@ uint8_t SendT0CmdHeader(
     }
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_ICC, cmdHeader->ins);
-	LoopICCETU(tdelay);	
+    LoopICCETU(tdelay);	
 
-	if(SendByteICCParity(cmdHeader->p1, inverse_convention))
+    if(SendByteICCParity(cmdHeader->p1, inverse_convention))
     {
         if(logger)
             LogByte1(logger, LOG_ICC_ERROR_SEND, 0);
@@ -1375,9 +1375,9 @@ uint8_t SendT0CmdHeader(
     }
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_ICC, cmdHeader->p1);
-	LoopICCETU(tdelay);	
+    LoopICCETU(tdelay);	
 
-	if(SendByteICCParity(cmdHeader->p2, inverse_convention))
+    if(SendByteICCParity(cmdHeader->p2, inverse_convention))
     {
         if(logger)
             LogByte1(logger, LOG_ICC_ERROR_SEND, 0);
@@ -1385,9 +1385,9 @@ uint8_t SendT0CmdHeader(
     }
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_ICC, cmdHeader->p2);
-	LoopICCETU(tdelay);	
+    LoopICCETU(tdelay);	
 
-	if(SendByteICCParity(cmdHeader->p3, inverse_convention))
+    if(SendByteICCParity(cmdHeader->p3, inverse_convention))
     {
         if(logger)
             LogByte1(logger, LOG_ICC_ERROR_SEND, 0);
@@ -1396,7 +1396,7 @@ uint8_t SendT0CmdHeader(
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_ICC, cmdHeader->p3);
 
-	return 0;
+    return 0;
 }
 
 
@@ -1418,27 +1418,27 @@ uint8_t SendT0CmdData(
         uint8_t len,
         log_struct_t *logger)
 {
-	uint8_t tdelay, i;
+    uint8_t tdelay, i;
 
-	if(cmdData == NULL) return RET_ERROR;
+    if(cmdData == NULL) return RET_ERROR;
 
-	tdelay = 1 + TC1;
+    tdelay = 1 + TC1;
 
-	for(i = 0; i < len - 1; i++)
-	{
-		if(SendByteICCParity(cmdData[i], inverse_convention))
+    for(i = 0; i < len - 1; i++)
+    {
+        if(SendByteICCParity(cmdData[i], inverse_convention))
         {
             if(logger)
                 LogByte1(logger, LOG_ICC_ERROR_SEND, 0);
-			return RET_ERROR;	
+            return RET_ERROR;	
         }
         if(logger)
             LogByte1(logger, LOG_BYTE_TO_ICC, cmdData[i]);
-		LoopICCETU(tdelay);	
-	}
+        LoopICCETU(tdelay);	
+    }
 
-	// Do not add a delay after the last byte
-	if(SendByteICCParity(cmdData[i], inverse_convention))
+    // Do not add a delay after the last byte
+    if(SendByteICCParity(cmdData[i], inverse_convention))
     {
         if(logger)
             LogByte1(logger, LOG_ICC_ERROR_SEND, 0);
@@ -1446,8 +1446,8 @@ uint8_t SendT0CmdData(
     }
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_ICC, cmdData[i]);
-	
-	return 0;
+
+    return 0;
 }
 
 
@@ -1494,7 +1494,7 @@ uint8_t SendT0Command(
 
     // for case 1 and case 2 commands there is no command data to send
     if(tmp == 1 || tmp == 2)
-       return 0;
+        return 0;
 
     // for other cases (3, 4) get procedure byte and send command data
     LoopICCETU(6);
@@ -1536,10 +1536,10 @@ uint8_t SendT0Command(
             LogByte1(logger, LOG_BYTE_FROM_ICC, tmp2);
         return RET_ERR_CHECK; 
     }
-    
+
     // Wait for card to be ready before sending any bytes
     LoopICCETU(6);
-    
+
     i = 0;
     // Send first byte if sending byte by byte
     if(tmp != cmd->cmdHeader->ins)
@@ -1555,7 +1555,7 @@ uint8_t SendT0Command(
         if(i < cmd->lenData)
             LoopICCETU(6);
     }
-    
+
     // send byte after byte in case we receive !INS instead of INS
     while(tmp != cmd->cmdHeader->ins && i < cmd->lenData)
     {
@@ -1568,7 +1568,7 @@ uint8_t SendT0Command(
         if(logger)
             LogByte1(logger, LOG_BYTE_FROM_ICC, tmp);
         LoopICCETU(6);
-    
+
         if(tmp != cmd->cmdHeader->ins)
         {
             if(SendByteICCParity(cmd->cmdData[i++], inverse_convention))
@@ -1580,10 +1580,10 @@ uint8_t SendT0Command(
             if(logger)
                 LogByte1(logger, LOG_BYTE_TO_ICC, cmd->cmdData[i-1]);
             if(i < cmd->lenData)
-        	    LoopICCETU(6);
+                LoopICCETU(6);
         }
     }
-    			
+
     // send remaining of bytes, if any
     for(; i < cmd->lenData - 1; i++)
     {
@@ -1608,7 +1608,7 @@ uint8_t SendT0Command(
         if(logger)
             LogByte1(logger, LOG_BYTE_TO_ICC, cmd->cmdData[i]);
     }
-    
+
     return 0;
 }
 
@@ -1633,18 +1633,18 @@ CAPDU* ForwardCommand(
         uint8_t cTC1,
         log_struct_t *logger)
 {
-	CAPDU* cmd;
+    CAPDU* cmd;
 
-	cmd = ReceiveT0Command(tInverse, tTC1, logger);
-	if(cmd == NULL) return NULL;
+    cmd = ReceiveT0Command(tInverse, tTC1, logger);
+    if(cmd == NULL) return NULL;
 
-	if(SendT0Command(cInverse, cTC1, cmd, logger))
-	{
-		FreeCAPDU(cmd);
-		return NULL;
-	}
+    if(SendT0Command(cInverse, cTC1, cmd, logger))
+    {
+        FreeCAPDU(cmd);
+        return NULL;
+    }
 
-	return cmd;
+    return cmd;
 }
 
 
@@ -1660,32 +1660,32 @@ CAPDU* ForwardCommand(
  */
 uint8_t* SerializeCommand(CAPDU *cmd, uint8_t *len)
 {
-	uint8_t *stream, i = 0;
-	
-	if(cmd == NULL || len == NULL || cmd->cmdHeader == NULL) return NULL;
-	if(cmd->lenData > 0 && cmd->cmdData == NULL) return NULL;
-	
-	*len = 5 + cmd->lenData;
-	stream = (uint8_t*)malloc((*len)*sizeof(uint8_t));
-	if(stream == NULL)
-	{
-		*len = 0;
-		return NULL;
-	}
+    uint8_t *stream, i = 0;
 
-	stream[i++] = cmd->cmdHeader->cla;
-	stream[i++] = cmd->cmdHeader->ins;
-	stream[i++] = cmd->cmdHeader->p1;
-	stream[i++] = cmd->cmdHeader->p2;
-	stream[i++] = cmd->cmdHeader->p3;
+    if(cmd == NULL || len == NULL || cmd->cmdHeader == NULL) return NULL;
+    if(cmd->lenData > 0 && cmd->cmdData == NULL) return NULL;
+
+    *len = 5 + cmd->lenData;
+    stream = (uint8_t*)malloc((*len)*sizeof(uint8_t));
+    if(stream == NULL)
+    {
+        *len = 0;
+        return NULL;
+    }
+
+    stream[i++] = cmd->cmdHeader->cla;
+    stream[i++] = cmd->cmdHeader->ins;
+    stream[i++] = cmd->cmdHeader->p1;
+    stream[i++] = cmd->cmdHeader->p2;
+    stream[i++] = cmd->cmdHeader->p3;
 
     while(i < cmd->lenData)
     {
-		stream[i] = cmd->cmdData[i];
+        stream[i] = cmd->cmdData[i];
         i++;
     }
 
-	return stream;
+    return stream;
 }
 
 
@@ -1711,172 +1711,172 @@ RAPDU* ReceiveT0Response(
         EMVCommandHeader *cmdHeader,
         log_struct_t *logger)
 {
-	uint8_t tmp, i;
-	RAPDU* rapdu;
+    uint8_t tmp, i;
+    RAPDU* rapdu;
 
-	if(cmdHeader == NULL) return NULL;
+    if(cmdHeader == NULL) return NULL;
 
-	rapdu = (RAPDU*)malloc(sizeof(RAPDU));
-	if(rapdu == NULL) return 0;
-	rapdu->repStatus = NULL;
-	rapdu->repData = NULL;
-	rapdu->lenData = 0;
-	tmp = GetCommandCase(cmdHeader->cla, cmdHeader->ins);		
-	if(tmp == 0)
-	{
-		free(rapdu);
-		return NULL;
-	}
+    rapdu = (RAPDU*)malloc(sizeof(RAPDU));
+    if(rapdu == NULL) return 0;
+    rapdu->repStatus = NULL;
+    rapdu->repData = NULL;
+    rapdu->lenData = 0;
+    tmp = GetCommandCase(cmdHeader->cla, cmdHeader->ins);		
+    if(tmp == 0)
+    {
+        free(rapdu);
+        return NULL;
+    }
 
-	
-	// for case 1 and case 3 there is no data expected, just status
-	if(tmp == 1 || tmp == 3)
-	{
-		rapdu->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
-		if(rapdu->repStatus == NULL)
-		{
-			free(rapdu);
-			return NULL;
-		}
 
-		if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw1)))
-		{
-			free(rapdu->repStatus);
-			rapdu->repStatus = NULL;
-			free(rapdu);
-			return NULL;
-		}
+    // for case 1 and case 3 there is no data expected, just status
+    if(tmp == 1 || tmp == 3)
+    {
+        rapdu->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
+        if(rapdu->repStatus == NULL)
+        {
+            free(rapdu);
+            return NULL;
+        }
+
+        if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw1)))
+        {
+            free(rapdu->repStatus);
+            rapdu->repStatus = NULL;
+            free(rapdu);
+            return NULL;
+        }
         if(logger)
             LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw1);
 
-		if(rapdu->repStatus->sw1 == 0x60)
-		{
-			// requested more time, recall
-			free(rapdu->repStatus);
-			rapdu->repStatus = NULL;
-			free(rapdu);
-			
-			return ReceiveT0Response(inverse_convention, cmdHeader, logger);
+        if(rapdu->repStatus->sw1 == 0x60)
+        {
+            // requested more time, recall
+            free(rapdu->repStatus);
+            rapdu->repStatus = NULL;
+            free(rapdu);
 
-		}
+            return ReceiveT0Response(inverse_convention, cmdHeader, logger);
 
-		if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2)))
-		{
-			free(rapdu->repStatus);
-			rapdu->repStatus = NULL;
-			free(rapdu);
-			return NULL;
-		}
+        }
+
+        if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2)))
+        {
+            free(rapdu->repStatus);
+            rapdu->repStatus = NULL;
+            free(rapdu);
+            return NULL;
+        }
         if(logger)
             LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw2);
 
-		return rapdu;
-	}
+        return rapdu;
+    }
 
-	// for case 2 and 4, we might get data based on first byte of response	
-	if(GetByteICCParity(inverse_convention, &tmp))
-	{
-		free(rapdu);
-		return NULL;
-	}
+    // for case 2 and 4, we might get data based on first byte of response	
+    if(GetByteICCParity(inverse_convention, &tmp))
+    {
+        free(rapdu);
+        return NULL;
+    }
     if(logger)
         LogByte1(logger, LOG_BYTE_FROM_ICC, tmp);
 
-	if(tmp == 0x60)
-	{
-		// requested more time, recall
-		free(rapdu);
-		
-		return ReceiveT0Response(inverse_convention, cmdHeader, logger);
-	}
+    if(tmp == 0x60)
+    {
+        // requested more time, recall
+        free(rapdu);
 
-	if(tmp == cmdHeader->ins || tmp == ~cmdHeader->ins)	// get data
-	{
-		if(tmp == cmdHeader->ins)
-			rapdu->lenData = cmdHeader->p3;
-		else
-			rapdu->lenData = 1;
+        return ReceiveT0Response(inverse_convention, cmdHeader, logger);
+    }
 
-		rapdu->repData = (uint8_t*)malloc(rapdu->lenData*sizeof(uint8_t));
-		if(rapdu->repData == NULL)
-		{
+    if(tmp == cmdHeader->ins || tmp == ~cmdHeader->ins)	// get data
+    {
+        if(tmp == cmdHeader->ins)
+            rapdu->lenData = cmdHeader->p3;
+        else
+            rapdu->lenData = 1;
+
+        rapdu->repData = (uint8_t*)malloc(rapdu->lenData*sizeof(uint8_t));
+        if(rapdu->repData == NULL)
+        {
 #if DEBUG
             fprintf(stderr, "Failed  MALLOC\n");
             _delay_ms(1000);
 #endif
-			free(rapdu);
-			return NULL;
-		}
+            free(rapdu);
+            return NULL;
+        }
 
-		for(i = 0; i < rapdu->lenData; i++)
-		{
-			if(GetByteICCParity(inverse_convention, &(rapdu->repData[i])))
-			{
-				free(rapdu->repData);
-				rapdu->repData = NULL;
-				free(rapdu);
-				return NULL;
-			}
+        for(i = 0; i < rapdu->lenData; i++)
+        {
+            if(GetByteICCParity(inverse_convention, &(rapdu->repData[i])))
+            {
+                free(rapdu->repData);
+                rapdu->repData = NULL;
+                free(rapdu);
+                return NULL;
+            }
             if(logger)
                 LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repData[i]);
-		}		
+        }		
 
-		rapdu->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
-		if(rapdu->repStatus == NULL)
-		{
-			free(rapdu->repData);
-			rapdu->repData = NULL;
-			free(rapdu);
-			return NULL;
-		}
+        rapdu->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
+        if(rapdu->repStatus == NULL)
+        {
+            free(rapdu->repData);
+            rapdu->repData = NULL;
+            free(rapdu);
+            return NULL;
+        }
 
-		if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw1)))
-		{
-			free(rapdu->repData);
-			rapdu->repData = NULL;
-			free(rapdu->repStatus);
-			rapdu->repStatus = NULL;
-			free(rapdu);
-			return NULL;
-		}
+        if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw1)))
+        {
+            free(rapdu->repData);
+            rapdu->repData = NULL;
+            free(rapdu->repStatus);
+            rapdu->repStatus = NULL;
+            free(rapdu);
+            return NULL;
+        }
         if(logger)
             LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw1);
 
-		if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2)))
-		{
-			free(rapdu->repData);
-			rapdu->repData = NULL;
-			free(rapdu->repStatus);
-			rapdu->repStatus = NULL;
-			free(rapdu);
-			return NULL;
-		}
+        if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2)))
+        {
+            free(rapdu->repData);
+            rapdu->repData = NULL;
+            free(rapdu->repStatus);
+            rapdu->repStatus = NULL;
+            free(rapdu);
+            return NULL;
+        }
         if(logger)
             LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw2);
 
-	}	
-	else	// get second byte of response (no data)
-	{
-		rapdu->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
-		if(rapdu->repStatus == NULL)
-		{			
-			free(rapdu);
-			return NULL;
-		}
+    }	
+    else	// get second byte of response (no data)
+    {
+        rapdu->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
+        if(rapdu->repStatus == NULL)
+        {			
+            free(rapdu);
+            return NULL;
+        }
 
-		rapdu->repStatus->sw1 = tmp;
-		if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2)))
-		{
-			free(rapdu->repStatus);
-			rapdu->repStatus = NULL;
-			free(rapdu);
-			return NULL;
-		}
+        rapdu->repStatus->sw1 = tmp;
+        if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2)))
+        {
+            free(rapdu->repStatus);
+            rapdu->repStatus = NULL;
+            free(rapdu);
+            return NULL;
+        }
         if(logger)
             LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw2);
-	}
+    }
 
-	return rapdu;
+    return rapdu;
 }
 
 
@@ -1897,42 +1897,42 @@ uint8_t SendT0Response(
         RAPDU *response,
         log_struct_t *logger)
 {
-	uint8_t i;	
+    uint8_t i;	
 
-	if(cmdHeader == NULL || response == NULL) return RET_ERROR;	
+    if(cmdHeader == NULL || response == NULL) return RET_ERROR;	
 
-	if(response->lenData > 0 && response->repData != NULL)
-	{
-		if(SendByteTerminalParity(cmdHeader->ins, inverse_convention))
-			return RET_ERROR;
+    if(response->lenData > 0 && response->repData != NULL)
+    {
+        if(SendByteTerminalParity(cmdHeader->ins, inverse_convention))
+            return RET_ERROR;
         if(logger)
             LogByte1(logger, LOG_BYTE_TO_TERMINAL, cmdHeader->ins);
-		LoopTerminalETU(2);
+        LoopTerminalETU(2);
 
-		for(i = 0; i < response->lenData; i++)
-		{			
-			if(SendByteTerminalParity(response->repData[i], inverse_convention))
-				return RET_ERROR;
+        for(i = 0; i < response->lenData; i++)
+        {			
+            if(SendByteTerminalParity(response->repData[i], inverse_convention))
+                return RET_ERROR;
             if(logger)
                 LogByte1(logger, LOG_BYTE_TO_TERMINAL, response->repData[i]);
-			LoopTerminalETU(2);
-		}
-	}
+            LoopTerminalETU(2);
+        }
+    }
 
-	if(response->repStatus == NULL) return RET_ERROR;
+    if(response->repStatus == NULL) return RET_ERROR;
 
-	if(SendByteTerminalParity(response->repStatus->sw1, inverse_convention))
-		return RET_ERROR;
+    if(SendByteTerminalParity(response->repStatus->sw1, inverse_convention))
+        return RET_ERROR;
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_TERMINAL, response->repStatus->sw1);
-	LoopTerminalETU(2);
-	if(SendByteTerminalParity(response->repStatus->sw2, inverse_convention))
-		return RET_ERROR;	
+    LoopTerminalETU(2);
+    if(SendByteTerminalParity(response->repStatus->sw2, inverse_convention))
+        return RET_ERROR;	
     if(logger)
         LogByte1(logger, LOG_BYTE_TO_TERMINAL, response->repStatus->sw2);
-	LoopTerminalETU(2);
+    LoopTerminalETU(2);
 
-	return 0;
+    return 0;
 }
 
 /**
@@ -1953,20 +1953,20 @@ RAPDU* ForwardResponse(
         EMVCommandHeader *cmdHeader,
         log_struct_t *logger)
 {
-	RAPDU* response;
+    RAPDU* response;
 
-	if(cmdHeader == NULL) return NULL;
+    if(cmdHeader == NULL) return NULL;
 
-	response = ReceiveT0Response(cInverse, cmdHeader, logger);
-	if(response == NULL) return NULL;
+    response = ReceiveT0Response(cInverse, cmdHeader, logger);
+    if(response == NULL) return NULL;
 
-	if(SendT0Response(tInverse, cmdHeader, response, logger))
-	{
-		FreeRAPDU(response);		
-		return NULL;
-	}
+    if(SendT0Response(tInverse, cmdHeader, response, logger))
+    {
+        FreeRAPDU(response);		
+        return NULL;
+    }
 
-	return response;
+    return response;
 }
 
 /**
@@ -1981,30 +1981,30 @@ RAPDU* ForwardResponse(
  */
 uint8_t* SerializeResponse(RAPDU *response, uint8_t *len)
 {
-	uint8_t *stream, i = 0;
-	
-	if(response == NULL || len == NULL || response->repStatus == NULL)
-		return NULL;
-	if(response->lenData > 0 && response->repData == NULL) return NULL;
-	
-	*len = 2 + response->lenData;
-	stream = (uint8_t*)malloc((*len)*sizeof(uint8_t));
-	if(stream == NULL)
-	{
-		*len = 0;
-		return NULL;
-	}
+    uint8_t *stream, i = 0;
 
-	stream[i++] = response->repStatus->sw1;
-	stream[i++] = response->repStatus->sw2;	
+    if(response == NULL || len == NULL || response->repStatus == NULL)
+        return NULL;
+    if(response->lenData > 0 && response->repData == NULL) return NULL;
+
+    *len = 2 + response->lenData;
+    stream = (uint8_t*)malloc((*len)*sizeof(uint8_t));
+    if(stream == NULL)
+    {
+        *len = 0;
+        return NULL;
+    }
+
+    stream[i++] = response->repStatus->sw1;
+    stream[i++] = response->repStatus->sw2;	
 
     while(i < response->lenData)
     {
-		stream[i] = response->repData[i];
+        stream[i] = response->repData[i];
         i++;
     }
 
-	return stream;
+    return stream;
 }
 
 
@@ -2031,33 +2031,33 @@ CRP* ExchangeData(
         uint8_t cTC1,
         log_struct_t *logger)
 {
-	CRP* data;
+    CRP* data;
 
-	data = (CRP*)malloc(sizeof(CRP));
-	if(data == NULL)
+    data = (CRP*)malloc(sizeof(CRP));
+    if(data == NULL)
     {
         if(logger)
             LogByte1(logger, LOG_ERROR_MEMORY, 0);
         return NULL;
     }
 
-	data->cmd = ForwardCommand(tInverse, cInverse, tTC1, cTC1, logger);
-	if(data->cmd == NULL)
-	{
-		free(data);
-		return NULL;
-	}
+    data->cmd = ForwardCommand(tInverse, cInverse, tTC1, cTC1, logger);
+    if(data->cmd == NULL)
+    {
+        free(data);
+        return NULL;
+    }
 
-	data->response = ForwardResponse(
+    data->response = ForwardResponse(
             tInverse, cInverse, data->cmd->cmdHeader, logger);
-	if(data->response == NULL)
-	{
-		FreeCAPDU(data->cmd);
-		free(data);
-		return NULL;
-	}
+    if(data->response == NULL)
+    {
+        FreeCAPDU(data->cmd);
+        free(data);
+        return NULL;
+    }
 
-	return data;
+    return data;
 }
 
 /**
@@ -2086,53 +2086,53 @@ CRP* ExchangeCompleteData(
         uint8_t cTC1,
         log_struct_t *logger)
 {
-	CRP *data, *tmp;
-	uint8_t cont;
+    CRP *data, *tmp;
+    uint8_t cont;
 
-	data = (CRP*)malloc(sizeof(CRP));
-	if(data == NULL)
+    data = (CRP*)malloc(sizeof(CRP));
+    if(data == NULL)
     {
         if(logger)
             LogByte1(logger, LOG_ERROR_MEMORY, 0);
         return NULL;
     }
-	data->cmd = NULL;
-	data->response = NULL;
+    data->cmd = NULL;
+    data->response = NULL;
 
-	// store command from first exchange
-	tmp = ExchangeData(tInverse, cInverse, tTC1, cTC1, logger);
-	if(tmp == NULL)
-	{
-		FreeCRP(data);
-		return NULL;
-	}
-	data->cmd = tmp->cmd;
-	tmp->cmd = NULL;	
+    // store command from first exchange
+    tmp = ExchangeData(tInverse, cInverse, tTC1, cTC1, logger);
+    if(tmp == NULL)
+    {
+        FreeCRP(data);
+        return NULL;
+    }
+    data->cmd = tmp->cmd;
+    tmp->cmd = NULL;	
 
-	cont = (tmp->response->repStatus->sw1 == 0x61 ||
-		tmp->response->repStatus->sw1 == 0x6C); 
-	if(cont) FreeCRP(tmp);
+    cont = (tmp->response->repStatus->sw1 == 0x61 ||
+            tmp->response->repStatus->sw1 == 0x6C); 
+    if(cont) FreeCRP(tmp);
 
-	while(cont)
-	{
-		tmp = ExchangeData(tInverse, cInverse, tTC1, cTC1, logger);
-		if(tmp == NULL)
-		{
-			FreeCRP(data);
-			return NULL;
-		}
+    while(cont)
+    {
+        tmp = ExchangeData(tInverse, cInverse, tTC1, cTC1, logger);
+        if(tmp == NULL)
+        {
+            FreeCRP(data);
+            return NULL;
+        }
 
-		cont = (tmp->response->repStatus->sw1 == 0x61 ||
-			tmp->response->repStatus->sw1 == 0x6C); 
-		
-		if(cont) FreeCRP(tmp);
-	}
+        cont = (tmp->response->repStatus->sw1 == 0x61 ||
+                tmp->response->repStatus->sw1 == 0x6C); 
 
-	data->response = tmp->response;
-	tmp->response = NULL;
-	FreeCRP(tmp);	
+        if(cont) FreeCRP(tmp);
+    }
 
-	return data;
+    data->response = tmp->response;
+    tmp->response = NULL;
+    FreeCRP(tmp);	
+
+    return data;
 }
 
 /**
@@ -2148,12 +2148,12 @@ CRP* ExchangeCompleteData(
  */
 ByteArray* MakeByteArray(uint8_t *data, uint8_t len)
 {
-   ByteArray *stream = (ByteArray*)malloc(sizeof(ByteArray));
-   if(stream == NULL) return NULL;
-   stream->bytes = data;
-   stream->len = len;
+    ByteArray *stream = (ByteArray*)malloc(sizeof(ByteArray));
+    if(stream == NULL) return NULL;
+    stream->bytes = data;
+    stream->len = len;
 
-   return stream;
+    return stream;
 }
 
 /**
@@ -2168,28 +2168,28 @@ ByteArray* MakeByteArray(uint8_t *data, uint8_t len)
  */
 ByteArray* MakeByteArrayV(uint8_t nargs, ...)
 {
-   ByteArray *ba;
-   va_list ap;
-   uint8_t i;
+    ByteArray *ba;
+    va_list ap;
+    uint8_t i;
 
-   ba = (ByteArray*)malloc(sizeof(ByteArray));
-   if(ba == NULL) return NULL;
-   ba->len = nargs;
-   ba->bytes = (uint8_t*)malloc(ba->len * sizeof(uint8_t));
-   if(ba->bytes == NULL)
-   {
-      free(ba);
-      return NULL;
-   }
+    ba = (ByteArray*)malloc(sizeof(ByteArray));
+    if(ba == NULL) return NULL;
+    ba->len = nargs;
+    ba->bytes = (uint8_t*)malloc(ba->len * sizeof(uint8_t));
+    if(ba->bytes == NULL)
+    {
+        free(ba);
+        return NULL;
+    }
 
-   va_start(ap, nargs);
-   // according to avr-libc documentation, variable arguments
-   // are passed on the stack as ints
-   for(i = 0; i < nargs; i++)
-      ba->bytes[i] = (uint8_t)va_arg(ap, int); 
-   va_end(ap);
+    va_start(ap, nargs);
+    // according to avr-libc documentation, variable arguments
+    // are passed on the stack as ints
+    for(i = 0; i < nargs; i++)
+        ba->bytes[i] = (uint8_t)va_arg(ap, int); 
+    va_end(ap);
 
-   return ba;
+    return ba;
 }
 
 /**
@@ -2204,24 +2204,24 @@ ByteArray* MakeByteArrayV(uint8_t nargs, ...)
  */
 ByteArray* CopyByteArray(const uint8_t *data, uint8_t len)
 {
-   ByteArray *stream = (ByteArray*)malloc(sizeof(ByteArray));
-   if(stream == NULL) return NULL;
-   stream->bytes = NULL;
-   stream->len = 0;
+    ByteArray *stream = (ByteArray*)malloc(sizeof(ByteArray));
+    if(stream == NULL) return NULL;
+    stream->bytes = NULL;
+    stream->len = 0;
 
-   if(data != NULL && len > 0)
-   {
-      stream->bytes = (uint8_t*)malloc(len * sizeof(uint8_t));
-      if(stream->bytes == NULL)
-      {
-         free(stream);
-         return NULL;
-      }
-      memcpy(stream->bytes, data, len);
-      stream->len = len;
-   }
+    if(data != NULL && len > 0)
+    {
+        stream->bytes = (uint8_t*)malloc(len * sizeof(uint8_t));
+        if(stream->bytes == NULL)
+        {
+            free(stream);
+            return NULL;
+        }
+        memcpy(stream->bytes, data, len);
+        stream->len = len;
+    }
 
-   return stream;
+    return stream;
 }
 
 /**
@@ -2231,14 +2231,14 @@ ByteArray* CopyByteArray(const uint8_t *data, uint8_t len)
  */
 void FreeByteArray(ByteArray* data)
 {
-   if(data == NULL) return;
+    if(data == NULL) return;
 
-   if(data->bytes != NULL)
-   {
-      free(data->bytes);
-      data->bytes = NULL;
-   }
-   free(data);
+    if(data->bytes != NULL)
+    {
+        free(data->bytes);
+        data->bytes = NULL;
+    }
+    free(data);
 }
 
 /**
@@ -2248,20 +2248,20 @@ void FreeByteArray(ByteArray* data)
  */
 void FreeCAPDU(CAPDU* cmd)
 {
-	if(cmd == NULL) return;
+    if(cmd == NULL) return;
 
-	if(cmd->cmdHeader != NULL)
-	{
-		free(cmd->cmdHeader);
-		cmd->cmdHeader = NULL;		
-	}
+    if(cmd->cmdHeader != NULL)
+    {
+        free(cmd->cmdHeader);
+        cmd->cmdHeader = NULL;		
+    }
 
-	if(cmd->cmdData != NULL)
-	{		
-		free(cmd->cmdData);
-		cmd->cmdData = NULL;
-	}
-	free(cmd);
+    if(cmd->cmdData != NULL)
+    {		
+        free(cmd->cmdData);
+        cmd->cmdData = NULL;
+    }
+    free(cmd);
 }
 
 /**
@@ -2272,37 +2272,37 @@ void FreeCAPDU(CAPDU* cmd)
  */
 CAPDU* CopyCAPDU(CAPDU* cmd)
 {
-   CAPDU *command;
+    CAPDU *command;
 
-   if(cmd == NULL || cmd->cmdHeader == NULL) return NULL;
+    if(cmd == NULL || cmd->cmdHeader == NULL) return NULL;
 
-   command = (CAPDU*)malloc(sizeof(CAPDU));
-   if(command == NULL) return NULL;
-   command->cmdHeader = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
-   if(command->cmdHeader == NULL)
-   {
-      free(command);
-      return NULL;
-   }
-   memcpy(command->cmdHeader, cmd->cmdHeader, sizeof(EMVCommandHeader));
-   if(cmd->cmdData != NULL && cmd->lenData != 0)
-   {
-      command->cmdData = (uint8_t*)malloc(cmd->lenData * sizeof(uint8_t));
-      if(command->cmdData == NULL)
-      {
-         FreeCAPDU(command);
-         return NULL;
-      }
-      memcpy(command->cmdData, cmd->cmdData, cmd->lenData);
-      command->lenData = cmd->lenData;
-   }
-   else
-   {
-      command->cmdData = NULL;
-      command->lenData = 0;
-   }
-   
-   return command;
+    command = (CAPDU*)malloc(sizeof(CAPDU));
+    if(command == NULL) return NULL;
+    command->cmdHeader = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
+    if(command->cmdHeader == NULL)
+    {
+        free(command);
+        return NULL;
+    }
+    memcpy(command->cmdHeader, cmd->cmdHeader, sizeof(EMVCommandHeader));
+    if(cmd->cmdData != NULL && cmd->lenData != 0)
+    {
+        command->cmdData = (uint8_t*)malloc(cmd->lenData * sizeof(uint8_t));
+        if(command->cmdData == NULL)
+        {
+            FreeCAPDU(command);
+            return NULL;
+        }
+        memcpy(command->cmdData, cmd->cmdData, cmd->lenData);
+        command->lenData = cmd->lenData;
+    }
+    else
+    {
+        command->cmdData = NULL;
+        command->lenData = 0;
+    }
+
+    return command;
 }
 
 /**
@@ -2312,20 +2312,20 @@ CAPDU* CopyCAPDU(CAPDU* cmd)
  */
 void FreeRAPDU(RAPDU* response)
 {
-	if(response == NULL) return;
+    if(response == NULL) return;
 
-	if(response->repStatus != NULL)
-	{
-		free(response->repStatus);
-		response->repStatus = NULL;		
-	}
+    if(response->repStatus != NULL)
+    {
+        free(response->repStatus);
+        response->repStatus = NULL;		
+    }
 
-	if(response->repData != NULL)
-	{		
-		free(response->repData);
-		response->repData = NULL;
-	}
-	free(response);
+    if(response->repData != NULL)
+    {		
+        free(response->repData);
+        response->repData = NULL;
+    }
+    free(response);
 }
 
 /**
@@ -2336,37 +2336,37 @@ void FreeRAPDU(RAPDU* response)
  */
 RAPDU* CopyRAPDU(RAPDU* resp)
 {
-   RAPDU *response;
+    RAPDU *response;
 
-   if(resp == NULL || resp->repStatus == NULL) return NULL;
+    if(resp == NULL || resp->repStatus == NULL) return NULL;
 
-   response = (RAPDU*)malloc(sizeof(RAPDU));
-   if(response == NULL) return NULL;
-   response->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
-   if(response->repStatus == NULL)
-   {
-      free(response);
-      return NULL;
-   }
-   memcpy(response->repStatus, resp->repStatus, sizeof(EMVStatus));
-   if(resp->repData != NULL && resp->lenData != 0)
-   {
-      response->repData = (uint8_t*)malloc(resp->lenData * sizeof(uint8_t));
-      if(response->repData == NULL)
-      {
-         FreeRAPDU(response);
-         return NULL;
-      }
-      memcpy(response->repData, resp->repData, resp->lenData);
-      response->lenData = resp->lenData;
-   }
-   else
-   {
-      response->repData = NULL;
-      response->lenData = 0;
-   }
-   
-   return response;
+    response = (RAPDU*)malloc(sizeof(RAPDU));
+    if(response == NULL) return NULL;
+    response->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
+    if(response->repStatus == NULL)
+    {
+        free(response);
+        return NULL;
+    }
+    memcpy(response->repStatus, resp->repStatus, sizeof(EMVStatus));
+    if(resp->repData != NULL && resp->lenData != 0)
+    {
+        response->repData = (uint8_t*)malloc(resp->lenData * sizeof(uint8_t));
+        if(response->repData == NULL)
+        {
+            FreeRAPDU(response);
+            return NULL;
+        }
+        memcpy(response->repData, resp->repData, resp->lenData);
+        response->lenData = resp->lenData;
+    }
+    else
+    {
+        response->repData = NULL;
+        response->lenData = 0;
+    }
+
+    return response;
 }
 
 /**
@@ -2376,20 +2376,20 @@ RAPDU* CopyRAPDU(RAPDU* resp)
  */
 void FreeCRP(CRP* data)
 {
-	if(data == NULL) return;
+    if(data == NULL) return;
 
-	if(data->cmd != NULL)
-	{
-		FreeCAPDU(data->cmd);
-		data->cmd = NULL;		
-	}
+    if(data->cmd != NULL)
+    {
+        FreeCAPDU(data->cmd);
+        data->cmd = NULL;		
+    }
 
-	if(data->response != NULL)
-	{		
-		FreeRAPDU(data->response);
-		data->response = NULL;
-	}
-	free(data);
+    if(data->response != NULL)
+    {		
+        FreeRAPDU(data->response);
+        data->response = NULL;
+    }
+    free(data);
 }
 
 

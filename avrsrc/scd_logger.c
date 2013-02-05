@@ -33,11 +33,11 @@
  */
 void ResetLogger(log_struct_t *logger)
 {
-  if(logger == NULL)
-    return;
+    if(logger == NULL)
+        return;
 
-  memset(logger->log_buffer, 0, LOG_BUFFER_SIZE);
-  logger->position = 0;
+    memset(logger->log_buffer, 0, LOG_BUFFER_SIZE);
+    logger->position = 0;
 }
 
 /**
@@ -51,17 +51,17 @@ void ResetLogger(log_struct_t *logger)
  */
 uint8_t LogByte1(log_struct_t *logger, SCD_LOG_BYTE type, uint8_t byte_a)
 {
-  if(logger == NULL)
-    return RET_ERR_PARAM;
-  if((type & 0x03) != 0x00)
-    return RET_ERR_PARAM;
-  if(logger->position > LOG_BUFFER_SIZE - 2)
-    return RET_ERR_MEMORY;
-    
-  logger->log_buffer[logger->position++] = type;
-  logger->log_buffer[logger->position++] = byte_a;
+    if(logger == NULL)
+        return RET_ERR_PARAM;
+    if((type & 0x03) != 0x00)
+        return RET_ERR_PARAM;
+    if(logger->position > LOG_BUFFER_SIZE - 2)
+        return RET_ERR_MEMORY;
 
-  return 0;
+    logger->log_buffer[logger->position++] = type;
+    logger->log_buffer[logger->position++] = byte_a;
+
+    return 0;
 }
 
 /**
@@ -75,20 +75,20 @@ uint8_t LogByte1(log_struct_t *logger, SCD_LOG_BYTE type, uint8_t byte_a)
  * @sa LogByte1
  */
 uint8_t LogByte2(log_struct_t *logger, SCD_LOG_BYTE type, uint8_t byte_a,
-                 uint8_t byte_b)
+        uint8_t byte_b)
 {
-  if(logger == NULL)
-    return RET_ERR_PARAM;
-  if((type & 0x03) != 0x01)
-    return RET_ERR_PARAM;
-  if(logger->position > LOG_BUFFER_SIZE - 3)
-    return RET_ERR_MEMORY;
-    
-  logger->log_buffer[logger->position++] = type;
-  logger->log_buffer[logger->position++] = byte_a;
-  logger->log_buffer[logger->position++] = byte_b;
+    if(logger == NULL)
+        return RET_ERR_PARAM;
+    if((type & 0x03) != 0x01)
+        return RET_ERR_PARAM;
+    if(logger->position > LOG_BUFFER_SIZE - 3)
+        return RET_ERR_MEMORY;
 
-  return 0;
+    logger->log_buffer[logger->position++] = type;
+    logger->log_buffer[logger->position++] = byte_a;
+    logger->log_buffer[logger->position++] = byte_b;
+
+    return 0;
 }
 
 
@@ -104,21 +104,21 @@ uint8_t LogByte2(log_struct_t *logger, SCD_LOG_BYTE type, uint8_t byte_a,
  * @sa LogByte1
  */
 uint8_t LogByte3(log_struct_t *logger, SCD_LOG_BYTE type, uint8_t byte_a,
-                 uint8_t byte_b, uint8_t byte_c)
+        uint8_t byte_b, uint8_t byte_c)
 {
-  if(logger == NULL)
-    return RET_ERR_PARAM;
-  if((type & 0x03) != 0x02)
-    return RET_ERR_PARAM;
-  if(logger->position > LOG_BUFFER_SIZE - 4)
-    return RET_ERR_MEMORY;
-    
-  logger->log_buffer[logger->position++] = type;
-  logger->log_buffer[logger->position++] = byte_a;
-  logger->log_buffer[logger->position++] = byte_b;
-  logger->log_buffer[logger->position++] = byte_c;
+    if(logger == NULL)
+        return RET_ERR_PARAM;
+    if((type & 0x03) != 0x02)
+        return RET_ERR_PARAM;
+    if(logger->position > LOG_BUFFER_SIZE - 4)
+        return RET_ERR_MEMORY;
 
-  return 0;
+    logger->log_buffer[logger->position++] = type;
+    logger->log_buffer[logger->position++] = byte_a;
+    logger->log_buffer[logger->position++] = byte_b;
+    logger->log_buffer[logger->position++] = byte_c;
+
+    return 0;
 }
 
 /**
@@ -134,21 +134,21 @@ uint8_t LogByte3(log_struct_t *logger, SCD_LOG_BYTE type, uint8_t byte_a,
  * @sa LogByte1
  */
 uint8_t LogByte4(log_struct_t *logger, SCD_LOG_BYTE type, uint8_t byte_a,
-                 uint8_t byte_b, uint8_t byte_c, uint8_t byte_d)
+        uint8_t byte_b, uint8_t byte_c, uint8_t byte_d)
 {
-  if(logger == NULL)
-    return RET_ERR_PARAM;
-  if((type & 0x03) != 0x03)
-    return RET_ERR_PARAM;
-  if(logger->position > LOG_BUFFER_SIZE - 5)
-    return RET_ERR_MEMORY;
-    
-  logger->log_buffer[logger->position++] = type;
-  logger->log_buffer[logger->position++] = byte_a;
-  logger->log_buffer[logger->position++] = byte_b;
-  logger->log_buffer[logger->position++] = byte_c;
-  logger->log_buffer[logger->position++] = byte_d;
+    if(logger == NULL)
+        return RET_ERR_PARAM;
+    if((type & 0x03) != 0x03)
+        return RET_ERR_PARAM;
+    if(logger->position > LOG_BUFFER_SIZE - 5)
+        return RET_ERR_MEMORY;
 
-  return 0;
+    logger->log_buffer[logger->position++] = type;
+    logger->log_buffer[logger->position++] = byte_a;
+    logger->log_buffer[logger->position++] = byte_b;
+    logger->log_buffer[logger->position++] = byte_c;
+    logger->log_buffer[logger->position++] = byte_d;
+
+    return 0;
 }
 

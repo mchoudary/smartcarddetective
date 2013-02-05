@@ -62,7 +62,7 @@ uint8_t ParseATCommand(const char *data, AT_CMD *command, char **atparams);
 
 /// Send EEPROM content as Intel Hex format to the virtual serial port
 uint8_t SendEEPROMHexVSerial();
-    
+
 /// Virtual Serial Terminal application
 uint8_t TerminalVSerial(log_struct_t *logger);
 

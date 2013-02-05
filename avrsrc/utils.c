@@ -32,25 +32,25 @@
 
 void Write16bitRegister(volatile uint16_t *reg, uint16_t value)
 {
-	uint8_t sreg;
+    uint8_t sreg;
 
-	sreg = SREG;
-	cli();
-	*reg = value;
-	SREG = sreg;	
+    sreg = SREG;
+    cli();
+    *reg = value;
+    SREG = sreg;	
 }
 
 uint16_t Read16bitRegister(volatile uint16_t *reg)
 {
-	uint16_t i;
-	uint8_t sreg;
+    uint16_t i;
+    uint8_t sreg;
 
-	sreg = SREG;
-	cli();
-	i = *reg;
-	SREG = sreg;
+    sreg = SREG;
+    cli();
+    i = *reg;
+    SREG = sreg;
 
-	return i;
+    return i;
 }
 
 /**
@@ -113,7 +113,7 @@ void SleepUntilCardInserted()
     cli();
     sleep_enable();
     sei();
-        sleep_cpu();
+    sleep_cpu();
 
     // back from sleep
     sleep_disable();

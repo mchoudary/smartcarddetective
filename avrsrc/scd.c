@@ -108,81 +108,81 @@ FILE lcd_str = FDEV_SETUP_STREAM(LcdPutchar, NULL, _FDEV_SETUP_WRITE);
  */
 int main(void)
 {
-   uint8_t sreg;
+    uint8_t sreg;
 
-   // Init SCD
-   InitSCD();
+    // Init SCD
+    InitSCD();
 
-   // Check the hardware
-   //TestHardware();
+    // Check the hardware
+    //TestHardware();
 
-   // Select application if BB is pressed while restarting
-   if(GetButtonB() == 0)
-   {
-       selected = SelectApplication();
+    // Select application if BB is pressed while restarting
+    if(GetButtonB() == 0)
+    {
+        selected = SelectApplication();
 
-       if(selected == APP_ERASE_EEPROM)
-       {
-               Led2On();
-               ResetEEPROM();
-               Led2Off();
-               wdt_enable(WDTO_15MS);
-       }
-       else
-       {
-               sreg = SREG;
-               cli();
-               eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);
-               SREG = sreg;
-       }
+        if(selected == APP_ERASE_EEPROM)
+        {
+            Led2On();
+            ResetEEPROM();
+            Led2Off();
+            wdt_enable(WDTO_15MS);
+        }
+        else
+        {
+            sreg = SREG;
+            cli();
+            eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);
+            SREG = sreg;
+        }
 
-       // restart micro-second counter every time we select an application
-       ResetCounter();
+        // restart micro-second counter every time we select an application
+        ResetCounter();
 
-       // restart SCD so that LCD power is reduced (small trick)
-       wdt_enable(WDTO_15MS);
-   }
-   else
-   {
-       sreg = SREG;
-       cli();
-       selected = eeprom_read_byte((uint8_t*)EEPROM_APPLICATION);
-       SREG = sreg;
-   }
+        // restart SCD so that LCD power is reduced (small trick)
+        wdt_enable(WDTO_15MS);
+    }
+    else
+    {
+        sreg = SREG;
+        cli();
+        selected = eeprom_read_byte((uint8_t*)EEPROM_APPLICATION);
+        SREG = sreg;
+    }
 
-   // continuously run the selected application
-   // add here any applications that can be selected from the user menu
-   while(1)
-   {
-       switch(selected)
-       {
-           case APP_VIRTUAL_SERIAL_PORT:
-             VirtualSerial(&scd_logger);
-           break;
-             
-           case APP_FORWARD:
-             ForwardData(&scd_logger);
-           break;
+    // continuously run the selected application
+    // add here any applications that can be selected from the user menu
+    while(1)
+    {
+        switch(selected)
+        {
+            case APP_VIRTUAL_SERIAL_PORT:
+                VirtualSerial(&scd_logger);
+                break;
 
-           case APP_FILTER_GENERATEAC: 
-             FilterGenerateAC(&scd_logger);
-           break;
+            case APP_FORWARD:
+                ForwardData(&scd_logger);
+                break;
 
-           case APP_TERMINAL:
-             Terminal(&scd_logger);
-           break;
+            case APP_FILTER_GENERATEAC: 
+                FilterGenerateAC(&scd_logger);
+                break;
 
-           default:
-             selected = APP_VIRTUAL_SERIAL_PORT;
-             eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);
-             VirtualSerial(&scd_logger);
-       }
-   }
+            case APP_TERMINAL:
+                Terminal(&scd_logger);
+                break;
 
-   // if needed disable wdt to avoid restart
-   // wdt_disable();
+            default:
+                selected = APP_VIRTUAL_SERIAL_PORT;
+                eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);
+                VirtualSerial(&scd_logger);
+        }
+    }
 
-   SwitchLeds();			
+    // if needed disable wdt to avoid restart
+    // wdt_disable();
+
+    SwitchLeds();			
 }
 
 /**
@@ -200,47 +200,47 @@ int main(void)
  */
 uint8_t SelectApplication()
 {
-	volatile uint8_t tmp;
-	uint8_t i;
+    volatile uint8_t tmp;
+    uint8_t i;
 
-	if(!lcdAvailable) return 0;
+    if(!lcdAvailable) return 0;
 
-	InitLCD();
-	fprintf(stderr, "\n");
+    InitLCD();
+    fprintf(stderr, "\n");
 
-	while(1){
-		fprintf(stderr, "%s\n", strScroll);
-		do{
-			tmp = GetButton();
-		}while((tmp & BUTTON_C) == 0);
-		_delay_ms(500);
+    while(1){
+        fprintf(stderr, "%s\n", strScroll);
+        do{
+            tmp = GetButton();
+        }while((tmp & BUTTON_C) == 0);
+        _delay_ms(500);
 
-		fprintf(stderr, "%s\n", strSelect);
-		do{
-			tmp = GetButton();
-		}while((tmp & BUTTON_C) == 0);
-		_delay_ms(500);
+        fprintf(stderr, "%s\n", strSelect);
+        do{
+            tmp = GetButton();
+        }while((tmp & BUTTON_C) == 0);
+        _delay_ms(500);
 
-		fprintf(stderr, "%s\n", strAvailable);
-		do{
-			tmp = GetButton();
-		}while((tmp & BUTTON_C) == 0);	
-		_delay_ms(500);
+        fprintf(stderr, "%s\n", strAvailable);
+        do{
+            tmp = GetButton();
+        }while((tmp & BUTTON_C) == 0);	
+        _delay_ms(500);
 
-		for(i = 0; i < APPLICATION_COUNT; i++)
-		{
-			fprintf(stderr, "%s\n", appStrings[i]);
-			while(1)
-			{
-				tmp = GetButton();
-				if((tmp & BUTTON_D) != 0) return (i + 1);
-				if((tmp & BUTTON_C) != 0) break;			
-			}
-			_delay_ms(500);
-		}
-	}
+        for(i = 0; i < APPLICATION_COUNT; i++)
+        {
+            fprintf(stderr, "%s\n", appStrings[i]);
+            while(1)
+            {
+                tmp = GetButton();
+                if((tmp & BUTTON_D) != 0) return (i + 1);
+                if((tmp & BUTTON_C) != 0) break;			
+            }
+            _delay_ms(500);
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 
@@ -251,79 +251,79 @@ uint8_t SelectApplication()
  */
 void InitSCD()
 {
-	// disable any interrupts	
-	cli();
-	EICRA = 0;
-	EICRB = 0;
-	EIFR = 0xFF;
-	EIMSK = 0;
+    // disable any interrupts	
+    cli();
+    EICRA = 0;
+    EICRB = 0;
+    EIFR = 0xFF;
+    EIMSK = 0;
 
-	// Disable WDT to keep safe operation
+    // Disable WDT to keep safe operation
     DisableWDT();
 
     // Reset log structure (the one in SRAM)
     ResetLogger(&scd_logger);
 
-	// Read ms counter in order to continue from last value
+    // Read ms counter in order to continue from last value
     // We add the estimated startup time of 4 ms
     SetCounter(eeprom_read_dword((uint32_t*)EEPROM_TIMER_T2) + 4);
 
-	// Ports setup
-	DDRB = 0x00;
+    // Ports setup
+    DDRB = 0x00;
 
-	DDRC = 0x00;
-	PORTC = 0x18;		// PC4 with internal pull-up (Terminal I/O)
-						// PC3 with internal pull-up (terminal clock)
+    DDRC = 0x00;
+    PORTC = 0x18;		// PC4 with internal pull-up (Terminal I/O)
+    // PC3 with internal pull-up (terminal clock)
 
-	DDRD = 0x80;		
-	PORTD = 0x83;		// PD7 high (ICC VCC) , PD1 pull-up
-						// (ICC switch), PD0 pull-up (terminal reset)
+    DDRD = 0x80;		
+    PORTD = 0x83;		// PD7 high (ICC VCC) , PD1 pull-up
+    // (ICC switch), PD0 pull-up (terminal reset)
 
-	DDRF &= 0xF0;
-	PORTF |= 0x0F; 		// enable pull-up for buttons	
+    DDRF &= 0xF0;
+    PORTF |= 0x0F; 		// enable pull-up for buttons	
 
-	// change CLK Prescaler value
-	clock_prescale_set(clock_div_1); 	
+    // change CLK Prescaler value
+    clock_prescale_set(clock_div_1); 	
 
     // enable counter T2
     StartTimerT2();
 
-	// light power led
-	Led4On();	
+    // light power led
+    Led4On();	
 
-//#if ICC_PRES_INT_ENABLE
-//  EnableICCInsertInterrupt();
-//#endif	
+    //#if ICC_PRES_INT_ENABLE
+    //  EnableICCInsertInterrupt();
+    //#endif	
 
-	// Read Warm byte info from EEPROM
-	warmResetByte = eeprom_read_byte((uint8_t*)EEPROM_WARM_RESET);
+    // Read Warm byte info from EEPROM
+    warmResetByte = eeprom_read_byte((uint8_t*)EEPROM_WARM_RESET);
 
-	// Read number of transactions in EEPROM
-	nCounter = eeprom_read_byte((uint8_t*)EEPROM_COUNTER);	
-	
-	// Check LCD status and use as stderr if status OK
-	if(CheckLCD())
-	{
-		stderr = NULL;
-		lcdAvailable = 0;
-	}
-	else	
-	{
-		stderr = &lcd_str;
-		lcdAvailable = 1;
+    // Read number of transactions in EEPROM
+    nCounter = eeprom_read_byte((uint8_t*)EEPROM_COUNTER);	
+
+    // Check LCD status and use as stderr if status OK
+    if(CheckLCD())
+    {
+        stderr = NULL;
+        lcdAvailable = 0;
+    }
+    else	
+    {
+        stderr = &lcd_str;
+        lcdAvailable = 1;
         // disable LCD power
         LCDOff();
-	}
+    }
 
-	// Disable most modules; they should be re-enabled when needed
-	power_adc_disable();
-	power_spi_disable();
-	power_twi_disable();
-	power_usart1_disable();
-	power_usb_disable();
+    // Disable most modules; they should be re-enabled when needed
+    power_adc_disable();
+    power_spi_disable();
+    power_twi_disable();
+    power_usart1_disable();
+    power_usb_disable();
 
-	// Enable interrupts
-	sei();	
+    // Enable interrupts
+    sei();	
 
     // Disable INT0 and INT1
     EIMSK &= ~(_BV(INT0));
@@ -340,11 +340,11 @@ void InitSCD()
  */
 ISR(INT0_vect)
 {
-	// disable wdt
+    // disable wdt
     DisableWDT();
 
-	// disable INT0	
-	DisableTerminalResetInterrupt();
+    // disable INT0	
+    DisableTerminalResetInterrupt();
 
     // Log the event
     LogByte1(&scd_logger, LOG_TERMINAL_RST_LOW, 0);
@@ -378,8 +378,8 @@ ISR(INT0_vect)
         while(EECR & _BV(EEPE));
     }
 
-	// re-enable wdt to restart device
-	wdt_enable(WDTO_15MS);
+    // re-enable wdt to restart device
+    wdt_enable(WDTO_15MS);
 
     // Update timer value in EEPROM while we wait for restart
     eeprom_update_dword((uint32_t*)EEPROM_TIMER_T2, GetCounter());
@@ -391,15 +391,15 @@ ISR(INT0_vect)
  */
 ISR(INT1_vect)
 {	
-	if(bit_is_set(PIND, PD1))
-	{			
-		Led3On();
-	}
-	else
-	{
-		Led3Off();		
-		DeactivateICC();
-	}
+    if(bit_is_set(PIND, PD1))
+    {			
+        Led3On();
+    }
+    else
+    {
+        Led3Off();		
+        DeactivateICC();
+    }
 
 }
 
@@ -424,7 +424,7 @@ ISR(WDT_vect)
  */
 ISR(TIMER3_COMPA_vect, ISR_NAKED)
 {	
-	reti();	// Do nothing, used just to wake up the CPU
+    reti();	// Do nothing, used just to wake up the CPU
 }
 
 /**
@@ -460,12 +460,12 @@ void BootloaderJumpCheck()
 
     // Disable wdt in case it was enabled
     wdt_disable();
-    
+
     // If the reset source was the bootloader and the key is correct, clear it and jump to the bootloader
     if ((MCUSR & (1<<WDRF)) && (bootkey == MAGIC_BOOT_KEY))
     {
         bootkey = 0;
-        
+
         fuse_high = boot_lock_fuse_bits_get(GET_HIGH_FUSE_BITS);
         fuse_high = (fuse_high & 0x07) >> 1;
         if(fuse_high == 0)
@@ -476,7 +476,7 @@ void BootloaderJumpCheck()
             bootloader_addr = 0xFC00;
         else if(fuse_high == 3)
             bootloader_addr = 0xFE00;
-            
+
         ((void (*)(void))bootloader_addr)();
     }   
 } 
@@ -487,47 +487,47 @@ void BootloaderJumpCheck()
 void TestHardware()
 {
 #if LCD_ENABLED
-	char* strBA = "Press BA";
-	char* strBB = "Press BB";
-	char* strBC = "Press BC";
-	char* strBD = "Press BD";
-	char* strAOK = "All fine!";	
+    char* strBA = "Press BA";
+    char* strBB = "Press BB";
+    char* strBC = "Press BC";
+    char* strBD = "Press BD";
+    char* strAOK = "All fine!";	
 #endif
 
 
-	Led1On();
-	_delay_ms(50);
-	Led1Off();
-	Led2On();
-	_delay_ms(50);
-	Led2Off();
-	Led3On();
-	_delay_ms(50);
-	Led3Off();
-	Led4On();
-	_delay_ms(50);
-	Led4Off();
+    Led1On();
+    _delay_ms(50);
+    Led1Off();
+    Led2On();
+    _delay_ms(50);
+    Led2Off();
+    Led3On();
+    _delay_ms(50);
+    Led3Off();
+    Led4On();
+    _delay_ms(50);
+    Led4Off();
 
 #if LCD_ENABLED
-	if(lcdAvailable)
-	{
-		InitLCD();
-		fprintf(stderr, "\n");
+    if(lcdAvailable)
+    {
+        InitLCD();
+        fprintf(stderr, "\n");
 
-		WriteStringLCD(strBA, strlen(strBA));		
-		while(bit_is_set(PINF, PF3));
+        WriteStringLCD(strBA, strlen(strBA));		
+        while(bit_is_set(PINF, PF3));
 
-		WriteStringLCD(strBB, strlen(strBB));		
-		while(bit_is_set(PINF, PF2));
+        WriteStringLCD(strBB, strlen(strBB));		
+        while(bit_is_set(PINF, PF2));
 
-		WriteStringLCD(strBC, strlen(strBC));		
-		while(bit_is_set(PINF, PF1));
+        WriteStringLCD(strBC, strlen(strBC));		
+        while(bit_is_set(PINF, PF1));
 
-		WriteStringLCD(strBD, strlen(strBD));		
-		while(bit_is_set(PINF, PF0));
+        WriteStringLCD(strBD, strlen(strBD));		
+        while(bit_is_set(PINF, PF0));
 
-		WriteStringLCD(strAOK, strlen(strAOK));		
-	}
+        WriteStringLCD(strAOK, strlen(strAOK));		
+    }
 #endif	
 }
 
@@ -541,132 +541,132 @@ void TestHardware()
  */
 void TestSCDTerminal()
 {
-	char strLCD[16];
-	uint8_t tmpa;
+    char strLCD[16];
+    uint8_t tmpa;
 
-	//start Timer for Terminal
-	StartCounterTerminal();
-	
-	// wait for Terminal CLK and send ATR
-	while(ReadCounterTerminal() < 100);
-	Led1On();	
-	while(GetTerminalResetLine() == 0);
-	Led2On();
-	LoopTerminalETU(10);
-	SendT0ATRTerminal(0, 0x0F, NULL);
-	Led1Off();	
+    //start Timer for Terminal
+    StartCounterTerminal();
 
+    // wait for Terminal CLK and send ATR
+    while(ReadCounterTerminal() < 100);
+    Led1On();	
+    while(GetTerminalResetLine() == 0);
+    Led2On();
+    LoopTerminalETU(10);
+    SendT0ATRTerminal(0, 0x0F, NULL);
+    Led1Off();	
 
-#if LCD_ENABLED
-	if(lcdAvailable)
-	{
-		InitLCD();
-		fprintf(stderr, "\n");
-		WriteStringLCD(strATRSent, strlen(strATRSent));		
-	}
-#endif
-
-	while(1)
-	{
-		// Get SELECT command for "1PAY.SYS.DDF01"
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);	// CLA = 0x00
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);	// INS = 0xA4
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);	// P1 = 0x04
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);	// P2 = 0x00
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);	// P3 = 0x0E
-
-		strLCD[5] = 0;	
-
-		Led1On();
-		Led2Off();		
-
-		// Send INS (procedure byte) back
-		LoopTerminalETU(20);
-		//SendByteTerminalNoParity(0xA4, 0);		
-		SendByteTerminalParity(0xA4, 0);		
-
-		Led1Off();
-		Led2On();
-
-		// Get Select command data => "1PAY.SYS.DDF01"
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[5], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[6], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[7], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[8], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[9], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[10], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[11], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[12], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[13], MAX_WAIT_TERMINAL);
-		strLCD[14] = 0;	
-		
-		Led1On();
-		Led2Off();
 
 #if LCD_ENABLED
-		if(lcdAvailable)
-		{
-			if(tmpa != 0)
-				WriteStringLCD(strError, strlen(strError));
-			else
-				WriteStringLCD(strLCD, 14);		
-		}
+    if(lcdAvailable)
+    {
+        InitLCD();
+        fprintf(stderr, "\n");
+        WriteStringLCD(strATRSent, strlen(strATRSent));		
+    }
 #endif
 
-		// Send "6104" (procedure bytes) back		
-		SendByteTerminalParity(0x61, 0);		
-		LoopTerminalETU(2);		
-		SendByteTerminalParity(0x04, 0);		
+    while(1)
+    {
+        // Get SELECT command for "1PAY.SYS.DDF01"
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);	// CLA = 0x00
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);	// INS = 0xA4
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);	// P1 = 0x04
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);	// P2 = 0x00
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);	// P3 = 0x0E
 
-		Led1Off();
-		Led2On();
+        strLCD[5] = 0;	
 
-		// Get GetResponse from Reader
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);
-		tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);
-		strLCD[5] = 0;	
+        Led1On();
+        Led2Off();		
 
-		Led1On();
-		Led2Off();
+        // Send INS (procedure byte) back
+        LoopTerminalETU(20);
+        //SendByteTerminalNoParity(0xA4, 0);		
+        SendByteTerminalParity(0xA4, 0);		
 
-		// Send some data back as response to select command
-		LoopTerminalETU(20);		
-		SendByteTerminalParity(0xC0, 0);		
-		LoopTerminalETU(2);
-		
-		SendByteTerminalParity(0xDE, 0);		
-		LoopTerminalETU(2);
-		
-		SendByteTerminalParity(0xAD, 0);		
-		LoopTerminalETU(2);
-		
-		SendByteTerminalParity(0xBE, 0);		
-		LoopTerminalETU(2);
-		
-		SendByteTerminalParity(0xEF, 0);		
-		LoopTerminalETU(2);
-		
-		SendByteTerminalParity(0x90, 0);		
-		LoopTerminalETU(2);
-		
-		SendByteTerminalParity(0x00, 0);		
+        Led1Off();
+        Led2On();
 
-		Led1Off();
-		Led2On();
+        // Get Select command data => "1PAY.SYS.DDF01"
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[5], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[6], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[7], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[8], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[9], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[10], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[11], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[12], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[13], MAX_WAIT_TERMINAL);
+        strLCD[14] = 0;	
+
+        Led1On();
+        Led2Off();
 
 #if LCD_ENABLED
-		if(lcdAvailable)
-			WriteStringLCD(strDataSent, strlen(strDataSent));
+        if(lcdAvailable)
+        {
+            if(tmpa != 0)
+                WriteStringLCD(strError, strlen(strError));
+            else
+                WriteStringLCD(strLCD, 14);		
+        }
 #endif
-	}
+
+        // Send "6104" (procedure bytes) back		
+        SendByteTerminalParity(0x61, 0);		
+        LoopTerminalETU(2);		
+        SendByteTerminalParity(0x04, 0);		
+
+        Led1Off();
+        Led2On();
+
+        // Get GetResponse from Reader
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);
+        tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);
+        strLCD[5] = 0;	
+
+        Led1On();
+        Led2Off();
+
+        // Send some data back as response to select command
+        LoopTerminalETU(20);		
+        SendByteTerminalParity(0xC0, 0);		
+        LoopTerminalETU(2);
+
+        SendByteTerminalParity(0xDE, 0);		
+        LoopTerminalETU(2);
+
+        SendByteTerminalParity(0xAD, 0);		
+        LoopTerminalETU(2);
+
+        SendByteTerminalParity(0xBE, 0);		
+        LoopTerminalETU(2);
+
+        SendByteTerminalParity(0xEF, 0);		
+        LoopTerminalETU(2);
+
+        SendByteTerminalParity(0x90, 0);		
+        LoopTerminalETU(2);
+
+        SendByteTerminalParity(0x00, 0);		
+
+        Led1Off();
+        Led2On();
+
+#if LCD_ENABLED
+        if(lcdAvailable)
+            WriteStringLCD(strDataSent, strlen(strDataSent));
+#endif
+    }
 }
 
 /**
@@ -679,87 +679,87 @@ void TestSCDTerminal()
  */
 void TestSCDICC(log_struct_t *logger)
 {
-	uint8_t inverse, proto, TC1, TA3, TB3;
-	uint8_t byte;
+    uint8_t inverse, proto, TC1, TA3, TB3;
+    uint8_t byte;
 
-	// Power ICC and get ATR
-	if(ResetICC(0, &inverse, &proto, &TC1, &TA3, &TB3, logger)) return;
- 
-	// Send SELECT command (no data yet)
-	LoopICCETU(5);
-	SendByteICCParity(0x00, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0xA4, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x04, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x00, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x0E, inverse);
+    // Power ICC and get ATR
+    if(ResetICC(0, &inverse, &proto, &TC1, &TA3, &TB3, logger)) return;
 
-	// Get INS back
-	LoopICCETU(1);
-	GetByteICCParity(inverse, &byte);
-	if(byte != 0xA4) return;
+    // Send SELECT command (no data yet)
+    LoopICCETU(5);
+    SendByteICCParity(0x00, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0xA4, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x04, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x00, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x0E, inverse);
 
-	// Send "1PAY.SYS.DDF01"
-	LoopICCETU(5);
-	SendByteICCParity(0x31, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x50, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x41, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x59, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x2E, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x53, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x59, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x53, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x2E, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x44, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x44, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x46, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x30, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x31, inverse);
-	
-	// Expect 0x61, 0xXX
-	LoopICCETU(1);
-	GetByteICCParity(inverse, &byte); 
-	if(byte != 0x61) return;
-	LoopICCETU(1);
-	GetByteICCParity(inverse, &byte);
+    // Get INS back
+    LoopICCETU(1);
+    GetByteICCParity(inverse, &byte);
+    if(byte != 0xA4) return;
 
-	// Send GET Response
-	LoopICCETU(5);
-	SendByteICCParity(0x00, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0xC0, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x00, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(0x00, inverse);
-	LoopICCETU(2);
-	SendByteICCParity(byte, inverse);
+    // Send "1PAY.SYS.DDF01"
+    LoopICCETU(5);
+    SendByteICCParity(0x31, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x50, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x41, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x59, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x2E, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x53, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x59, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x53, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x2E, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x44, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x44, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x46, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x30, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x31, inverse);
 
-	// Data should follow from the ICC...
-	Led1On();
+    // Expect 0x61, 0xXX
+    LoopICCETU(1);
+    GetByteICCParity(inverse, &byte); 
+    if(byte != 0x61) return;
+    LoopICCETU(1);
+    GetByteICCParity(inverse, &byte);
+
+    // Send GET Response
+    LoopICCETU(5);
+    SendByteICCParity(0x00, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0xC0, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x00, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(0x00, inverse);
+    LoopICCETU(2);
+    SendByteICCParity(byte, inverse);
+
+    // Data should follow from the ICC...
+    Led1On();
 #if LCD_ENABLED
-	if(lcdAvailable)
-	{
-		InitLCD();
-		fprintf(stderr, "\n");
-		WriteStringLCD(strDataSent, strlen(strDataSent));		
-	}
+    if(lcdAvailable)
+    {
+        InitLCD();
+        fprintf(stderr, "\n");
+        WriteStringLCD(strDataSent, strlen(strDataSent));		
+    }
 #endif
 }
 
@@ -768,14 +768,14 @@ void TestSCDICC(log_struct_t *logger)
  */
 void SwitchLeds()
 {
-   while(1)
-   {
-      _delay_ms(500);
-      Led1On();
-      Led2Off();
-      _delay_ms(500);
-      Led1Off();
-      Led2On();
-   }
+    while(1)
+    {
+        _delay_ms(500);
+        Led1On();
+        Led2Off();
+        _delay_ms(500);
+        Led1Off();
+        Led2On();
+    }
 }
 

@@ -50,62 +50,62 @@ static uint8_t lcd_state; // 0 if LcdOff, non-zero otherwise
 
 void Led1On()
 {
-	DDRE |= _BV(PE7);
-	PORTE |= _BV(PE7);	
+    DDRE |= _BV(PE7);
+    PORTE |= _BV(PE7);	
 }
 
 void Led2On()
 {
-	DDRE |= _BV(PE6);
-	PORTE |= _BV(PE6);	
+    DDRE |= _BV(PE6);
+    PORTE |= _BV(PE6);	
 }
 
 void Led3On()
 {
-	DDRE |= _BV(PE5);
-	PORTE |= _BV(PE5);	
+    DDRE |= _BV(PE5);
+    PORTE |= _BV(PE5);	
 }
 
 void Led4On()
 {
-	DDRE |= _BV(PE4);
-	PORTE |= _BV(PE4);	
+    DDRE |= _BV(PE4);
+    PORTE |= _BV(PE4);	
 }
 
 void Led1Off()
 {
-	//DDRE |= _BV(PE7);
-	//PORTE &= ~(_BV(PE7));
+    //DDRE |= _BV(PE7);
+    //PORTE &= ~(_BV(PE7));
 
-	DDRE &= ~(_BV(PE7));
-	PORTE &= ~(_BV(PE7));
+    DDRE &= ~(_BV(PE7));
+    PORTE &= ~(_BV(PE7));
 }
 
 void Led2Off()
 {
-	//DDRE |= _BV(PE6);
-	//PORTE &= ~(_BV(PE6));
+    //DDRE |= _BV(PE6);
+    //PORTE &= ~(_BV(PE6));
 
-	DDRE &= ~(_BV(PE6));
-	PORTE &= ~(_BV(PE6));
+    DDRE &= ~(_BV(PE6));
+    PORTE &= ~(_BV(PE6));
 }
 
 void Led3Off()
 {
-	//DDRE |= _BV(PE5);
-	//PORTE &= ~(_BV(PE5));
+    //DDRE |= _BV(PE5);
+    //PORTE &= ~(_BV(PE5));
 
-	DDRE &= ~(_BV(PE5));
-	PORTE &= ~(_BV(PE5));
+    DDRE &= ~(_BV(PE5));
+    PORTE &= ~(_BV(PE5));
 }
 
 void Led4Off()
 {
-	//DDRE |= _BV(PE4);
-	//PORTE &= ~(_BV(PE4));
+    //DDRE |= _BV(PE4);
+    //PORTE &= ~(_BV(PE4));
 
-	DDRE &= ~(_BV(PE4));
-	PORTE &= ~(_BV(PE4));
+    DDRE &= ~(_BV(PE4));
+    PORTE &= ~(_BV(PE4));
 }
 
 // Ohter signals
@@ -169,8 +169,8 @@ void JTAG_P3_Low()
  */
 uint8_t GetButtonA()
 {
-	DDRF &= ~(_BV(PF3));
-	return bit_is_set(PINF, PF3);
+    DDRF &= ~(_BV(PF3));
+    return bit_is_set(PINF, PF3);
 }
 
 /**
@@ -180,8 +180,8 @@ uint8_t GetButtonA()
  */
 uint8_t GetButtonB()
 {
-	DDRF &= ~(_BV(PF2));
-	return bit_is_set(PINF, PF2);
+    DDRF &= ~(_BV(PF2));
+    return bit_is_set(PINF, PF2);
 }
 
 
@@ -192,8 +192,8 @@ uint8_t GetButtonB()
  */
 uint8_t GetButtonC()
 {
-	DDRF &= ~(_BV(PF1));
-	return bit_is_set(PINF, PF1);
+    DDRF &= ~(_BV(PF1));
+    return bit_is_set(PINF, PF1);
 }
 
 
@@ -204,8 +204,8 @@ uint8_t GetButtonC()
  */
 uint8_t GetButtonD()
 {
-	DDRF &= ~(_BV(PF0));
-	return bit_is_set(PINF, PF0);
+    DDRF &= ~(_BV(PF0));
+    return bit_is_set(PINF, PF0);
 }
 
 /**
@@ -220,14 +220,14 @@ uint8_t GetButtonD()
  */
 uint8_t GetButton()
 {
-	uint8_t result = 0;
+    uint8_t result = 0;
 
-	if(bit_is_clear(PINF, PF3)) result |= BUTTON_A;
-	if(bit_is_clear(PINF, PF2)) result |= BUTTON_B;
-	if(bit_is_clear(PINF, PF1)) result |= BUTTON_C;
-	if(bit_is_clear(PINF, PF0)) result |= BUTTON_D;
+    if(bit_is_clear(PINF, PF3)) result |= BUTTON_A;
+    if(bit_is_clear(PINF, PF2)) result |= BUTTON_B;
+    if(bit_is_clear(PINF, PF1)) result |= BUTTON_C;
+    if(bit_is_clear(PINF, PF0)) result |= BUTTON_D;
 
-	return result;
+    return result;
 }
 
 
@@ -243,19 +243,19 @@ uint8_t GetButton()
 // Returns a byte = BF | AC6 ... AC0 containing the busy flag and address counter
 uint8_t GetLCDStatus()
 {
-	uint8_t status;
+    uint8_t status;
 
-	PORTC &= 0xF8;
-	DDRC |= 0x07;
-	DDRA = 0;
-	PORTC |= _BV(PC1);
-	PORTC |= _BV(PC2);
-	_delay_us(10);
-	status = PINA;
-	PORTC &= ~(_BV(PC2));
-	DDRC &= 0xF8;
+    PORTC &= 0xF8;
+    DDRC |= 0x07;
+    DDRA = 0;
+    PORTC |= _BV(PC1);
+    PORTC |= _BV(PC2);
+    _delay_us(10);
+    status = PINA;
+    PORTC &= ~(_BV(PC2));
+    DDRC &= 0xF8;
 
-	return status;
+    return status;
 }
 
 /**
@@ -263,7 +263,7 @@ uint8_t GetLCDStatus()
  */
 uint8_t GetLCDState()
 {
-	return lcd_state;
+    return lcd_state;
 }
 
 /*
@@ -272,62 +272,62 @@ uint8_t GetLCDState()
  */
 void SetLCDState(uint8_t state)
 {
-	lcd_state = state;
+    lcd_state = state;
 }
 
 // Sends a command with a given delay (if needed) and returns
 // the value of the D0-D7 pins
 uint8_t SendLCDCommand(uint8_t RS, uint8_t RW, uint8_t data, uint16_t delay_us)
 {
-	uint8_t result, busy;
+    uint8_t result, busy;
 
-	do{
-		result = GetLCDStatus();
-		busy = result & 0x80;
-	}while(busy);
+    do{
+        result = GetLCDStatus();
+        busy = result & 0x80;
+    }while(busy);
 
-	DDRC |= 0x07;
-	if(RS) PORTC |= _BV(PC0);
-	else PORTC &= ~(_BV(PC0));
+    DDRC |= 0x07;
+    if(RS) PORTC |= _BV(PC0);
+    else PORTC &= ~(_BV(PC0));
 
-	if(RW)
-	{
-		PORTC |= _BV(PC1);
-		DDRA = 0x00;
-	}
-	else 
-	{
-		PORTC &= ~(_BV(PC1));
-		DDRA = 0xFF;
-		PORTA = data;
-	}
+    if(RW)
+    {
+        PORTC |= _BV(PC1);
+        DDRA = 0x00;
+    }
+    else 
+    {
+        PORTC &= ~(_BV(PC1));
+        DDRA = 0xFF;
+        PORTA = data;
+    }
 
-	PORTC |= _BV(PC2);
-	_delay_us(delay_us);
-	data = PINA;
-	PORTC &= ~(_BV(PC2));
-	DDRC &= 0xF8;
+    PORTC |= _BV(PC2);
+    _delay_us(delay_us);
+    data = PINA;
+    PORTC &= ~(_BV(PC2));
+    DDRC &= 0xF8;
 
-	return data;
+    return data;
 }
 
 void FillScreen()
 {
-	uint8_t i;
-	char *str = "12";
+    uint8_t i;
+    char *str = "12";
 
-	// clear display
-	SendLCDCommand(0, 0, 0x01, LCD_COMMAND_DELAY);
+    // clear display
+    SendLCDCommand(0, 0, 0x01, LCD_COMMAND_DELAY);
 
-	// send data for first line
-	for(i = 0; i < 40; i++)
-		SendLCDCommand(1, 0, str[0], LCD_COMMAND_DELAY);	
+    // send data for first line
+    for(i = 0; i < 40; i++)
+        SendLCDCommand(1, 0, str[0], LCD_COMMAND_DELAY);	
 
-	// change address to second line
-	SendLCDCommand(0, 0, 0xc0, 37);
+    // change address to second line
+    SendLCDCommand(0, 0, 0xc0, 37);
 
-	for(i = 0; i < 40; i++)
-		SendLCDCommand(1, 0, str[1], LCD_COMMAND_DELAY);	
+    for(i = 0; i < 40; i++)
+        SendLCDCommand(1, 0, str[1], LCD_COMMAND_DELAY);	
 }
 
 /**
@@ -338,33 +338,33 @@ void FillScreen()
  */
 void WriteStringLCD(char *string, uint8_t len)
 {
-	uint8_t i;
+    uint8_t i;
 
-	// clear display
-	SendLCDCommand(0, 0, 0x01, LCD_COMMAND_DELAY);
+    // clear display
+    SendLCDCommand(0, 0, 0x01, LCD_COMMAND_DELAY);
 
-	i = 0;
-	while(i < len && i < 8)
-	{
-		// write byte to DDRAM
-		SendLCDCommand(1, 0, string[i], LCD_COMMAND_DELAY);
-		i++;
-	}	
+    i = 0;
+    while(i < len && i < 8)
+    {
+        // write byte to DDRAM
+        SendLCDCommand(1, 0, string[i], LCD_COMMAND_DELAY);
+        i++;
+    }	
 
-	if(len > 8)
-	{
-		// change address to second line
-		SendLCDCommand(0, 0, 0xc0, LCD_COMMAND_DELAY);
+    if(len > 8)
+    {
+        // change address to second line
+        SendLCDCommand(0, 0, 0xc0, LCD_COMMAND_DELAY);
 
-		while(i < len && i < 16)
-		{
-			// write byte to DDRAM
-			SendLCDCommand(1, 0, string[i], LCD_COMMAND_DELAY);
-			i++;
-		}	
-	}
+        while(i < len && i < 16)
+        {
+            // write byte to DDRAM
+            SendLCDCommand(1, 0, string[i], LCD_COMMAND_DELAY);
+            i++;
+        }	
+    }
 
-	lcd_count = 0;
+    lcd_count = 0;
 }
 
 /* 
@@ -381,33 +381,33 @@ void WriteStringLCD(char *string, uint8_t len)
  */
 int LcdPutchar(char c, FILE *unused)
 {
-  static uint8_t nl_seen;
+    static uint8_t nl_seen;
 
-  if (nl_seen && c != '\n')
-  {
-    //First character after newline, clear display and home cursor.       
-    SendLCDCommand(0, 0, 0x01, LCD_COMMAND_DELAY);
-    nl_seen = 0;
-	lcd_count = 0;
-  }
+    if (nl_seen && c != '\n')
+    {
+        //First character after newline, clear display and home cursor.       
+        SendLCDCommand(0, 0, 0x01, LCD_COMMAND_DELAY);
+        nl_seen = 0;
+        lcd_count = 0;
+    }
 
-  if(c == '\n')
-  {
-    nl_seen = 1;
-  }
-  else
-  {
-  	// write character
-   	SendLCDCommand(1, 0, c, LCD_COMMAND_DELAY);
-  }
+    if(c == '\n')
+    {
+        nl_seen = 1;
+    }
+    else
+    {
+        // write character
+        SendLCDCommand(1, 0, c, LCD_COMMAND_DELAY);
+    }
 
-  lcd_count++;
-  if(lcd_count == 8)
-  	SendLCDCommand(0, 0, 0xc0, LCD_COMMAND_DELAY);  // go to 2nd line
-  else if(lcd_count == 16)
-  	SendLCDCommand(0, 0, 0x02, LCD_COMMAND_DELAY);  // return home
+    lcd_count++;
+    if(lcd_count == 8)
+        SendLCDCommand(0, 0, 0xc0, LCD_COMMAND_DELAY);  // go to 2nd line
+    else if(lcd_count == 16)
+        SendLCDCommand(0, 0, 0x02, LCD_COMMAND_DELAY);  // return home
 
-  return 0;
+    return 0;
 }
 
 
@@ -417,35 +417,35 @@ int LcdPutchar(char c, FILE *unused)
  */
 void InitLCD()
 {	
-	// power to V0 (contrast variable resistor output)
-	DDRC |= _BV(PC5);
-	PORTC |= _BV(PC5);
+    // power to V0 (contrast variable resistor output)
+    DDRC |= _BV(PC5);
+    PORTC |= _BV(PC5);
 
-	// send function set command - 1 line, 8 bits data
-	//SendLCDCommand(0, 0, 0x30, LCD_COMMAND_DELAY);
+    // send function set command - 1 line, 8 bits data
+    //SendLCDCommand(0, 0, 0x30, LCD_COMMAND_DELAY);
 
-	// send function set command - 2 lines, 8 bits data
-	SendLCDCommand(0, 0, 0x38, LCD_COMMAND_DELAY);
-	
-	// display on, cursor enabled, no blinking
-	SendLCDCommand(0, 0, 0x0E, LCD_COMMAND_DELAY);
-	
-	// sets cursor move dir
-	SendLCDCommand(0, 0, 0x06, LCD_COMMAND_DELAY);
+    // send function set command - 2 lines, 8 bits data
+    SendLCDCommand(0, 0, 0x38, LCD_COMMAND_DELAY);
 
-	// clear display
-	SendLCDCommand(0, 0, 0x01, LCD_COMMAND_DELAY);	
+    // display on, cursor enabled, no blinking
+    SendLCDCommand(0, 0, 0x0E, LCD_COMMAND_DELAY);
 
-	lcd_state = 1;
+    // sets cursor move dir
+    SendLCDCommand(0, 0, 0x06, LCD_COMMAND_DELAY);
 
-	// The following shift commands are only needed if a
-	// display messes with position
+    // clear display
+    SendLCDCommand(0, 0, 0x01, LCD_COMMAND_DELAY);	
 
-	// shift to left
-	//SendLCDCommand(0, 0, 0x18, LCD_COMMAND_DELAY);
+    lcd_state = 1;
 
-	// shift to right
-	//SendLCDCommand(0, 0, 0x1C, LCD_COMMAND_DELAY);
+    // The following shift commands are only needed if a
+    // display messes with position
+
+    // shift to left
+    //SendLCDCommand(0, 0, 0x18, LCD_COMMAND_DELAY);
+
+    // shift to right
+    //SendLCDCommand(0, 0, 0x1C, LCD_COMMAND_DELAY);
 }
 
 /**
@@ -455,21 +455,21 @@ void InitLCD()
  */
 uint8_t CheckLCD()
 {
-	// RS = PC0
-	// R/W = PC1
-	// E = PC2
-	// D0-D7 = PA0-7
-	uint8_t tmp;	
+    // RS = PC0
+    // R/W = PC1
+    // E = PC2
+    // D0-D7 = PA0-7
+    uint8_t tmp;	
 
-	// put a random value (i.e. 0xAA) on PORTA. If LCD works, on GetSTATUS
-	// we should get something different	
-	DDRA = 0xFF;
-	PORTA = 0xAA;	
-	tmp = GetLCDStatus();	
+    // put a random value (i.e. 0xAA) on PORTA. If LCD works, on GetSTATUS
+    // we should get something different	
+    DDRA = 0xFF;
+    PORTA = 0xAA;	
+    tmp = GetLCDStatus();	
 
-	if(tmp == 0xAA) return 1;
+    if(tmp == 0xAA) return 1;
 
-	return 0;	
+    return 0;	
 }
 
 /**
@@ -477,10 +477,10 @@ uint8_t CheckLCD()
  */
 void LCDOff()
 {
-	SendLCDCommand(0, 0, 0x08, LCD_COMMAND_DELAY);
-	DDRC &= ~(_BV(PC5));
-	PORTC &= ~(_BV(PC5));
-	lcd_state = 0;
+    SendLCDCommand(0, 0, 0x08, LCD_COMMAND_DELAY);
+    DDRC &= ~(_BV(PC5));
+    PORTC &= ~(_BV(PC5));
+    lcd_state = 0;
 }
 
 /**
@@ -488,10 +488,10 @@ void LCDOff()
  */
 void LCDOn()
 {
-	DDRC |= _BV(PC5);
-	PORTC |= _BV(PC5);
-	SendLCDCommand(0, 0, 0x0E, LCD_COMMAND_DELAY);
-	lcd_state = 1;
+    DDRC |= _BV(PC5);
+    PORTC |= _BV(PC5);
+    SendLCDCommand(0, 0, 0x0E, LCD_COMMAND_DELAY);
+    lcd_state = 1;
 }
 
 
@@ -513,16 +513,16 @@ void LCDOn()
  */
 void WriteSingleByteEEPROM(uint16_t addr, uint8_t data)
 {
-	// wait completion of previous write
-	while(EECR & _BV(EEPE));
+    // wait completion of previous write
+    while(EECR & _BV(EEPE));
 
-	// set up address and data
-	EEAR = addr;
-	EEDR = data;
+    // set up address and data
+    EEAR = addr;
+    EEDR = data;
 
-	// make the write
-	EECR |= _BV(EEMPE);
-	EECR |= _BV(EEPE);
+    // make the write
+    EECR |= _BV(EEMPE);
+    EECR |= _BV(EEPE);
 }
 
 /** 
@@ -539,14 +539,14 @@ void WriteSingleByteEEPROM(uint16_t addr, uint8_t data)
  */
 uint8_t ReadSingleByteEEPROM(uint16_t addr)
 {
-	// wait for completion of previous write
-	while(EECR & _BV(EEPE));
+    // wait for completion of previous write
+    while(EECR & _BV(EEPE));
 
-	// set up address and start reading
-	EEAR = addr;
-	EECR |= _BV(EERE);
+    // set up address and start reading
+    EEAR = addr;
+    EECR |= _BV(EERE);
 
-	return EEDR;
+    return EEDR;
 }
 
 
@@ -561,20 +561,20 @@ uint8_t ReadSingleByteEEPROM(uint16_t addr)
  */
 void WriteBytesEEPROM(uint16_t addr, uint8_t *data, uint16_t len)
 {
-	uint8_t i, sreg;
+    uint8_t i, sreg;
 
-	if(data == NULL || len > 4000) return;
+    if(data == NULL || len > 4000) return;
 
-	sreg = SREG;
-	cli();
+    sreg = SREG;
+    cli();
 
-	for(i = 0; i < len; i++)
-		WriteSingleByteEEPROM(addr++, data[i]);
+    for(i = 0; i < len; i++)
+        WriteSingleByteEEPROM(addr++, data[i]);
 
-	// wait completion of last write
-	while(EECR & _BV(EEPE));
-		
-	SREG = sreg;
+    // wait completion of last write
+    while(EECR & _BV(EEPE));
+
+    SREG = sreg;
 }
 
 /** 
@@ -591,22 +591,22 @@ void WriteBytesEEPROM(uint16_t addr, uint8_t *data, uint16_t len)
  */
 uint8_t* ReadBytesEEPROM(uint16_t addr, uint16_t len)
 {
-	uint8_t i, sreg;
-	uint8_t *data;
+    uint8_t i, sreg;
+    uint8_t *data;
 
-	if(len > 4000) return NULL;
-	data = (uint8_t*)malloc(len*sizeof(uint8_t));
-	if(data == NULL) return NULL;
+    if(len > 4000) return NULL;
+    data = (uint8_t*)malloc(len*sizeof(uint8_t));
+    if(data == NULL) return NULL;
 
-	sreg = SREG;
-	cli();
+    sreg = SREG;
+    cli();
 
-	for(i = 0; i < len; i++)
-		data[i] = ReadSingleByteEEPROM(addr++);
-		
-	SREG = sreg;
+    for(i = 0; i < len; i++)
+        data[i] = ReadSingleByteEEPROM(addr++);
 
-	return data;
+    SREG = sreg;
+
+    return data;
 }
 
 
