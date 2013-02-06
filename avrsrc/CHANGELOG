@@ -8,10 +8,10 @@ Current software version: 2.5.0
 ******************************************
 CHANGES from 2.4.2:
 ******************************************
-- Added GPL v3 license text and files, also in Python tools were there was no license.
 - Made some updates to the way in which the terminal reset is handled at the end of a transaction
 - Updated the Descriptors file in LUFA to avoid errors from newer compilers.
 - Modified the InitSCDTransaction method to allow a more robust check of the terminal reset line.
+- Added functionality to act as a card and reply to a Terminal from a host connected via USB.
 
 ******************************************
 CHANGES from 2.4.0:

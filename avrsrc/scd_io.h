@@ -5,7 +5,7 @@
  * This file provides the function definitions for all micro-controller
  * I/O functions, including control of LCD, leds and buttons
  *
- * Copyright (C) 2012 Omar Choudary (omar.choudary@cl.cam.ac.uk)
+ * Copyright (C) 2013 Omar Choudary (omar.choudary@cl.cam.ac.uk)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:

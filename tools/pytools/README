@@ -2,12 +2,9 @@ This folder contains several python script tools that can be used with the SCD.
 
 Copyright (C) 2013 Omar Choudary (omar.choudary@cl.cam.ac.uk)
  
-The software is given under the GPL v3 License:
-http://www.gnu.org/licenses/
-Please read the information about the license carefully on the GPL website or
-in the license file attached (gpl-3.0.txt). In particular, if you make any modifications
-to the code, you should make those available.
-If you require a difference license then get in touch with me.
+LICENSE
+The software is given under the 2-clause BSD (new BSD, or FreeBSD) license:
+http://www.opensource.org/licenses/bsd-license.php
 
 TOOLS AND USAGE
 

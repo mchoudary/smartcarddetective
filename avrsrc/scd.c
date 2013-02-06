@@ -8,7 +8,7 @@
  * with the ICC and Terminal and the functions from scd_io.h to
  * communicate with the LCD, buttons and LEDs 
  *
- * Copyright (C) 2012 Omar Choudary (omar.choudary@cl.cam.ac.uk)
+ * Copyright (C) 2013 Omar Choudary (omar.choudary@cl.cam.ac.uk)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
