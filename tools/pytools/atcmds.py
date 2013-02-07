@@ -11,6 +11,7 @@ class AT_CMD:
     AT_CGBM = 'AT+CGBM\r\n'
     AT_CCINIT = 'AT+CCINIT\r\n'
     AT_CCAPDU = 'AT+CCAPDU\r\n'
+    AT_CTWAIT = 'AT+CTWAIT\r\n'
     AT_CUDATA = 'AT+UDATA\r\n'
     AT_CCEND = 'AT+CCEND\r\n'
 

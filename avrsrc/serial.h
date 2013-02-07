@@ -54,6 +54,7 @@ typedef enum {
     AT_NONE,        // No command, used for errors
     AT_CRST,        // Reset the SCD
     AT_CTERM,       // Start the terminal application
+    AT_CTWAIT,      // Request more time from Terminal
     AT_CTUSB,       // Start the USB to terminal application
     AT_CLET,        // Log an EMV transaction
     AT_CGEE,        // Get EEPROM contents
@@ -81,6 +82,9 @@ uint8_t TerminalVSerial(log_struct_t *logger);
 
 /// USB to Terminal communication
 uint8_t TerminalUSB(log_struct_t *logger);
+
+/// Convert bytes to hex chars
+void BytesToHexChars(char* dest, uint8_t *data, uint32_t len);
 
 /// Convert two hex digit characters into a byte
 uint8_t hexCharsToByte(char c1, char c2);

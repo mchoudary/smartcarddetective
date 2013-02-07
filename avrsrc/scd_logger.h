@@ -85,6 +85,7 @@ typedef enum {
     LOG_TERMINAL_ERROR_RECEIVE = (0x13 << 2 | 0x00),        // 0x4C
     LOG_TERMINAL_ERROR_SEND = (0x14 << 2 | 0x00),           // 0x50
     LOG_TERMINAL_NO_CLOCK = (0x15 << 2 | 0x00),             // 0x54
+    LOG_TERMINAL_MORE_TIME = (0x16 << 2 | 0x00),            // 0x58
 
     // ICC events
     LOG_ICC_ACTIVATED = (0x20 << 2 | 0x00),                 // 0x80

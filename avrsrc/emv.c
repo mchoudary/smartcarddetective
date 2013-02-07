@@ -821,13 +821,15 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
     uint8_t error;
     uint8_t index;
     uint8_t history;
-    uint8_t done = 0, i;
+    uint8_t done = 0;
+    uint32_t i;
+
 
     // start timer for terminal
     StartCounterTerminal();	
 
     // wait for terminal CLK
-    for(i = 0; i < MAX_WAIT_TERMINAL; i++)
+    for(i = 0; i < MAX_WAIT_TERMINAL / 10; i++)
     {
         if(ReadCounterTerminal() >=  10) // this will be T0
         {

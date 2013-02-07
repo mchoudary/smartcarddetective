@@ -141,6 +141,13 @@ def serial_card(port, fid = sys.stdin):
             line = ser.readline()
             print 'Data from Terminal: ', line
 
+            # Test delay
+            for i in range(5):
+                time.sleep(0.1)
+                ser.write(AT_CMD.AT_CTWAIT)
+                time.sleep(0.1)
+
+
 def visualise_scd_eeprom(port, filename):
     """
     Retrieves the EEPROM trace from the SCD and parses the information

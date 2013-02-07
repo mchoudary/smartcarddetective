@@ -66,6 +66,7 @@ static const char strAT_CCINIT[] = "AT+CCINIT";
 static const char strAT_CCAPDU[] = "AT+CCAPDU";
 static const char strAT_UDATA[] = "AT+UDATA";
 static const char strAT_CCEND[] = "AT+CCEND";
+static const char strAT_CTWAIT[] = "AT+CTWAIT";
 static const char strAT_RBAD[] = "AT BAD\r\n";
 static const char strAT_ROK[] = "AT OK\r\n";
 
@@ -249,6 +250,11 @@ uint8_t ParseATCommand(const char *data, AT_CMD *atcmd, char **atparams)
             *atcmd = AT_CCEND;
             return 0;
         }
+        else if(strstr(data, strAT_CTWAIT) == data)
+        {
+            *atcmd = AT_CTWAIT;
+            return 0;
+        }
     }
 
     return 0;
@@ -334,6 +340,44 @@ uint8_t SendEEPROMHexVSerial()
     return 0;
 }
 
+/***
+ * Method to convert data bytes into hex characters
+ *
+ * @param dest the allocated buffer with the result string containing the coverted chars.
+ * The returned string is 0 terminated.
+ * @param data a vector of bytes
+ * @param len the length of the data bytes
+ */
+void BytesToHexChars(char* dest, uint8_t *data, uint32_t len)
+{
+    uint32_t i;
+
+    for(i = 0; i < len; i++)
+    {
+        dest[2*i] = nibbleToHexChar(data[i], 1);
+        dest[2*i + 1] = nibbleToHexChar(data[i], 0);
+    }
+    dest[2*len] = 0;
+}
+
+
+/*uint8_t SendHostBigData(char *data)
+{
+    uint32_t len;
+    uint8_t pos = 0;
+    char c;
+
+    len = strlen(data);
+
+    while(len > 255)
+    {
+        c = data[255];
+        data[255] = 0;
+    
+
+    return 0;
+}*/
+
 /**
  * This method implements communication between USB and Terminal
  *
@@ -354,6 +398,7 @@ uint8_t TerminalUSB(log_struct_t *logger)
     uint8_t tmp, i, lparams, ldata, error, done;
     char *buf, *atparams = NULL;
     char reply[USB_BUF_SIZE];
+    uint8_t *data;
     uint32_t time;
     uint32_t len;
     AT_CMD atcmd;
@@ -363,11 +408,11 @@ uint8_t TerminalUSB(log_struct_t *logger)
     // Send OK to host to get ATR
     SendHostData(strAT_ROK);
     Led2Off(); // Remove me
+    Led3Off(); // Remove me
     Led4Off(); // Remove me
 
     // Get the ATR from host
-    //buf = GetHostData(USB_BUF_SIZE);
-    buf = GetHostData(255);
+    buf = GetHostData(USB_BUF_SIZE);
     if(buf == NULL)
     {
         error = RET_ERROR;
@@ -444,26 +489,65 @@ uint8_t TerminalUSB(log_struct_t *logger)
     }
     free(buf);
 
-    command = ReceiveT0Command(t_inverse, t_TC1, logger);
-    if(command == NULL)
+    // Keep receiving terminal commands and replies from the USB host
+    while(1)
     {
-        error = RET_ERROR;
-        goto enderror;
+        // receive/send command to terminal
+        command = ReceiveT0Command(t_inverse, t_TC1, logger);
+        if(command == NULL)
+        {
+            error = RET_ERROR;
+            goto enderror;
+        }
+        data = SerializeCommand(command, &len);
+        FreeCAPDU(command);
+        BytesToHexChars(reply, data, len);
+        reply[2*len] = '\r';
+        reply[2*len + 1] = '\n';
+        reply[2*len + 2] = 0;
+        SendHostData(reply);
+
+askhost:
+        // receive/send reply to card
+        buf = GetHostData(USB_BUF_SIZE);
+        if(buf == NULL)
+        {
+            error = RET_ERROR;
+            goto enderror;
+        }
+        Led2Off(); //Remove me
+
+        tmp = ParseATCommand(buf, &atcmd, &atparams);
+        lparams = strlen(atparams);
+        if(atcmd == AT_CCEND)
+        {
+            error = 0;
+            goto enderror;
+        }
+        else if(atcmd == AT_CTWAIT)
+        {
+            Led2On();
+            SendByteTerminalNoParity(0x60, t_inverse);
+            if(logger)
+                LogByte1(logger, LOG_TERMINAL_MORE_TIME, 0x00);
+            goto askhost;
+        }
+        else if(atcmd != AT_UDATA)
+        {
+            error = RET_ERROR;
+            goto enderror;
+        }
+        for(i = 0; i < lparams/2; i++)
+        {
+            tmp = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
+            SendByteTerminalNoParity(tmp, t_inverse);
+            if(logger)
+                LogByte1(logger, LOG_BYTE_TO_TERMINAL, tmp);
+            LoopTerminalETU(2);
+        }
+        free(buf);
+
     }
-    memset(reply, 0, USB_BUF_SIZE);
-    buf = SerializeCommand(command, &len);
-    memcpy(reply, buf, len);
-    if(len > 8)
-    {
-        Led4On(); // Remove me
-        _delay_ms(1000);
-    }
-    fprintf(stderr,  "%s\n", buf);
-    _delay_ms(1000);
-    reply[tmp] = '\r';
-    reply[tmp + 1] = '\n';
-    SendHostData(reply);
-    free(buf);
 
 
 enderror:
@@ -675,4 +759,5 @@ char nibbleToHexChar(uint8_t b, uint8_t high)
 
     return result;
 }
+
 

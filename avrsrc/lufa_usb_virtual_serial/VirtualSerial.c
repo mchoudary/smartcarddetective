@@ -1,36 +1,36 @@
 /*
-             LUFA Library
-     Copyright (C) Dean Camera, 2010.
+   LUFA Library
+   Copyright (C) Dean Camera, 2010.
 
-  dean [at] fourwalledcubicle [dot] com
-           www.lufa-lib.org
-*/
+   dean [at] fourwalledcubicle [dot] com
+   www.lufa-lib.org
+   */
 
 /*
  * File modified for the Smart Card Detective by Omar Choudary
  */
 
 /*
-  Copyright 2010  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+   Copyright 2010  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
-  Permission to use, copy, modify, distribute, and sell this
-  software and its documentation for any purpose is hereby granted
-  without fee, provided that the above copyright notice appear in
-  all copies and that both that the copyright notice and this
-  permission notice and warranty disclaimer appear in supporting
-  documentation, and that the name of the author not be used in
-  advertising or publicity pertaining to distribution of the
-  software without specific, written prior permission.
+   Permission to use, copy, modify, distribute, and sell this
+   software and its documentation for any purpose is hereby granted
+   without fee, provided that the above copyright notice appear in
+   all copies and that both that the copyright notice and this
+   permission notice and warranty disclaimer appear in supporting
+   documentation, and that the name of the author not be used in
+   advertising or publicity pertaining to distribution of the
+   software without specific, written prior permission.
 
-  The author disclaim all warranties with regard to this
-  software, including all implied warranties of merchantability
-  and fitness.  In no event shall the author be liable for any
-  special, indirect or consequential damages or any damages
-  whatsoever resulting from loss of use, data or profits, whether
-  in an action of contract, negligence or other tortious action,
-  arising out of or in connection with the use or performance of
-  this software.
-*/
+   The author disclaim all warranties with regard to this
+   software, including all implied warranties of merchantability
+   and fitness.  In no event shall the author be liable for any
+   special, indirect or consequential damages or any damages
+   whatsoever resulting from loss of use, data or profits, whether
+   in an action of contract, negligence or other tortious action,
+   arising out of or in connection with the use or performance of
+   this software.
+   */
 
 /** \file
  *
@@ -54,9 +54,9 @@
  *  serial link characteristics and instead sends and receives data in endpoint streams.
  */
 CDC_LineEncoding_t LineEncoding = { .BaudRateBPS = 0,
-                                    .CharFormat  = CDC_LINEENCODING_OneStopBit,
-                                    .ParityType  = CDC_PARITY_None,
-                                    .DataBits    = 8                            };
+    .CharFormat  = CDC_LINEENCODING_OneStopBit,
+    .ParityType  = CDC_PARITY_None,
+    .DataBits    = 8                            };
 
 /** 
  * Main program entry point implemented in VirtualSerial() in scd.c
@@ -66,17 +66,17 @@ CDC_LineEncoding_t LineEncoding = { .BaudRateBPS = 0,
 /** Configures the board hardware and chip peripherals */
 void SetupHardware(void)
 {
-	/* Disable watchdog if enabled by bootloader/fuses */
-	MCUSR &= ~(1 << WDRF);
-	wdt_disable();
+    /* Disable watchdog if enabled by bootloader/fuses */
+    MCUSR &= ~(1 << WDRF);
+    wdt_disable();
 
-	/* Disable clock division */
-	//clock_prescale_set(clock_div_1);
+    /* Disable clock division */
+    //clock_prescale_set(clock_div_1);
 
-	/* Hardware Initialization */
-	Joystick_Init();
-	LEDs_Init();
-	USB_Init();
+    /* Hardware Initialization */
+    Joystick_Init();
+    LEDs_Init();
+    USB_Init();
 }
 
 /**
@@ -94,8 +94,8 @@ void StopVS(void)
  */
 void EVENT_USB_Device_Connect(void)
 {
-	/* Indicate USB enumerating */
-	LEDs_SetAllLEDs(LEDMASK_USB_ENUMERATING);
+    /* Indicate USB enumerating */
+    LEDs_SetAllLEDs(LEDMASK_USB_ENUMERATING);
 }
 
 /** Event handler for the USB_Disconnect event. This indicates that the device is no longer connected to a host via
@@ -103,8 +103,8 @@ void EVENT_USB_Device_Connect(void)
  */
 void EVENT_USB_Device_Disconnect(void)
 {
-	/* Indicate USB not ready */
-	LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
+    /* Indicate USB not ready */
+    LEDs_SetAllLEDs(LEDMASK_USB_NOTREADY);
 }
 
 /** Event handler for the USB_ConfigurationChanged event. This is fired when the host set the current configuration
@@ -112,21 +112,21 @@ void EVENT_USB_Device_Disconnect(void)
  */
 void EVENT_USB_Device_ConfigurationChanged(void)
 {
-	bool ConfigSuccess = true;
+    bool ConfigSuccess = true;
 
-	/* Setup CDC Data Endpoints */
-	ConfigSuccess &= Endpoint_ConfigureEndpoint(CDC_NOTIFICATION_EPNUM, EP_TYPE_INTERRUPT, ENDPOINT_DIR_IN,
-	                                            CDC_NOTIFICATION_EPSIZE, ENDPOINT_BANK_SINGLE);
-	ConfigSuccess &= Endpoint_ConfigureEndpoint(CDC_TX_EPNUM, EP_TYPE_BULK, ENDPOINT_DIR_IN,
-	                                            CDC_TXRX_EPSIZE, ENDPOINT_BANK_SINGLE);
-	ConfigSuccess &= Endpoint_ConfigureEndpoint(CDC_RX_EPNUM, EP_TYPE_BULK, ENDPOINT_DIR_OUT,
-	                                            CDC_TXRX_EPSIZE, ENDPOINT_BANK_SINGLE);
+    /* Setup CDC Data Endpoints */
+    ConfigSuccess &= Endpoint_ConfigureEndpoint(CDC_NOTIFICATION_EPNUM, EP_TYPE_INTERRUPT, ENDPOINT_DIR_IN,
+            CDC_NOTIFICATION_EPSIZE, ENDPOINT_BANK_SINGLE);
+    ConfigSuccess &= Endpoint_ConfigureEndpoint(CDC_TX_EPNUM, EP_TYPE_BULK, ENDPOINT_DIR_IN,
+            CDC_TXRX_EPSIZE, ENDPOINT_BANK_SINGLE);
+    ConfigSuccess &= Endpoint_ConfigureEndpoint(CDC_RX_EPNUM, EP_TYPE_BULK, ENDPOINT_DIR_OUT,
+            CDC_TXRX_EPSIZE, ENDPOINT_BANK_SINGLE);
 
-	/* Reset line encoding baud rate so that the host knows to send new values */
-	LineEncoding.BaudRateBPS = 0;
+    /* Reset line encoding baud rate so that the host knows to send new values */
+    LineEncoding.BaudRateBPS = 0;
 
-	/* Indicate endpoint configuration success or failure */
-	LEDs_SetAllLEDs(ConfigSuccess ? LEDMASK_USB_READY : LEDMASK_USB_ERROR);
+    /* Indicate endpoint configuration success or failure */
+    LEDs_SetAllLEDs(ConfigSuccess ? LEDMASK_USB_READY : LEDMASK_USB_ERROR);
 }
 
 /** Event handler for the USB_ControlRequest event. This is used to catch and process control requests sent to
@@ -135,109 +135,109 @@ void EVENT_USB_Device_ConfigurationChanged(void)
  */
 void EVENT_USB_Device_ControlRequest(void)
 {
-	/* Process CDC specific control requests */
-	switch (USB_ControlRequest.bRequest)
-	{
-		case CDC_REQ_GetLineEncoding:
-			if (USB_ControlRequest.bmRequestType == (REQDIR_DEVICETOHOST | REQTYPE_CLASS | REQREC_INTERFACE))
-			{
-				Endpoint_ClearSETUP();
+    /* Process CDC specific control requests */
+    switch (USB_ControlRequest.bRequest)
+    {
+        case CDC_REQ_GetLineEncoding:
+            if (USB_ControlRequest.bmRequestType == (REQDIR_DEVICETOHOST | REQTYPE_CLASS | REQREC_INTERFACE))
+            {
+                Endpoint_ClearSETUP();
 
-				/* Write the line coding data to the control endpoint */
-				Endpoint_Write_Control_Stream_LE(&LineEncoding, sizeof(CDC_LineEncoding_t));
-				Endpoint_ClearOUT();
-			}
+                /* Write the line coding data to the control endpoint */
+                Endpoint_Write_Control_Stream_LE(&LineEncoding, sizeof(CDC_LineEncoding_t));
+                Endpoint_ClearOUT();
+            }
 
-			break;
-		case CDC_REQ_SetLineEncoding:
-			if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_CLASS | REQREC_INTERFACE))
-			{
-				Endpoint_ClearSETUP();
+            break;
+        case CDC_REQ_SetLineEncoding:
+            if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_CLASS | REQREC_INTERFACE))
+            {
+                Endpoint_ClearSETUP();
 
-				/* Read the line coding data in from the host into the global struct */
-				Endpoint_Read_Control_Stream_LE(&LineEncoding, sizeof(CDC_LineEncoding_t));
-				Endpoint_ClearIN();
-			}
+                /* Read the line coding data in from the host into the global struct */
+                Endpoint_Read_Control_Stream_LE(&LineEncoding, sizeof(CDC_LineEncoding_t));
+                Endpoint_ClearIN();
+            }
 
-			break;
-		case CDC_REQ_SetControlLineState:
-			if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_CLASS | REQREC_INTERFACE))
-			{
-				Endpoint_ClearSETUP();
-				Endpoint_ClearStatusStage();
+            break;
+        case CDC_REQ_SetControlLineState:
+            if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_CLASS | REQREC_INTERFACE))
+            {
+                Endpoint_ClearSETUP();
+                Endpoint_ClearStatusStage();
 
-				/* NOTE: Here you can read in the line state mask from the host, to get the current state of the output handshake
-				         lines. The mask is read in from the wValue parameter in USB_ControlRequest, and can be masked against the
-						 CONTROL_LINE_OUT_* masks to determine the RTS and DTR line states using the following code:
-				*/
-			}
+                /* NOTE: Here you can read in the line state mask from the host, to get the current state of the output handshake
+                   lines. The mask is read in from the wValue parameter in USB_ControlRequest, and can be masked against the
+                   CONTROL_LINE_OUT_* masks to determine the RTS and DTR line states using the following code:
+                   */
+            }
 
-			break;
-	}
+            break;
+    }
 }
 
 /** Function to manage CDC data transmission and reception to and from the host. */
 void CDC_Task(void)
 {
-	char*       ReportString    = NULL;
-	uint8_t     JoyStatus_LCL   = Joystick_GetStatus();
-	static bool ActionSent      = false;
-	char        buf[18];
+    char*       ReportString    = NULL;
+    uint8_t     JoyStatus_LCL   = Joystick_GetStatus();
+    static bool ActionSent      = false;
+    char        buf[18];
     uint8_t i;
     static uint8_t pos = 0;
 
-	/* Device must be connected and configured for the task to run */
-	if (USB_DeviceState != DEVICE_STATE_Configured)
-	  return;
+    /* Device must be connected and configured for the task to run */
+    if (USB_DeviceState != DEVICE_STATE_Configured)
+        return;
 
-	/* Determine if a joystick action has occurred */
-	if ((JoyStatus_LCL & JOY_UP) == JOY_UP)
-	  ReportString = "Joystick Up\r\n";
-	else if ((JoyStatus_LCL & JOY_DOWN) == JOY_DOWN)
-	  ReportString = "Joystick Down\r\n";
-	else if ((JoyStatus_LCL & JOY_LEFT) == JOY_LEFT)
-	  ReportString = "Joystick Left\r\n";
-	else if ((JoyStatus_LCL & JOY_RIGHT) == JOY_RIGHT)
-	  ReportString = "Joystick Right\r\n";
-	else if (JoyStatus_LCL & JOY_PRESS)
-	  ReportString = "Joystick Pressed\r\n";
-	else
-	  ActionSent = false;
+    /* Determine if a joystick action has occurred */
+    if ((JoyStatus_LCL & JOY_UP) == JOY_UP)
+        ReportString = "Joystick Up\r\n";
+    else if ((JoyStatus_LCL & JOY_DOWN) == JOY_DOWN)
+        ReportString = "Joystick Down\r\n";
+    else if ((JoyStatus_LCL & JOY_LEFT) == JOY_LEFT)
+        ReportString = "Joystick Left\r\n";
+    else if ((JoyStatus_LCL & JOY_RIGHT) == JOY_RIGHT)
+        ReportString = "Joystick Right\r\n";
+    else if (JoyStatus_LCL & JOY_PRESS)
+        ReportString = "Joystick Pressed\r\n";
+    else
+        ActionSent = false;
 
-	/* Flag management - Only allow one string to be sent per action */
-	if ((ReportString != NULL) && (ActionSent == false) && LineEncoding.BaudRateBPS)
-	{
-		ActionSent = true;
+    /* Flag management - Only allow one string to be sent per action */
+    if ((ReportString != NULL) && (ActionSent == false) && LineEncoding.BaudRateBPS)
+    {
+        ActionSent = true;
 
-		/* Select the Serial Tx Endpoint */
-		Endpoint_SelectEndpoint(CDC_TX_EPNUM);
+        /* Select the Serial Tx Endpoint */
+        Endpoint_SelectEndpoint(CDC_TX_EPNUM);
 
-		/* Write the String to the Endpoint */
-		Endpoint_Write_Stream_LE(ReportString, strlen(ReportString));
+        /* Write the String to the Endpoint */
+        Endpoint_Write_Stream_LE(ReportString, strlen(ReportString));
 
-		/* Remember if the packet to send completely fills the endpoint */
-		bool IsFull = (Endpoint_BytesInEndpoint() == CDC_TXRX_EPSIZE);
+        /* Remember if the packet to send completely fills the endpoint */
+        bool IsFull = (Endpoint_BytesInEndpoint() == CDC_TXRX_EPSIZE);
 
-		/* Finalize the stream transfer to send the last packet */
-		Endpoint_ClearIN();
+        /* Finalize the stream transfer to send the last packet */
+        Endpoint_ClearIN();
 
-		/* If the last packet filled the endpoint, send an empty packet to release the buffer on
-		 * the receiver (otherwise all data will be cached until a non-full packet is received) */
-		if (IsFull)
-		{
-			/* Wait until the endpoint is ready for another packet */
-			Endpoint_WaitUntilReady();
+        /* If the last packet filled the endpoint, send an empty packet to release the buffer on
+         * the receiver (otherwise all data will be cached until a non-full packet is received) */
+        if (IsFull)
+        {
+            /* Wait until the endpoint is ready for another packet */
+            Endpoint_WaitUntilReady();
 
-			/* Send an empty packet to ensure that the host does not buffer data sent to it */
-			Endpoint_ClearIN();
-		}
-	}
+            /* Send an empty packet to ensure that the host does not buffer data sent to it */
+            Endpoint_ClearIN();
+        }
+    }
 
-	/* Select the Serial Rx Endpoint */
-	Endpoint_SelectEndpoint(CDC_RX_EPNUM);
+    /* Select the Serial Rx Endpoint */
+    Endpoint_SelectEndpoint(CDC_RX_EPNUM);
 
-	/* Print received data from the host */
-	if (Endpoint_IsOUTReceived())
+    /* Print received data from the host */
+    if (Endpoint_IsOUTReceived())
     {
         buf[pos++] = Endpoint_Read_Byte();
 
@@ -277,7 +277,7 @@ void CDC_Task(void)
  * @return the NUL('\0') terminated string if success, NULL if error. The
  * caller is responsible for eliberating the returned memory.
  */
-char* GetHostData(uint8_t len)
+char* GetHostData(uint16_t len)
 {
     uint8_t pos = 0;
     uint8_t retval;
@@ -290,11 +290,11 @@ char* GetHostData(uint8_t len)
 
     memset(buf, 0, len);
 
-	/* Select the Serial Rx Endpoint */
-	Endpoint_SelectEndpoint(CDC_RX_EPNUM);
-	while(!Endpoint_IsOUTReceived());
+    /* Select the Serial Rx Endpoint */
+    Endpoint_SelectEndpoint(CDC_RX_EPNUM);
+    while(!Endpoint_IsOUTReceived());
 
-	/* Print received data from the host */
+    /* Print received data from the host */
     while(1){
 
         while(Endpoint_WaitUntilReady() != ENDPOINT_READYWAIT_NoError);

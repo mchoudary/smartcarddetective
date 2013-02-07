@@ -98,6 +98,7 @@ class SCDTrace:
                 0x13: "Error receiving byte from terminal",
                 0x14: "Error sending byte to terminal",
                 0x15: "No clock from terminal",
+                0x16: "More time requested to terminal",
                 0x20: "ICC activated",
                 0x21: "ICC deactivated",
                 0x22: "ICC reset high",
