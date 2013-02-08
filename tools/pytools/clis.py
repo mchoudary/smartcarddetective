@@ -141,12 +141,6 @@ def serial_card(port, fid = sys.stdin):
             line = ser.readline()
             print 'Data from Terminal: ', line
 
-            # Test delay
-            for i in range(5):
-                time.sleep(0.1)
-                ser.write(AT_CMD.AT_CTWAIT)
-                time.sleep(0.1)
-
 
 def visualise_scd_eeprom(port, filename):
     """
@@ -204,11 +198,11 @@ def main():
             const = sys.stdin,
             default = False, metavar = 'filename',
             help='Requests the SCD to act as a card and send the commands (ATR and RAPDUs) from the given filename (default stdin).\
-            The RAPDUs must be complete responses (header + data) with no spaces in between; one per line.\n\
+            The RAPDUs must be complete responses (status + data) with no spaces in between; one per line.\n\
             The file must start with the ATR, then a sequence of commands and should end with the string "0000000000".\n\
             Example:                         \n\
-            3B6D00000031C071D66419160100849000  (ATR) \n\
-            6122            (More data available)\n\
+            3B6500002063CB6600  (ATR) \n\
+            611B  (More data available)\n\
             .... \n\
             0000000000'),
     parser.add_argument(
