@@ -68,8 +68,8 @@
 		#define LEDMASK_USB_ERROR           (LEDS_LED1 | LEDS_LED3)
 
 	/* Function Prototypes: */
-		void SetupHardware(void);
-		void StopVS(void);
+		void SetupUSBHardware(void);
+		void StopUSBHardware(void);
 		void CDC_Task(void);
         char* GetHostData(uint16_t len);
         uint8_t SendHostData(const char *data);

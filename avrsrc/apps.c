@@ -97,7 +97,7 @@ uint8_t VirtualSerial(log_struct_t *logger)
     fprintf(stderr, "Set up  VS\n");
     _delay_ms(500);
     power_usb_enable();
-    SetupHardware();
+    SetupUSBHardware();
     sei();
 
     // Signal that VS is ready
@@ -110,7 +110,7 @@ uint8_t VirtualSerial(log_struct_t *logger)
 
     for (;;)
     {
-        buf = GetHostData(255);
+        buf = GetHostData(256);
         if(buf == NULL)
         {
             _delay_ms(100);

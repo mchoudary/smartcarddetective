@@ -101,7 +101,7 @@ char* ProcessSerialData(const char* data, log_struct_t *logger)
     if(atcmd == AT_CRST)
     {
         // Reset the SCD within 1S so that host can reset connection
-        StopVS();
+        StopUSBHardware();
         wdt_enable(WDTO_1S);
         while(1);
     }
@@ -149,7 +149,7 @@ char* ProcessSerialData(const char* data, log_struct_t *logger)
     {
         result = TerminalVSerial(logger);
         if (result == 0)
-            str_ret = NULL;
+            str_ret = strdup(strAT_ROK);
         else
             str_ret = strdup(strAT_RBAD);
     }
@@ -407,9 +407,6 @@ uint8_t TerminalUSB(log_struct_t *logger)
 
     // Send OK to host to get ATR
     SendHostData(strAT_ROK);
-    Led2Off(); // Remove me
-    Led3Off(); // Remove me
-    Led4Off(); // Remove me
 
     // Get the ATR from host
     buf = GetHostData(USB_BUF_SIZE);
@@ -515,18 +512,18 @@ askhost:
             error = RET_ERROR;
             goto enderror;
         }
-        Led2Off(); //Remove me
 
         tmp = ParseATCommand(buf, &atcmd, &atparams);
         lparams = strlen(atparams);
         if(atcmd == AT_CCEND)
         {
+            if(logger)
+                LogByte1(logger, LOG_BYTE_CCEND_FROM_USB, tmp);
             error = 0;
             goto enderror;
         }
         else if(atcmd == AT_CTWAIT)
         {
-            Led2On();
             SendByteTerminalNoParity(0x60, t_inverse);
             if(logger)
                 LogByte1(logger, LOG_TERMINAL_MORE_TIME, 0x00);
@@ -546,15 +543,12 @@ askhost:
             LoopTerminalETU(2);
         }
         free(buf);
-
     }
 
 
 enderror:
-    DeactivateICC();
     if(logger)
     {
-        LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
         if(lcdAvailable)
             fprintf(stderr, "Writing Log\n");
         WriteLogEEPROM(logger);
@@ -587,14 +581,10 @@ uint8_t TerminalVSerial(log_struct_t *logger)
     RAPDU *response = NULL;
     CAPDU *command = NULL;
 
-    // First thing is to respond to the VS host since this method
-    // was presumably called based on an AT+CINIT command
-    if(!IsICCInserted())
-    {
-        fprintf(stderr, "ICC not inserted\n");
-        _delay_ms(500);
-        return RET_ERROR;
-    }
+    // First request ICC
+    fprintf(stderr, "Insert  ICC...\n");
+    while(!IsICCInserted());
+    fprintf(stderr, "Working...\n");
 
     result = ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3, logger);
     if(result)

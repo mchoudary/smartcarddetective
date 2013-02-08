@@ -64,7 +64,7 @@ CDC_LineEncoding_t LineEncoding = { .BaudRateBPS = 0,
 //int main(void)
 
 /** Configures the board hardware and chip peripherals */
-void SetupHardware(void)
+void SetupUSBHardware(void)
 {
     /* Disable watchdog if enabled by bootloader/fuses */
     MCUSR &= ~(1 << WDRF);
@@ -84,7 +84,7 @@ void SetupHardware(void)
  * structures. This method should be called after using the Virtual Serial
  * interface.
  */
-void StopVS(void)
+void StopUSBHardware(void)
 {
     USB_ShutDown();
 }
@@ -301,7 +301,10 @@ char* GetHostData(uint16_t len)
 
         retval = Endpoint_Read_Stream_LE(&buf[pos], len - pos);
         if(retval != ENDPOINT_RWSTREAM_NoError && retval != ENDPOINT_RWSTREAM_Timeout)
-            continue;
+        {
+            free(buf);
+            return NULL;
+        }
 
         pos = strlen(buf);
 

@@ -92,6 +92,7 @@ class SCDTrace:
                 0x04: "Byte to ICC",
                 0x05: "Byte from ICC",
                 0x06: "ATR from USB",
+                0x07: "CCEND from USB",
                 0x10: "Terminal clock active",
                 0x11: "Terminal reset low",
                 0x12: "Terminal timed out",
