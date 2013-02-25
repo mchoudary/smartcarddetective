@@ -451,7 +451,7 @@ uint8_t LoopTerminalETU(uint32_t nEtus)
     for(i = 0; i < nEtus; i++)
     {
         done = 0;
-        for(k = 0; k < MAX_WAIT_TERMINAL / 10; k++)
+        for(k = 0; k < MAX_WAIT_TERMINAL; k++)
         {
             if(bit_is_set(TIFR3, OCF3A))
             {

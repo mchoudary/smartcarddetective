@@ -1256,6 +1256,12 @@ uint8_t ForwardData(log_struct_t *logger)
 
 enderror:
     DeactivateICC();
+    if(error == RET_TERMINAL_TIME_OUT)
+    {
+        if(logger)
+            LogByte1(logger, LOG_TERMINAL_TIME_OUT, 0);
+        error = 0;  // Just for now, check if needs to be changed
+    }
     if(logger)
     {
         LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
@@ -1264,9 +1270,6 @@ enderror:
         WriteLogEEPROM(logger);
         ResetLogger(logger);
     }
-
-    if(error == RET_TERMINAL_TIME_OUT)
-        error = 0;  // Just for now, check if needs to be changed
 
     return error;
 }
