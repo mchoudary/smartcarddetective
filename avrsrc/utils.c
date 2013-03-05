@@ -41,25 +41,25 @@
 
 void Write16bitRegister(volatile uint16_t *reg, uint16_t value)
 {
-    uint8_t sreg;
+  uint8_t sreg;
 
-    sreg = SREG;
-    cli();
-    *reg = value;
-    SREG = sreg;	
+  sreg = SREG;
+  cli();
+  *reg = value;
+  SREG = sreg;	
 }
 
 uint16_t Read16bitRegister(volatile uint16_t *reg)
 {
-    uint16_t i;
-    uint8_t sreg;
+  uint16_t i;
+  uint8_t sreg;
 
-    sreg = SREG;
-    cli();
-    i = *reg;
-    SREG = sreg;
+  sreg = SREG;
+  cli();
+  i = *reg;
+  SREG = sreg;
 
-    return i;
+  return i;
 }
 
 /**
@@ -68,36 +68,36 @@ uint16_t Read16bitRegister(volatile uint16_t *reg)
  */
 void SleepUntilTerminalClock()
 {
-    uint8_t sreg, lcdstate;
+  uint8_t sreg, lcdstate;
 
-    Write16bitRegister(&OCR3A, 100);
-    Write16bitRegister(&TCNT3, 1);
-    TCCR3A = 0;
-    TIMSK3 = 0x02;  //Interrupt on Timer3 compare A match
-    TCCR3B = 0x0F;  // CTC, timer external source
-    sreg = SREG;
+  Write16bitRegister(&OCR3A, 100);
+  Write16bitRegister(&TCNT3, 1);
+  TCCR3A = 0;
+  TIMSK3 = 0x02;  //Interrupt on Timer3 compare A match
+  TCCR3B = 0x0F;  // CTC, timer external source
+  sreg = SREG;
 
-    // stop LCD and LEDs before going to sleep
-    lcdstate = GetLCDState();
-    if(lcdAvailable && lcdstate != 0) LCDOff();
-    Led1Off();
-    Led2Off();
-    Led3Off();
-    Led4Off();
+  // stop LCD and LEDs before going to sleep
+  lcdstate = GetLCDState();
+  if(lcdAvailable && lcdstate != 0) LCDOff();
+  Led1Off();
+  Led2Off();
+  Led3Off();
+  Led4Off();
 
-    // go to sleep
-    set_sleep_mode(SLEEP_MODE_IDLE); // it is also possible to use sleep_mode() below
-    cli();
-    sleep_enable();
-    sei();
-    sleep_cpu();
+  // go to sleep
+  set_sleep_mode(SLEEP_MODE_IDLE); // it is also possible to use sleep_mode() below
+  cli();
+  sleep_enable();
+  sei();
+  sleep_cpu();
 
-    // back from sleep
-    sleep_disable();
-    SREG = sreg;
-    TIMSK3 = 0; // disable interrupts on Timer3
-    TCCR3B = 0; // stop timer   
-    Led4On();
+  // back from sleep
+  sleep_disable();
+  SREG = sreg;
+  TIMSK3 = 0; // disable interrupts on Timer3
+  TCCR3B = 0; // stop timer   
+  Led4On();
 }
 
 /**
@@ -106,27 +106,27 @@ void SleepUntilTerminalClock()
  */
 void SleepUntilCardInserted()
 {
-    uint8_t sreg, lcdstate;
+  uint8_t sreg, lcdstate;
 
-    // stop LCD and LEDs before going to sleep
-    lcdstate = GetLCDState();
-    if(lcdAvailable && lcdstate != 0) LCDOff();
-    Led1Off();
-    Led2Off();
-    Led3Off();
-    Led4Off();
+  // stop LCD and LEDs before going to sleep
+  lcdstate = GetLCDState();
+  if(lcdAvailable && lcdstate != 0) LCDOff();
+  Led1Off();
+  Led2Off();
+  Led3Off();
+  Led4Off();
 
-    // go to sleep
-    sreg = SREG;
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-    cli();
-    sleep_enable();
-    sei();
-    sleep_cpu();
+  // go to sleep
+  sreg = SREG;
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  cli();
+  sleep_enable();
+  sei();
+  sleep_cpu();
 
-    // back from sleep
-    sleep_disable();
-    SREG = sreg;
-    Led4On();
+  // back from sleep
+  sleep_disable();
+  SREG = sreg;
+  Led4On();
 }
 

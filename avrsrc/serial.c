@@ -89,76 +89,76 @@ static const char strAT_ROK[] = "AT OK\r\n";
  */
 char* ProcessSerialData(const char* data, log_struct_t *logger)
 {   
-    char *atparams = NULL;
-    AT_CMD atcmd;
-    uint8_t result = 0;
-    char *str_ret = NULL;
+  char *atparams = NULL;
+  AT_CMD atcmd;
+  uint8_t result = 0;
+  char *str_ret = NULL;
 
-    result = ParseATCommand(data, &atcmd, &atparams);
-    if(result != 0)
-        return strdup(strAT_RBAD);
+  result = ParseATCommand(data, &atcmd, &atparams);
+  if(result != 0)
+    return strdup(strAT_RBAD);
 
-    if(atcmd == AT_CRST)
-    {
-        // Reset the SCD within 1S so that host can reset connection
-        StopUSBHardware();
-        wdt_enable(WDTO_1S);
-        while(1);
-    }
-    else if(atcmd == AT_CTERM)
-    {
-        result = Terminal(logger);
-        if (result == 0)
-            str_ret = strdup(strAT_ROK);
-        else
-            str_ret = strdup(strAT_RBAD);
-    }
-    else if(atcmd == AT_CTUSB)
-    {
-        result = TerminalUSB(logger);
-        if (result == 0)
-            str_ret = strdup(strAT_ROK);
-        else
-            str_ret = strdup(strAT_RBAD);
-    }
-    else if(atcmd == AT_CLET)
-    {
-        result = ForwardData(logger);
-        if (result == 0)
-            str_ret = strdup(strAT_ROK);
-        else
-            str_ret = strdup(strAT_RBAD);
-    }
-    else if(atcmd == AT_CGEE)
-    {
-        // Return EEPROM contents in Intel HEX format
-        SendEEPROMHexVSerial();
-        str_ret = strdup(strAT_ROK);
-    }
-    else if(atcmd == AT_CEEE)
-    {
-        ResetEEPROM();
-        str_ret = strdup(strAT_ROK);
-    }
-    else if(atcmd == AT_CGBM)
-    {
-        RunBootloader();
-        str_ret = strdup(strAT_ROK);
-    }
-    else if(atcmd == AT_CCINIT)
-    {
-        result = TerminalVSerial(logger);
-        if (result == 0)
-            str_ret = strdup(strAT_ROK);
-        else
-            str_ret = strdup(strAT_RBAD);
-    }
+  if(atcmd == AT_CRST)
+  {
+    // Reset the SCD within 1S so that host can reset connection
+    StopUSBHardware();
+    wdt_enable(WDTO_1S);
+    while(1);
+  }
+  else if(atcmd == AT_CTERM)
+  {
+    result = Terminal(logger);
+    if (result == 0)
+      str_ret = strdup(strAT_ROK);
     else
-    {
-        str_ret = strdup(strAT_RBAD);
-    }
+      str_ret = strdup(strAT_RBAD);
+  }
+  else if(atcmd == AT_CTUSB)
+  {
+    result = TerminalUSB(logger);
+    if (result == 0)
+      str_ret = strdup(strAT_ROK);
+    else
+      str_ret = strdup(strAT_RBAD);
+  }
+  else if(atcmd == AT_CLET)
+  {
+    result = ForwardData(logger);
+    if (result == 0)
+      str_ret = strdup(strAT_ROK);
+    else
+      str_ret = strdup(strAT_RBAD);
+  }
+  else if(atcmd == AT_CGEE)
+  {
+    // Return EEPROM contents in Intel HEX format
+    SendEEPROMHexVSerial();
+    str_ret = strdup(strAT_ROK);
+  }
+  else if(atcmd == AT_CEEE)
+  {
+    ResetEEPROM();
+    str_ret = strdup(strAT_ROK);
+  }
+  else if(atcmd == AT_CGBM)
+  {
+    RunBootloader();
+    str_ret = strdup(strAT_ROK);
+  }
+  else if(atcmd == AT_CCINIT)
+  {
+    result = TerminalVSerial(logger);
+    if (result == 0)
+      str_ret = strdup(strAT_ROK);
+    else
+      str_ret = strdup(strAT_RBAD);
+  }
+  else
+  {
+    str_ret = strdup(strAT_RBAD);
+  }
 
-    return str_ret;
+  return str_ret;
 } 
 
 /**
@@ -175,89 +175,89 @@ char* ProcessSerialData(const char* data, log_struct_t *logger)
  */
 uint8_t ParseATCommand(const char *data, AT_CMD *atcmd, char **atparams)
 {
-    uint8_t len, pos;
+  uint8_t len, pos;
 
-    *atparams = NULL;
-    *atcmd = AT_NONE;
+  *atparams = NULL;
+  *atcmd = AT_NONE;
 
-    if(data == NULL || data[0] != 'A' || data[1] != 'T')
-        return RET_ERR_PARAM;
+  if(data == NULL || data[0] != 'A' || data[1] != 'T')
+    return RET_ERR_PARAM;
 
-    len = strlen(data);
-    if(len < 3)
-        return RET_ERR_PARAM;
+  len = strlen(data);
+  if(len < 3)
+    return RET_ERR_PARAM;
 
-    if(data[2] == '+')
+  if(data[2] == '+')
+  {
+    if(strstr(data, strAT_CRST) == data)
     {
-        if(strstr(data, strAT_CRST) == data)
-        {
-            *atcmd = AT_CRST;
-            return 0;
-        }
-        else if(strstr(data, strAT_CTERM) == data)
-        {
-            *atcmd = AT_CTERM;
-            return 0;
-        }
-        else if(strstr(data, strAT_CTUSB) == data)
-        {
-            *atcmd = AT_CTUSB;
-            return 0;
-        }
-        else if(strstr(data, strAT_CLET) == data)
-        {
-            *atcmd = AT_CLET;
-            return 0;
-        }
-        else if(strstr(data, strAT_CGEE) == data)
-        {
-            *atcmd = AT_CGEE;
-            return 0;
-        }
-        else if(strstr(data, strAT_CEEE) == data)
-        {
-            *atcmd = AT_CEEE;
-            return 0;
-        }
-        else if(strstr(data, strAT_CGBM) == data)
-        {
-            *atcmd = AT_CGBM;
-            return 0;
-        }
-        else if(strstr(data, strAT_CCINIT) == data)
-        {
-            *atcmd = AT_CCINIT;
-            return 0;
-        }
-        else if(strstr(data, strAT_CCAPDU) == data)
-        {
-            *atcmd = AT_CCAPDU;
-            pos = strlen(strAT_CCAPDU);
-            if((strlen(data) > pos + 1) && data[pos] == '=')
-                *atparams = &data[pos + 1];
-            return 0;
-        }
-        else if(strstr(data, strAT_UDATA) == data)
-        {
-            *atcmd = AT_UDATA;
-            pos = strlen(strAT_UDATA);
-            if((strlen(data) > pos + 1) && data[pos] == '=')
-                *atparams = &data[pos + 1];
-            return 0;
-        }
-        else if(strstr(data, strAT_CCEND) == data)
-        {
-            *atcmd = AT_CCEND;
-            return 0;
-        }
-        else if(strstr(data, strAT_CTWAIT) == data)
-        {
-            *atcmd = AT_CTWAIT;
-            return 0;
-        }
+      *atcmd = AT_CRST;
+      return 0;
     }
+    else if(strstr(data, strAT_CTERM) == data)
+    {
+      *atcmd = AT_CTERM;
+      return 0;
+    }
+    else if(strstr(data, strAT_CTUSB) == data)
+    {
+      *atcmd = AT_CTUSB;
+      return 0;
+    }
+    else if(strstr(data, strAT_CLET) == data)
+    {
+      *atcmd = AT_CLET;
+      return 0;
+    }
+    else if(strstr(data, strAT_CGEE) == data)
+    {
+      *atcmd = AT_CGEE;
+      return 0;
+    }
+    else if(strstr(data, strAT_CEEE) == data)
+    {
+      *atcmd = AT_CEEE;
+      return 0;
+    }
+    else if(strstr(data, strAT_CGBM) == data)
+    {
+      *atcmd = AT_CGBM;
+      return 0;
+    }
+    else if(strstr(data, strAT_CCINIT) == data)
+    {
+      *atcmd = AT_CCINIT;
+      return 0;
+    }
+    else if(strstr(data, strAT_CCAPDU) == data)
+    {
+      *atcmd = AT_CCAPDU;
+      pos = strlen(strAT_CCAPDU);
+      if((strlen(data) > pos + 1) && data[pos] == '=')
+        *atparams = &data[pos + 1];
+      return 0;
+    }
+    else if(strstr(data, strAT_UDATA) == data)
+    {
+      *atcmd = AT_UDATA;
+      pos = strlen(strAT_UDATA);
+      if((strlen(data) > pos + 1) && data[pos] == '=')
+        *atparams = &data[pos + 1];
+      return 0;
+    }
+    else if(strstr(data, strAT_CCEND) == data)
+    {
+      *atcmd = AT_CCEND;
+      return 0;
+    }
+    else if(strstr(data, strAT_CTWAIT) == data)
+    {
+      *atcmd = AT_CTWAIT;
+      return 0;
+    }
+  }
 
-    return 0;
+  return 0;
 }
 
 
@@ -270,74 +270,74 @@ uint8_t ParseATCommand(const char *data, AT_CMD *atcmd, char **atparams)
  */
 uint8_t SendEEPROMHexVSerial()
 {
-    uint8_t eedata[32];
-    uint16_t eeaddr;
-    char eestr[78];
-    uint8_t eesum;
-    uint8_t i, k, t;
+  uint8_t eedata[32];
+  uint16_t eeaddr;
+  char eestr[78];
+  uint8_t eesum;
+  uint8_t i, k, t;
 
-    eeaddr = 0;
-    memset(eestr, 0, 78);
-    eestr[0] = ':';
-    eestr[1] = '2';
-    eestr[2] = '0';
-    eestr[7] = '0';
-    eestr[8] = '0';
-    eestr[75] = '\r';
-    eestr[76] = '\n';
+  eeaddr = 0;
+  memset(eestr, 0, 78);
+  eestr[0] = ':';
+  eestr[1] = '2';
+  eestr[2] = '0';
+  eestr[7] = '0';
+  eestr[8] = '0';
+  eestr[75] = '\r';
+  eestr[76] = '\n';
 
-    for(k = 0; k < EEPROM_SIZE / 32; k++)
+  for(k = 0; k < EEPROM_SIZE / 32; k++)
+  {
+    eeprom_read_block(eedata, (void*)eeaddr, 32);
+    eesum = 32 + ((eeaddr >> 8) & 0xFF) + (eeaddr & 0xFF);
+    t = (eeaddr >> 12) & 0x0F;
+    eestr[3] = (t < 0x0A) ? (t + '0') : (t + '7');
+    t = (eeaddr >> 8) & 0x0F;
+    eestr[4] = (t < 0x0A) ? (t + '0') : (t + '7');
+    t = (eeaddr >> 4) & 0x0F;
+    eestr[5] = (t < 0x0A) ? (t + '0') : (t + '7');
+    t = eeaddr & 0x0F;
+    eestr[6] = (t < 0x0A) ? (t + '0') : (t + '7');
+
+    for(i = 0; i < 32; i++)
     {
-        eeprom_read_block(eedata, (void*)eeaddr, 32);
-        eesum = 32 + ((eeaddr >> 8) & 0xFF) + (eeaddr & 0xFF);
-        t = (eeaddr >> 12) & 0x0F;
-        eestr[3] = (t < 0x0A) ? (t + '0') : (t + '7');
-        t = (eeaddr >> 8) & 0x0F;
-        eestr[4] = (t < 0x0A) ? (t + '0') : (t + '7');
-        t = (eeaddr >> 4) & 0x0F;
-        eestr[5] = (t < 0x0A) ? (t + '0') : (t + '7');
-        t = eeaddr & 0x0F;
-        eestr[6] = (t < 0x0A) ? (t + '0') : (t + '7');
-
-        for(i = 0; i < 32; i++)
-        {
-            eesum = eesum + eedata[i];
-            t = (eedata[i] >> 4) & 0x0F;
-            eestr[9 + i * 2] = (t < 0x0A) ? (t + '0') : (t + '7');
-            t = eedata[i] & 0x0F;
-            eestr[10 + i * 2] = (t < 0x0A) ? (t + '0') : (t + '7');
-        }
-
-        eesum = (uint8_t)((eesum ^ 0xFF) + 1);
-        t = (eesum >> 4) & 0x0F;
-        eestr[73] = (t < 0x0A) ? (t + '0') : (t + '7');
-        t = eesum & 0x0F;
-        eestr[74] = (t < 0x0A) ? (t + '0') : (t + '7');
-
-        if(SendHostData(eestr))
-            return RET_ERROR;
-
-        eeaddr = eeaddr + 32;
+      eesum = eesum + eedata[i];
+      t = (eedata[i] >> 4) & 0x0F;
+      eestr[9 + i * 2] = (t < 0x0A) ? (t + '0') : (t + '7');
+      t = eedata[i] & 0x0F;
+      eestr[10 + i * 2] = (t < 0x0A) ? (t + '0') : (t + '7');
     }
 
-    memset(eestr, 0, 78);
-    eestr[0] = ':';
-    eestr[1] = '0';
-    eestr[2] = '0';
-    eestr[3] = '0';
-    eestr[4] = '0';
-    eestr[5] = '0';
-    eestr[6] = '0';
-    eestr[7] = '0';
-    eestr[8] = '1';
-    eestr[9] = 'F';
-    eestr[10] = 'F';
-    eestr[11] = '\r';
-    eestr[12] = '\n';
-    if(SendHostData(eestr))
-        return RET_ERROR;
+    eesum = (uint8_t)((eesum ^ 0xFF) + 1);
+    t = (eesum >> 4) & 0x0F;
+    eestr[73] = (t < 0x0A) ? (t + '0') : (t + '7');
+    t = eesum & 0x0F;
+    eestr[74] = (t < 0x0A) ? (t + '0') : (t + '7');
 
-    return 0;
+    if(SendHostData(eestr))
+      return RET_ERROR;
+
+    eeaddr = eeaddr + 32;
+  }
+
+  memset(eestr, 0, 78);
+  eestr[0] = ':';
+  eestr[1] = '0';
+  eestr[2] = '0';
+  eestr[3] = '0';
+  eestr[4] = '0';
+  eestr[5] = '0';
+  eestr[6] = '0';
+  eestr[7] = '0';
+  eestr[8] = '1';
+  eestr[9] = 'F';
+  eestr[10] = 'F';
+  eestr[11] = '\r';
+  eestr[12] = '\n';
+  if(SendHostData(eestr))
+    return RET_ERROR;
+
+  return 0;
 }
 
 /***
@@ -350,33 +350,33 @@ uint8_t SendEEPROMHexVSerial()
  */
 void BytesToHexChars(char* dest, uint8_t *data, uint32_t len)
 {
-    uint32_t i;
+  uint32_t i;
 
-    for(i = 0; i < len; i++)
-    {
-        dest[2*i] = nibbleToHexChar(data[i], 1);
-        dest[2*i + 1] = nibbleToHexChar(data[i], 0);
-    }
-    dest[2*len] = 0;
+  for(i = 0; i < len; i++)
+  {
+    dest[2*i] = nibbleToHexChar(data[i], 1);
+    dest[2*i + 1] = nibbleToHexChar(data[i], 0);
+  }
+  dest[2*len] = 0;
 }
 
 
 /*uint8_t SendHostBigData(char *data)
-{
-    uint32_t len;
-    uint8_t pos = 0;
-    char c;
+  {
+  uint32_t len;
+  uint8_t pos = 0;
+  char c;
 
-    len = strlen(data);
+  len = strlen(data);
 
-    while(len > 255)
-    {
-        c = data[255];
-        data[255] = 0;
-    
+  while(len > 255)
+  {
+  c = data[255];
+  data[255] = 0;
 
-    return 0;
-}*/
+
+  return 0;
+  }*/
 
 /**
  * This method implements communication between USB and Terminal
@@ -393,169 +393,169 @@ void BytesToHexChars(char* dest, uint8_t *data, uint32_t len)
  */
 uint8_t TerminalUSB(log_struct_t *logger)
 {
-    //uint8_t convention, proto, TC1, TA3, TB3;
-    uint8_t t_inverse = 0, t_TC1 = 0;
-    uint8_t tmp, i, lparams, ldata, error, done;
-    char *buf, *atparams = NULL;
-    char reply[USB_BUF_SIZE];
-    uint8_t *data;
-    uint32_t time;
-    uint32_t len;
-    AT_CMD atcmd;
-    RAPDU *response = NULL;
-    CAPDU *command = NULL;
+  //uint8_t convention, proto, TC1, TA3, TB3;
+  uint8_t t_inverse = 0, t_TC1 = 0;
+  uint8_t tmp, i, lparams, ldata, error, done;
+  char *buf, *atparams = NULL;
+  char reply[USB_BUF_SIZE];
+  uint8_t *data;
+  uint32_t time;
+  uint32_t len;
+  AT_CMD atcmd;
+  RAPDU *response = NULL;
+  CAPDU *command = NULL;
 
-    // Send OK to host to get ATR
-    SendHostData(strAT_ROK);
+  // Send OK to host to get ATR
+  SendHostData(strAT_ROK);
 
-    // Get the ATR from host
+  // Get the ATR from host
+  buf = GetHostData(USB_BUF_SIZE);
+  if(buf == NULL)
+  {
+    error = RET_ERROR;
+    goto enderror;
+  }
+
+  tmp = ParseATCommand(buf, &atcmd, &atparams);
+  lparams = strlen(atparams);
+  if(atcmd != AT_UDATA)
+  {
+    error = RET_ERROR;
+    goto enderror;
+  }
+
+  // Now we have the ATR, wait for start of transaction from Terminal
+  if(lcdAvailable)
+    fprintf(stderr, "Connect terminal\n");
+  if(logger)
+    LogByte1(logger, LOG_BYTE_ATR_FROM_USB, 0);
+  while(GetTerminalResetLine() != 0);
+  StartCounterTerminal();	
+
+  // wait for terminal CLK
+  done = 0;
+  for(i = 0; i < MAX_WAIT_TERMINAL; i++)
+  {
+    if(ReadCounterTerminal() >=  10) // this will be T0
+    {
+      done = 1;
+      break;
+    }
+  }
+
+  if(!done)
+  {
+    error = RET_TERMINAL_TIME_OUT;
+    goto enderror;
+  }
+
+  time = GetCounter();
+
+  {
+    LogByte4(
+        logger,
+        LOG_TIME_GENERAL,
+        (time & 0xFF),
+        ((time >> 8) & 0xFF),
+        ((time >> 16) & 0xFF),
+        ((time >> 24) & 0xFF));
+    LogByte1(logger, LOG_TERMINAL_CLK_ACTIVE, 0);
+  }
+
+  //Wait for terminal reset to go high within 45000 terminal clocks
+  tmp = (uint8_t)(45400 / 372);
+  error = LoopTerminalETU(tmp);
+  if(error)
+    goto enderror;
+
+  // Check terminal reset line
+  if(GetTerminalResetLine() == 0)
+  {
+    error = RET_ERROR;
+    goto enderror;
+  }
+
+  // Send the ATR to the terminal
+  for(i = 0; i < lparams/2; i++)
+  {
+    tmp = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
+    SendByteTerminalNoParity(tmp, t_inverse);
+    if(logger)
+      LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, tmp);
+    LoopTerminalETU(2);
+  }
+  free(buf);
+
+  // Keep receiving terminal commands and replies from the USB host
+  while(1)
+  {
+    // receive/send command to terminal
+    command = ReceiveT0Command(t_inverse, t_TC1, logger);
+    if(command == NULL)
+    {
+      error = RET_ERROR;
+      goto enderror;
+    }
+    data = SerializeCommand(command, &len);
+    FreeCAPDU(command);
+    BytesToHexChars(reply, data, len);
+    reply[2*len] = '\r';
+    reply[2*len + 1] = '\n';
+    reply[2*len + 2] = 0;
+    SendHostData(reply);
+
+askhost:
+    // receive/send reply to card
     buf = GetHostData(USB_BUF_SIZE);
     if(buf == NULL)
     {
-        error = RET_ERROR;
-        goto enderror;
+      error = RET_ERROR;
+      goto enderror;
     }
 
     tmp = ParseATCommand(buf, &atcmd, &atparams);
     lparams = strlen(atparams);
-    if(atcmd != AT_UDATA)
+    if(atcmd == AT_CCEND)
     {
-        error = RET_ERROR;
-        goto enderror;
+      if(logger)
+        LogByte1(logger, LOG_BYTE_CCEND_FROM_USB, tmp);
+      error = 0;
+      goto enderror;
     }
-
-    // Now we have the ATR, wait for start of transaction from Terminal
-    if(lcdAvailable)
-        fprintf(stderr, "Connect terminal\n");
-    if(logger)
-        LogByte1(logger, LOG_BYTE_ATR_FROM_USB, 0);
-    while(GetTerminalResetLine() != 0);
-    StartCounterTerminal();	
-
-    // wait for terminal CLK
-    done = 0;
-    for(i = 0; i < MAX_WAIT_TERMINAL; i++)
+    else if(atcmd == AT_CTWAIT)
     {
-        if(ReadCounterTerminal() >=  10) // this will be T0
-        {
-            done = 1;
-            break;
-        }
+      SendByteTerminalNoParity(0x60, t_inverse);
+      if(logger)
+        LogByte1(logger, LOG_TERMINAL_MORE_TIME, 0x00);
+      goto askhost;
     }
-
-    if(!done)
+    else if(atcmd != AT_UDATA)
     {
-        error = RET_TERMINAL_TIME_OUT;
-        goto enderror;
+      error = RET_ERROR;
+      goto enderror;
     }
-
-    time = GetCounter();
-    
-    {
-        LogByte4(
-                logger,
-                LOG_TIME_GENERAL,
-                (time & 0xFF),
-                ((time >> 8) & 0xFF),
-                ((time >> 16) & 0xFF),
-                ((time >> 24) & 0xFF));
-        LogByte1(logger, LOG_TERMINAL_CLK_ACTIVE, 0);
-    }
-
-    //Wait for terminal reset to go high within 45000 terminal clocks
-    tmp = (uint8_t)(45400 / 372);
-    error = LoopTerminalETU(tmp);
-    if(error)
-        goto enderror;
-
-    // Check terminal reset line
-    if(GetTerminalResetLine() == 0)
-    {
-        error = RET_ERROR;
-        goto enderror;
-    }
-
-    // Send the ATR to the terminal
     for(i = 0; i < lparams/2; i++)
     {
-        tmp = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
-        SendByteTerminalNoParity(tmp, t_inverse);
-        if(logger)
-            LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, tmp);
-        LoopTerminalETU(2);
+      tmp = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
+      SendByteTerminalNoParity(tmp, t_inverse);
+      if(logger)
+        LogByte1(logger, LOG_BYTE_TO_TERMINAL, tmp);
+      LoopTerminalETU(2);
     }
     free(buf);
-
-    // Keep receiving terminal commands and replies from the USB host
-    while(1)
-    {
-        // receive/send command to terminal
-        command = ReceiveT0Command(t_inverse, t_TC1, logger);
-        if(command == NULL)
-        {
-            error = RET_ERROR;
-            goto enderror;
-        }
-        data = SerializeCommand(command, &len);
-        FreeCAPDU(command);
-        BytesToHexChars(reply, data, len);
-        reply[2*len] = '\r';
-        reply[2*len + 1] = '\n';
-        reply[2*len + 2] = 0;
-        SendHostData(reply);
-
-askhost:
-        // receive/send reply to card
-        buf = GetHostData(USB_BUF_SIZE);
-        if(buf == NULL)
-        {
-            error = RET_ERROR;
-            goto enderror;
-        }
-
-        tmp = ParseATCommand(buf, &atcmd, &atparams);
-        lparams = strlen(atparams);
-        if(atcmd == AT_CCEND)
-        {
-            if(logger)
-                LogByte1(logger, LOG_BYTE_CCEND_FROM_USB, tmp);
-            error = 0;
-            goto enderror;
-        }
-        else if(atcmd == AT_CTWAIT)
-        {
-            SendByteTerminalNoParity(0x60, t_inverse);
-            if(logger)
-                LogByte1(logger, LOG_TERMINAL_MORE_TIME, 0x00);
-            goto askhost;
-        }
-        else if(atcmd != AT_UDATA)
-        {
-            error = RET_ERROR;
-            goto enderror;
-        }
-        for(i = 0; i < lparams/2; i++)
-        {
-            tmp = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
-            SendByteTerminalNoParity(tmp, t_inverse);
-            if(logger)
-                LogByte1(logger, LOG_BYTE_TO_TERMINAL, tmp);
-            LoopTerminalETU(2);
-        }
-        free(buf);
-    }
+  }
 
 
 enderror:
-    if(logger)
-    {
-        if(lcdAvailable)
-            fprintf(stderr, "Writing Log\n");
-        WriteLogEEPROM(logger);
-        ResetLogger(logger);
-    }
+  if(logger)
+  {
+    if(lcdAvailable)
+      fprintf(stderr, "Writing Log\n");
+    WriteLogEEPROM(logger);
+    ResetLogger(logger);
+  }
 
-    return error;
+  return error;
 }
 
 /**
@@ -572,121 +572,121 @@ enderror:
  */
 uint8_t TerminalVSerial(log_struct_t *logger)
 {
-    uint8_t convention, proto, TC1, TA3, TB3;
-    uint8_t tmp, i, lparams, ldata, result;
-    char *buf, *atparams = NULL;
-    char reply[512];
-    uint8_t data[256];
-    AT_CMD atcmd;
-    RAPDU *response = NULL;
-    CAPDU *command = NULL;
+  uint8_t convention, proto, TC1, TA3, TB3;
+  uint8_t tmp, i, lparams, ldata, result;
+  char *buf, *atparams = NULL;
+  char reply[512];
+  uint8_t data[256];
+  AT_CMD atcmd;
+  RAPDU *response = NULL;
+  CAPDU *command = NULL;
 
-    // First request ICC
-    fprintf(stderr, "Insert  ICC...\n");
-    while(!IsICCInserted());
-    fprintf(stderr, "Working...\n");
+  // First request ICC
+  fprintf(stderr, "Insert  ICC...\n");
+  while(!IsICCInserted());
+  fprintf(stderr, "Working...\n");
 
-    result = ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3, logger);
-    if(result)
+  result = ResetICC(0, &convention, &proto, &TC1, &TA3, &TB3, logger);
+  if(result)
+  {
+    fprintf(stderr, "ICC reset failed\n");
+    _delay_ms(500);
+    fprintf(stderr, "result: %2X\n", result);
+    _delay_ms(500);
+    goto enderror;
+  }
+
+  if(proto != 0) // Not implemented yet ...
+  {
+    fprintf(stderr, "bad ICC proto\n");
+    _delay_ms(500);
+    goto enderror;
+  }
+
+  // If all is well so far announce the host so we get more data
+  SendHostData(strAT_ROK);
+
+  // Loop continuously until the host ends the transaction or
+  // we get an error
+  while(1)
+  {
+    buf = GetHostData(255);
+    if(buf == NULL)
     {
-        fprintf(stderr, "ICC reset failed\n");
-        _delay_ms(500);
-        fprintf(stderr, "result: %2X\n", result);
-        _delay_ms(500);
-        goto enderror;
+      _delay_ms(100);
+      continue;
     }
 
-    if(proto != 0) // Not implemented yet ...
+    tmp = ParseATCommand(buf, &atcmd, &atparams);
+    lparams = strlen(atparams);
+
+    if(atcmd == AT_CCEND)
     {
-        fprintf(stderr, "bad ICC proto\n");
-        _delay_ms(500);
-        goto enderror;
+      result = 0;
+      break;
+    }
+    else if(atcmd != AT_CCAPDU || atparams == NULL || lparams < 10 || (lparams % 2) != 0)
+    {
+      SendHostData(strAT_RBAD);
+      free(buf);
+      continue;
     }
 
-    // If all is well so far announce the host so we get more data
-    SendHostData(strAT_ROK);
-
-    // Loop continuously until the host ends the transaction or
-    // we get an error
-    while(1)
+    memset(data, 0, 256);
+    for(i = 0; i < lparams/2; i++)
     {
-        buf = GetHostData(255);
-        if(buf == NULL)
-        {
-            _delay_ms(100);
-            continue;
-        }
+      data[i] = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
+    }
+    free(buf);
 
-        tmp = ParseATCommand(buf, &atcmd, &atparams);
-        lparams = strlen(atparams);
+    ldata = (lparams - 10) / 2;
+    command = MakeCommand(
+        data[0], data[1], data[2], data[3], data[4],
+        &data[5], ldata);
+    if(command == NULL)
+    {
+      SendHostData(strAT_RBAD);
+      continue;
+    }
 
-        if(atcmd == AT_CCEND)
-        {
-            result = 0;
-            break;
-        }
-        else if(atcmd != AT_CCAPDU || atparams == NULL || lparams < 10 || (lparams % 2) != 0)
-        {
-            SendHostData(strAT_RBAD);
-            free(buf);
-            continue;
-        }
+    // Send the command
+    response = TerminalSendT0Command(command, convention, TC1, logger);
+    FreeCAPDU(command);
+    if(response == NULL)
+    {
+      FreeCAPDU(command);
+      SendHostData(strAT_RBAD);
+      continue;
+    }
 
-        memset(data, 0, 256);
-        for(i = 0; i < lparams/2; i++)
-        {
-            data[i] = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
-        }
-        free(buf);
-
-        ldata = (lparams - 10) / 2;
-        command = MakeCommand(
-                data[0], data[1], data[2], data[3], data[4],
-                &data[5], ldata);
-        if(command == NULL)
-        {
-            SendHostData(strAT_RBAD);
-            continue;
-        }
-
-        // Send the command
-        response = TerminalSendT0Command(command, convention, TC1, logger);
-        FreeCAPDU(command);
-        if(response == NULL)
-        {
-            FreeCAPDU(command);
-            SendHostData(strAT_RBAD);
-            continue;
-        }
-
-        memset(reply, 0, 512);
-        reply[0] = nibbleToHexChar(response->repStatus->sw1, 1);
-        reply[1] = nibbleToHexChar(response->repStatus->sw1, 0);
-        reply[2] = nibbleToHexChar(response->repStatus->sw2, 1);
-        reply[3] = nibbleToHexChar(response->repStatus->sw2, 0);
-        for(i = 0; i < response->lenData; i++)
-        {
-            reply[4 + i*2] = nibbleToHexChar(response->repData[i], 1);
-            reply[5 + i*2] = nibbleToHexChar(response->repData[i], 0);
-        }
-        reply[4 + i] = '\r';
-        reply[5 + i] = '\n';
-        FreeRAPDU(response);
-        SendHostData(reply);
-    } // end while(1)
+    memset(reply, 0, 512);
+    reply[0] = nibbleToHexChar(response->repStatus->sw1, 1);
+    reply[1] = nibbleToHexChar(response->repStatus->sw1, 0);
+    reply[2] = nibbleToHexChar(response->repStatus->sw2, 1);
+    reply[3] = nibbleToHexChar(response->repStatus->sw2, 0);
+    for(i = 0; i < response->lenData; i++)
+    {
+      reply[4 + i*2] = nibbleToHexChar(response->repData[i], 1);
+      reply[5 + i*2] = nibbleToHexChar(response->repData[i], 0);
+    }
+    reply[4 + i] = '\r';
+    reply[5 + i] = '\n';
+    FreeRAPDU(response);
+    SendHostData(reply);
+  } // end while(1)
 
 enderror:
-    DeactivateICC();
-    if(logger)
-    {
-        LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
-        if(lcdAvailable)
-            fprintf(stderr, "Writing Log\n");
-        WriteLogEEPROM(logger);
-        ResetLogger(logger);
-    }
+  DeactivateICC();
+  if(logger)
+  {
+    LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
+    if(lcdAvailable)
+      fprintf(stderr, "Writing Log\n");
+    WriteLogEEPROM(logger);
+    ResetLogger(logger);
+  }
 
-    return result;
+  return result;
 }
 
 
@@ -700,29 +700,29 @@ enderror:
  */
 uint8_t hexCharsToByte(char c1, char c2)
 {
-    uint8_t result = 0;
+  uint8_t result = 0;
 
-    if(c1 >= '0' && c1 <= '9')
-        result = c1 - '0';
-    else if(c1 >= 'A' && c1 <= 'F')
-        result = c1 - '7';
-    else if(c1 >= 'a' && c1 <= 'f')
-        result = c1 - 'W';
-    else
-        return 0;
+  if(c1 >= '0' && c1 <= '9')
+    result = c1 - '0';
+  else if(c1 >= 'A' && c1 <= 'F')
+    result = c1 - '7';
+  else if(c1 >= 'a' && c1 <= 'f')
+    result = c1 - 'W';
+  else
+    return 0;
 
-    result = result << 4;
+  result = result << 4;
 
-    if(c2 >= '0' && c2 <= '9')
-        result |= c2 - '0';
-    else if(c2 >= 'A' && c2 <= 'F')
-        result |= c2 - '7';
-    else if(c2 >= 'a' && c2 <= 'f')
-        result |= c2 - 'W';
-    else
-        return 0;
+  if(c2 >= '0' && c2 <= '9')
+    result |= c2 - '0';
+  else if(c2 >= 'A' && c2 <= 'F')
+    result |= c2 - '7';
+  else if(c2 >= 'a' && c2 <= 'f')
+    result |= c2 - 'W';
+  else
+    return 0;
 
-    return result;
+  return result;
 }
 
 /**
@@ -735,19 +735,19 @@ uint8_t hexCharsToByte(char c1, char c2)
  */
 char nibbleToHexChar(uint8_t b, uint8_t high)
 {
-    char result = '0';
+  char result = '0';
 
-    if(high)
-        b = (b & 0xF0) >> 4;
-    else
-        b = b & 0x0F;
+  if(high)
+    b = (b & 0xF0) >> 4;
+  else
+    b = b & 0x0F;
 
-    if(b < 10)
-        result = b + '0';
-    else if(b < 16)
-        result = b + '7';
+  if(b < 10)
+    result = b + '0';
+  else if(b < 16)
+    result = b + '7';
 
-    return result;
+  return result;
 }
 
 

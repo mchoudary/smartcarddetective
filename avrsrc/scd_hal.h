@@ -51,8 +51,8 @@
 #define ETU_EXTENDED(X) ((unsigned int) ((X)*1.075))
 #define ICC_VCC_DELAY_US 50   
 #define PULL_UP_HIZ_ICC	1		        // Set to 1 to enable pull-ups when setting
-// the I/O-ICC line to Hi-Z
-#define F_CPU 16000000UL                // Change this to the correct frequency (generally CLK = CLK_IO)
+                                        // the I/O-ICC line to Hi-Z
+#define F_CPU 16000000UL                // Set this to the correct frequency (generally CLK = CLK_IO)
 #define MAX_WAIT_TERMINAL (1 * F_CPU)   // How many cycles to wait for a terminal response
 
 /* Hardcoded values for ICC clock - selected based on ICC_CLK_MODE above */
