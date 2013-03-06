@@ -80,7 +80,7 @@ typedef enum {
     LOG_BYTE_CCEND_FROM_USB = (0x07 << 2 | 0x00),           // 0x1C
 
     // Terminal events
-    LOG_TERMINAL_CLK_ACTIVE = (0x10 << 2 | 0x00),           // 0x40
+    LOG_TERMINAL_RST_HIGH = (0x10 << 2 | 0x00),             // 0x40
     LOG_TERMINAL_RST_LOW = (0x11 << 2 | 0x00),              // 0x44
     LOG_TERMINAL_TIME_OUT = (0x12 << 2 | 0x00),             // 0x48
     LOG_TERMINAL_ERROR_RECEIVE = (0x13 << 2 | 0x00),        // 0x4C
@@ -103,6 +103,11 @@ typedef enum {
     // Error events
     LOG_ERROR_MEMORY = (0x32 << 2 | 0x00),                  // 0xC8
     LOG_WDT_RESET = (0x33 << 2 | 0x00),                     // 0xCC
+    // Debug events
+    LOG_DEBUG_TEST1 = (0x34 << 2 | 0x00),                   // 0xD0
+    LOG_DEBUG_TEST2 = (0x35 << 2 | 0x00),                   // 0xD4
+    LOG_DEBUG_TEST3 = (0x36 << 2 | 0x00),                   // 0xD8
+    LOG_DEBUG_TEST4 = (0x37 << 2 | 0x00),                   // 0xDC
 
 }SCD_LOG_BYTE;
 

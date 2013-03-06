@@ -38,7 +38,13 @@
 
 #include "utils.h"
 #include "scd_io.h"
+#include "scd_hal.h"
+#include "scd_logger.h"
+#include "scd_values.h"
 
+/**
+ * Write a 16 bit value using an atomic operation
+ */
 void Write16bitRegister(volatile uint16_t *reg, uint16_t value)
 {
   uint8_t sreg;
@@ -49,6 +55,9 @@ void Write16bitRegister(volatile uint16_t *reg, uint16_t value)
   SREG = sreg;	
 }
 
+/**
+ * Read a 16 bit value using an atomic operation
+ */
 uint16_t Read16bitRegister(volatile uint16_t *reg)
 {
   uint16_t i;
@@ -129,4 +138,33 @@ void SleepUntilCardInserted()
   SREG = sreg;
   Led4On();
 }
+
+
+/**
+ * Retrieve relative time value and write it to log
+ *
+ * @param logger the logger struct used for logging the time. This should not be
+ * NULL.
+ * @return zero if success, non-zero otherwise.
+ */
+uint8_t LogCurrentTime(log_struct_t *logger)
+{
+  uint32_t time;
+
+  if(logger == NULL)
+    return RET_ERR_PARAM;
+
+  time = GetCounter();
+  LogByte4(
+      logger,
+      LOG_TIME_GENERAL,
+      (time & 0xFF),
+      ((time >> 8) & 0xFF),
+      ((time >> 16) & 0xFF),
+      ((time >> 24) & 0xFF));
+
+  return 0;
+}
+
+
 

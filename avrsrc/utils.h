@@ -37,6 +37,7 @@
 #define _UTILS_H_
 
 #include <avr/io.h>
+#include <scd_logger.h>
 
 extern uint8_t lcdAvailable;
 
@@ -51,6 +52,9 @@ void SleepUntilTerminalClock();
 
 /// Puts the SCD to sleep until card is inserted or removed
 void SleepUntilCardInserted();
+
+/// Retrieve relative time value and writes it to log
+uint8_t LogCurrentTime(log_struct_t *logger);
 
 #endif // _UTILS_H_
 

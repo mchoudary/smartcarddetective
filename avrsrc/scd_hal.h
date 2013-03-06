@@ -46,14 +46,21 @@
 // 4 for ICC_CLK = 500 KHz
 // 5 for external clock - update parameters below as necessary!
 #define ETU_TERMINAL 372
-#define ETU_HALF(X) ((unsigned int) ((X)/2))
-#define ETU_LESS_THAN_HALF(X) ((unsigned int) ((X)*0.46))
-#define ETU_EXTENDED(X) ((unsigned int) ((X)*1.075))
+#define ETU_HALF(X) ((uint16_t) ((X)/2))
+#define ETU_LESS_THAN_HALF(X) ((uint16_t) ((X)*0.46))
+#define ETU_EXTENDED(X) ((uint16_t) ((X)*1.075))
 #define ICC_VCC_DELAY_US 50   
 #define PULL_UP_HIZ_ICC	1		        // Set to 1 to enable pull-ups when setting
                                         // the I/O-ICC line to Hi-Z
 #define F_CPU 16000000UL                // Set this to the correct frequency (generally CLK = CLK_IO)
-#define MAX_WAIT_TERMINAL (1 * F_CPU)   // How many cycles to wait for a terminal response
+#define REF_CPU 16000000                // This should never be changed
+#define CPU_FACTOR ((uint8_t)(REF_CPU / F_CPU)) // Dependent on current frequency
+// CPU cycles to wait for terminal clock, about 10 seconds with WaitTerminalClock
+#define MAX_WAIT_TERMINAL_CLK ((uint32_t) (REF_CPU / (8 * CPU_FACTOR)))
+// CPU cycles to wait for terminal reset, about 10 seconds with WaitTerminalReset
+#define MAX_WAIT_TERMINAL_RESET ((uint32_t) (REF_CPU / (1.5 * CPU_FACTOR)))
+// CPU cycles to wait for terminal command, about 15 seconds with GetByteTerminal
+#define MAX_WAIT_TERMINAL_CMD ((uint32_t)(REF_CPU / (2 * CPU_FACTOR)))
 
 /* Hardcoded values for ICC clock - selected based on ICC_CLK_MODE above */
 #if (ICC_CLK_MODE == 0)
@@ -117,9 +124,6 @@ void EnableTerminalResetInterrupt();
 /// Disable the terminal reset interrupt
 void DisableTerminalResetInterrupt();
 
-/// Returns the frequency of the terminal clock in khz, zero if there is no clock 
-uint16_t GetTerminalFreq();
-
 /// Checks if we have terminal clock or not
 uint16_t IsTerminalClock();
 
@@ -131,6 +135,12 @@ uint8_t GetTerminalResetLine();
 
 /// Loops until the IO or reset line from the terminal become low
 uint8_t WaitTerminalResetIOLow(uint32_t max_wait);
+
+/// Loops until the reset line from the terminal becomes high
+uint8_t WaitTerminalResetHigh(uint32_t max_wait);
+
+/// Loops until receives clock from terminal
+uint8_t WaitTerminalClock(uint32_t max_wait);
 
 /// Reads the value of the timer T2
 uint8_t ReadTimerT2();

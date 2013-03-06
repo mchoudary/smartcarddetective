@@ -36,7 +36,7 @@
 #include "scd_logger.h"
 
 //------------------------------------------------------------------------
-// Constant values used in EMV
+// Constans
 #define EMV_MORE_TAGS_MASK 0x1F
 #define EMV_EXTRA_LENGTH_BYTE 0x81
 

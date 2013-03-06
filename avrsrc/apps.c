@@ -1260,10 +1260,9 @@ uint8_t ForwardData(log_struct_t *logger)
 
 enderror:
   DeactivateICC();
-  if(error == RET_TERMINAL_TIME_OUT)
+  if((error == RET_TERMINAL_TIME_OUT) || (error == RET_TERMINAL_NO_CLOCK))
   {
-    if(logger)
-      LogByte1(logger, LOG_TERMINAL_TIME_OUT, 0);
+    // these errors are logged and used as a signal to stop
     error = 0;
   }
   if(logger)

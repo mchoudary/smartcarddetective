@@ -48,6 +48,7 @@
 #include "serial.h"
 #include "scd_io.h"
 #include "scd_values.h"
+#include "utils.h"
 #include "VirtualSerial.h"
 
 
@@ -399,7 +400,6 @@ uint8_t TerminalUSB(log_struct_t *logger)
   char *buf, *atparams = NULL;
   char reply[USB_BUF_SIZE];
   uint8_t *data;
-  uint32_t time;
   uint32_t len;
   AT_CMD atcmd;
   RAPDU *response = NULL;
@@ -433,33 +433,18 @@ uint8_t TerminalUSB(log_struct_t *logger)
   StartCounterTerminal();	
 
   // wait for terminal CLK
-  done = 0;
-  for(i = 0; i < MAX_WAIT_TERMINAL; i++)
+  error = WaitTerminalClock(MAX_WAIT_TERMINAL_CLK);
+  if(error)
   {
-    if(ReadCounterTerminal() >=  10) // this will be T0
-    {
-      done = 1;
-      break;
-    }
-  }
-
-  if(!done)
-  {
-    error = RET_TERMINAL_TIME_OUT;
+    if(logger)
+      LogByte1(logger, LOG_TERMINAL_NO_CLOCK, 0);
     goto enderror;
   }
 
-  time = GetCounter();
-
+  if(logger)
   {
-    LogByte4(
-        logger,
-        LOG_TIME_GENERAL,
-        (time & 0xFF),
-        ((time >> 8) & 0xFF),
-        ((time >> 16) & 0xFF),
-        ((time >> 24) & 0xFF));
-    LogByte1(logger, LOG_TERMINAL_CLK_ACTIVE, 0);
+    LogCurrentTime(logger);
+    LogByte1(logger, LOG_TERMINAL_RST_HIGH, 0);
   }
 
   //Wait for terminal reset to go high within 45000 terminal clocks

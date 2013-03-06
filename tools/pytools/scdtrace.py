@@ -93,7 +93,7 @@ class SCDTrace:
                 0x05: "Byte from ICC",
                 0x06: "ATR from USB",
                 0x07: "CCEND from USB",
-                0x10: "Terminal clock active",
+                0x10: "Terminal reset high",
                 0x11: "Terminal reset low",
                 0x12: "Terminal timed out",
                 0x13: "Error receiving byte from terminal",
@@ -110,6 +110,10 @@ class SCDTrace:
                 0x31: "Time for a general event",
                 0x32: "Error allocating memory",
                 0x33: "Watchdog timer reset",
+                0x34: "Debug event type 1",
+                0x35: "Debug event type 2",
+                0x36: "Debug event type 3",
+                0x37: "Debug event type 4",
                 }
         #self.errors = []
         #self.warnings = []

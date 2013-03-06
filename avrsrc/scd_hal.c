@@ -156,6 +156,52 @@ void ResetWDT()
 }
 
 /**
+ * Loops until the terminal reset line becomes high
+ * 
+ * @param max_wait the maximum number of cycles to wait for the terminal reset
+ * line to become high. Give 0 to wait indefinitely.
+ * @return 0 (success) if the terminal reset line has become high or some
+ * non-zero error value if the max_wait time has ellapsed or other error
+ * ocurred.
+ */
+uint8_t WaitTerminalResetHigh(uint32_t max_wait)
+{
+  uint32_t cnt = 0;
+
+  while(GetTerminalResetLine() == 0)
+  {
+    cnt = cnt + 1;
+    if(max_wait != 0 && cnt == max_wait)
+      return RET_TERMINAL_TIME_OUT;
+  }
+
+  return 0;
+}
+
+/**
+ * Loops until receiving clock from terminal
+ * 
+ * @param max_wait the maximum number of cycles to wait for the terminal reset
+ * line to become high. Give 0 to wait indefinitely.
+ * @return 0 (success) if received clock from terminal or some
+ * non-zero error value if the max_wait time has ellapsed or other error
+ * ocurred.
+ */
+uint8_t WaitTerminalClock(uint32_t max_wait)
+{
+  uint32_t cnt = 0;
+
+  while(IsTerminalClock() == 0)
+  {
+    cnt = cnt + 1;
+    if(max_wait != 0 && cnt == max_wait)
+      return RET_TERMINAL_NO_CLOCK;
+  }
+
+  return 0;
+}
+
+/**
  * Loops until the IO or reset line from the terminal become low.
  * 
  * @param max_wait the maximum number of cycles to wait for the reset or the
@@ -196,63 +242,10 @@ uint16_t IsTerminalClock()
   sreg = SREG;
   cli();	
   TCNT3 = 1;		// We need to be sure it will not restart in the process	
+  // Wait at least 32 clock cycles and then check for at least 2 terminal clock
+  // cycles at the lowest frequency to avoid errors from bits flipping during
+  // card insertion/retrieval.
   asm volatile("nop\n\t"		
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      ::);
-  time = TCNT3;	
-  result = time - 1;
-  SREG = sreg;
-
-  return result;
-}
-
-/**
- * @return the frequency of the terminal clock in khz, zero if there is no clock
- *
- * Assumes the terminal counter is already started (Timer 3)
- */
-uint16_t GetTerminalFreq()
-{
-  uint8_t sreg;
-  uint16_t time, result;
-
-  sreg = SREG;
-  cli();	
-  TCNT3 = 1;		// We need to be sure it will not restart in the process	
-  asm volatile("nop\n\t"		
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
       "nop\n\t"
       "nop\n\t"
       "nop\n\t"
@@ -288,12 +281,10 @@ uint16_t GetTerminalFreq()
       "nop\n\t"
       ::);
   time = TCNT3;	
-
-  if(time == 1)
-    result = 0;
+  if(time > 2)
+    result = 1;
   else
-    result = (uint16_t)(((F_CPU/1000) * time) / 50);
-
+    result = 0;
   SREG = sreg;
 
   return result;
@@ -451,7 +442,7 @@ uint8_t LoopTerminalETU(uint32_t nEtus)
   for(i = 0; i < nEtus; i++)
   {
     done = 0;
-    for(k = 0; k < MAX_WAIT_TERMINAL; k++)
+    for(k = 0; k < MAX_WAIT_TERMINAL_CLK; k++)
     {
       if(bit_is_set(TIFR3, OCF3A))
       {
@@ -484,7 +475,7 @@ void SendByteTerminalNoParity(uint8_t byte, uint8_t inverse_convention)
 
   // check we have clock from terminal to avoid damage
   // assuming the counter is started
-  if(!GetTerminalFreq())
+  if(IsTerminalClock() == 0)
     return;	
 
   // this code is needed to be sure that the I/O line will not
@@ -657,7 +648,7 @@ uint8_t GetByteTerminalNoParity(
     uint32_t max_wait)
 {
   volatile uint8_t bit;
-  volatile uint8_t tio, treset;
+  volatile uint8_t tio;
   uint8_t i, byte, parity;
   uint32_t cnt;
 
@@ -671,14 +662,13 @@ uint8_t GetByteTerminalNoParity(
   {
     cnt = cnt + 1;
 
-    // check we have clock from terminal
-    if(!IsTerminalClock())
-      return RET_TERMINAL_NO_CLOCK;
-
     // check for terminal reset (reset low)
-    treset = bit_is_clear(PIND, PD0);
-    if(treset)
+    if(GetTerminalResetLine() == 0)
       return RET_TERMINAL_RESET_LOW;
+
+    // check for terminal clock
+    if(IsTerminalClock() == 0)
+      return RET_TERMINAL_NO_CLOCK;
 
     // check for start bit (Terminal I/O low)
     tio = bit_is_clear(PINC, PC4);
@@ -689,9 +679,9 @@ uint8_t GetByteTerminalNoParity(
       return RET_TERMINAL_TIME_OUT;
   }
 
-  Write16bitRegister(&TCNT3, 1);						// TCNT3 = 1		
-  Write16bitRegister(&OCR3A, ETU_HALF(ETU_TERMINAL));	// OCR3A approx. 0.5 ETU
-  TIFR3 |= _BV(OCF3A);								// Reset OCR3A compare flag		
+  Write16bitRegister(&TCNT3, 1);
+  Write16bitRegister(&OCR3A, (uint16_t)(ETU_TERMINAL * 0.4));
+  TIFR3 |= _BV(OCF3A); // Reset OCR3A compare flag		
 
   // Wait until the timer/counter 3 reaches the value in OCR3A
   while(bit_is_clear(TIFR3, OCF3A));
@@ -703,7 +693,8 @@ uint8_t GetByteTerminalNoParity(
   *r_byte = 0;
   byte = 0;
   parity = 0;	
-  if(bit)	return 1;	
+  if(bit)
+    return RET_ERROR;	
 
   // read the byte in correct conversion mode
   for(i = 0; i < 8; i++)
@@ -777,25 +768,23 @@ uint8_t GetByteTerminalParity(
   if(result == RET_ERROR)
   {
     // check we have clock from terminal to avoid damage
-    if(!GetTerminalFreq())
+    if(IsTerminalClock() == 0)
       return result;
 
     // set I/O low for at least 1 ETU starting at 10.5 ETU from start bit	
     TCCR3A = 0x0C;							// OC3C set to 1 on compare		
     DDRC |= _BV(PC4);						// Set PC4 (OC3C) as output
-    //Write16bitRegister(&OCR3A, 170);		// OCR3A ~= 0.5 ETU
     Write16bitRegister(&OCR3A, 
-        ETU_LESS_THAN_HALF(ETU_TERMINAL));	// OCR3A ~= 0.5 ETU
-    Write16bitRegister(&TCNT3, 1);			// TCNT3 = 1	
+        ETU_LESS_THAN_HALF(ETU_TERMINAL));
+    Write16bitRegister(&TCNT3, 1);
     TIFR3 |= _BV(OCF3A);					// Reset OCR3A compare flag	
 
     TCCR3A = 0x08;							// OC3C toggles to low on compare
 
     while(bit_is_clear(TIFR3, OCF3A));
     TIFR3 |= _BV(OCF3A);
-    //Write16bitRegister(&OCR3A, 400);		// OCR3A > 1 ETU
     Write16bitRegister(&OCR3A, 
-        ETU_EXTENDED(ETU_TERMINAL));		// OCR3A > 1 ETU		
+        ETU_EXTENDED(ETU_TERMINAL));
     while(bit_is_clear(TIFR3, OCF3A));
     TIFR3 |= _BV(OCF3A);
 
@@ -805,7 +794,6 @@ uint8_t GetByteTerminalParity(
     PORTC |= _BV(PC4);
 
     // wait for the last ETU to complete
-    //Write16bitRegister(&OCR3A, 158);
     Write16bitRegister(&OCR3A, ETU_LESS_THAN_HALF(ETU_TERMINAL));
     while(bit_is_clear(TIFR3, OCF3A));
     TIFR3 |= _BV(OCF3A);
@@ -952,7 +940,8 @@ uint8_t GetByteICCNoParity(uint8_t inverse_convention, uint8_t *r_byte)
   *r_byte = 0;
   byte = 0;
   parity = 0;	
-  if(bit)	return 1;	
+  if(bit)
+    return RET_ERROR;	
 
   // read the byte in correct conversion mode
   for(i = 0; i < 8; i++)
@@ -987,13 +976,13 @@ uint8_t GetByteICCNoParity(uint8_t inverse_convention, uint8_t *r_byte)
 
   if(inverse_convention)
   { 
-    if(parity && bit) return 1;
-    if(!parity && !bit) return 1;		
+    if(parity && bit) return RET_ERROR;
+    if(!parity && !bit) return RET_ERROR;		
   }
   else
   {
-    if(parity && !bit) return 1;
-    if(!parity && bit) return 1;		
+    if(parity && !bit) return RET_ERROR;
+    if(!parity && bit) return RET_ERROR;		
   }
 
   return 0;	

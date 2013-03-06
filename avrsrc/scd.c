@@ -273,11 +273,11 @@ void InitSCD()
 
   DDRC = 0x00;
   PORTC = 0x18;		// PC4 with internal pull-up (Terminal I/O)
-  // PC3 with internal pull-up (terminal clock)
+                  // PC3 with internal pull-up (terminal clock)
 
   DDRD = 0x80;		
   PORTD = 0x83;		// PD7 high (ICC VCC) , PD1 pull-up
-  // (ICC switch), PD0 pull-up (terminal reset)
+                  // (ICC switch), PD0 pull-up (terminal reset)
 
   DDRF &= 0xF0;
   PORTF |= 0x0F; 		// enable pull-up for buttons	
@@ -354,7 +354,7 @@ ISR(INT0_vect)
   ResetLogger(&scd_logger);
 
   // check for warm vs cold reset
-  if(GetTerminalFreq())
+  if(IsTerminalClock())
   {
     // warm reset
     warmResetByte = eeprom_read_byte((uint8_t*)EEPROM_WARM_RESET);
@@ -569,11 +569,11 @@ void TestSCDTerminal()
   while(1)
   {
     // Get SELECT command for "1PAY.SYS.DDF01"
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);	// CLA = 0x00
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);	// INS = 0xA4
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);	// P1 = 0x04
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);	// P2 = 0x00
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);	// P3 = 0x0E
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL_CMD);	// CLA = 0x00
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL_CMD);	// INS = 0xA4
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL_CMD);	// P1 = 0x04
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL_CMD);	// P2 = 0x00
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL_CMD);	// P3 = 0x0E
 
     strLCD[5] = 0;	
 
@@ -589,20 +589,20 @@ void TestSCDTerminal()
     Led2On();
 
     // Get Select command data => "1PAY.SYS.DDF01"
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[5], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[6], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[7], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[8], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[9], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[10], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[11], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[12], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[13], MAX_WAIT_TERMINAL);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[5], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[6], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[7], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[8], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[9], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[10], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[11], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[12], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[13], MAX_WAIT_TERMINAL_CMD);
     strLCD[14] = 0;	
 
     Led1On();
@@ -627,11 +627,11 @@ void TestSCDTerminal()
     Led2On();
 
     // Get GetResponse from Reader
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL);
-    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[0], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[1], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[2], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[3], MAX_WAIT_TERMINAL_CMD);
+    tmpa = GetByteTerminalParity(0, (uint8_t*)&strLCD[4], MAX_WAIT_TERMINAL_CMD);
     strLCD[5] = 0;	
 
     Led1On();

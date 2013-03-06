@@ -40,12 +40,13 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "counter.h"
 #include "emv.h"
+#include "emv_values.h"
 #include "scd_hal.h"
 #include "scd_io.h"
-#include "emv_values.h"
 #include "scd_values.h"
-#include "counter.h"
+#include "utils.h"
 
 #define DEBUG 1   // Set DEBUG to 1 to enable debug code
 
@@ -72,7 +73,6 @@ uint8_t ResetICC(
     uint8_t *TB3,
     log_struct_t *logger)
 {
-  uint32_t time;
   uint16_t atr_selection;
   uint8_t atr_bytes[32];
   uint8_t atr_tck;
@@ -80,7 +80,6 @@ uint8_t ResetICC(
   uint8_t error;
 
   // Activate the ICC
-  time = GetCounter();
   error = ActivateICC(warm);
   if(error)
   {
@@ -89,13 +88,7 @@ uint8_t ResetICC(
   }
   if(logger)
   {
-    LogByte4(
-        logger,
-        LOG_TIME_GENERAL,
-        (time & 0xFF),
-        ((time >> 8) & 0xFF),
-        ((time >> 16) & 0xFF),
-        ((time >> 24) & 0xFF));
+    LogCurrentTime(logger);
     LogByte1(logger, LOG_ICC_ACTIVATED, 0);
   }
 
@@ -811,9 +804,7 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
     uint8_t *TA3, uint8_t *TB3, log_struct_t *logger)
 {
   uint8_t tmp;
-  uint16_t tfreq, tdelay;
   int8_t tmpi;
-  uint32_t time;
   uint16_t atr_selection;
   uint8_t atr_bytes[32];
   uint8_t atr_tck;
@@ -828,50 +819,63 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
   // start timer for terminal
   StartCounterTerminal();	
 
-  // wait for terminal CLK
-  for(i = 0; i < MAX_WAIT_TERMINAL / 10; i++)
+  // wait for terminal CLK enough to allow for consecutive resets that may
+  // happen with large delay while logging some particular application.
+  // However, don't wait too much (e.g. more than 10-15 s) as that would be
+  // annoying.
+  // Note that we can get some clock at this point during the card deactivation
+  // procedure, for which we compensate on the next check.
+  error = WaitTerminalClock(MAX_WAIT_TERMINAL_CLK);
+  if(error)
   {
-    if(ReadCounterTerminal() >=  10) // this will be T0
+#if DEBUG
+    LogByte1(logger, LOG_DEBUG_TEST1, 0);
+#endif
+    if(logger)
     {
-      done = 1;
-      break;
+      LogCurrentTime(logger);
+      LogByte1(logger, LOG_TERMINAL_NO_CLOCK, 0);
     }
-  }
-
-  if(!done)
-  {
-    error = RET_TERMINAL_TIME_OUT;
     goto enderror;
   }
 
-  time = GetCounter();
+  // Wait enough time for terminal reset to go high,
+  // in order to allow logging transactions with a large delay
+  // between consecutive resets from same transactions
+  error = WaitTerminalResetHigh(MAX_WAIT_TERMINAL_RESET);
+  if(error)
+  {
+#if DEBUG
+    LogByte1(logger, LOG_DEBUG_TEST2, 0);
+#endif
+    if(logger)
+    {
+      LogCurrentTime(logger);
+      LogByte1(logger, LOG_TERMINAL_TIME_OUT, 0);
+    }
+    goto enderror;
+  }
+
+  // Check we still have clock from terminal, in case the reset high is due to
+  // SCD pull-ups and physically disconnected terminal.
+  if(IsTerminalClock() == 0)
+  {
+#if DEBUG
+    LogByte1(logger, LOG_DEBUG_TEST3, 0);
+#endif
+    if(logger)
+    {
+      LogCurrentTime(logger);
+      LogByte1(logger, LOG_TERMINAL_NO_CLOCK, 0);
+    }
+    error = RET_TERMINAL_NO_CLOCK;
+    goto enderror;
+  }
+
   if(logger)
   {
-    LogByte4(
-        logger,
-        LOG_TIME_GENERAL,
-        (time & 0xFF),
-        ((time >> 8) & 0xFF),
-        ((time >> 16) & 0xFF),
-        ((time >> 24) & 0xFF));
-    LogByte1(logger, LOG_TERMINAL_CLK_ACTIVE, 0);
-  }
-
-  // get the terminal frequency
-  tfreq = GetTerminalFreq();
-  tdelay = 10 * tfreq;
-
-  //Wait for terminal reset to go high within 45000 terminal clocks
-  tmp = (uint8_t)(45400 / 372);
-  error = LoopTerminalETU(tmp);
-  if(error)
-    goto enderror;
-
-  // Check terminal reset line
-  if(GetTerminalResetLine() == 0)
-  {
-    error = RET_ERROR;
-    goto enderror;
+    LogCurrentTime(logger);
+    LogByte1(logger, LOG_TERMINAL_RST_HIGH, 0);
   }
 
   // Send the TS byte now
@@ -1074,7 +1078,7 @@ uint8_t GetCommandCase(uint8_t cla, uint8_t ins)
 
 
 /**
- * Receive a response from ICC for protocol T = 0
+ * Receive a command header from terminal for protocol T = 0
  *
  * @param inverse_convention different than 0 if inverse
  * convention is to be used
@@ -1092,7 +1096,6 @@ EMVCommandHeader* ReceiveT0CmdHeader(
 {
   uint8_t tdelay, result;
   EMVCommandHeader *cmdHeader;
-  uint32_t time;
 
   cmdHeader = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
   if(cmdHeader == NULL)
@@ -1105,7 +1108,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
   tdelay = 1 + TC1;
 
   result = GetByteTerminalParity(
-      inverse_convention, &(cmdHeader->cla), MAX_WAIT_TERMINAL);
+      inverse_convention, &(cmdHeader->cla), MAX_WAIT_TERMINAL_CMD);
   if(result != 0)
     goto enderror;
   if(logger)
@@ -1113,7 +1116,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
   LoopTerminalETU(tdelay);	
 
   result = GetByteTerminalParity(
-      inverse_convention, &(cmdHeader->ins), MAX_WAIT_TERMINAL);
+      inverse_convention, &(cmdHeader->ins), MAX_WAIT_TERMINAL_CMD);
   if(result != 0)
     goto enderror;
   if(logger)
@@ -1121,7 +1124,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
   LoopTerminalETU(tdelay);	
 
   result = GetByteTerminalParity(
-      inverse_convention, &(cmdHeader->p1), MAX_WAIT_TERMINAL);
+      inverse_convention, &(cmdHeader->p1), MAX_WAIT_TERMINAL_CMD);
   if(result != 0)
     goto enderror;
   if(logger)
@@ -1129,7 +1132,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
   LoopTerminalETU(tdelay);	
 
   result = GetByteTerminalParity(
-      inverse_convention, &(cmdHeader->p2), MAX_WAIT_TERMINAL);
+      inverse_convention, &(cmdHeader->p2), MAX_WAIT_TERMINAL_CMD);
   if(result != 0)
     goto enderror;
   if(logger)
@@ -1137,7 +1140,7 @@ EMVCommandHeader* ReceiveT0CmdHeader(
   LoopTerminalETU(tdelay);	
 
   result = GetByteTerminalParity(
-      inverse_convention, &(cmdHeader->p3), MAX_WAIT_TERMINAL);
+      inverse_convention, &(cmdHeader->p3), MAX_WAIT_TERMINAL_CMD);
   if(result != 0)
     goto enderror;
   if(logger)
@@ -1149,14 +1152,7 @@ enderror:
   free(cmdHeader);
   if(logger)
   {
-    time = GetCounter();
-    LogByte4(
-        logger,
-        LOG_TIME_GENERAL,
-        (time & 0xFF),
-        ((time >> 8) & 0xFF),
-        ((time >> 16) & 0xFF),
-        ((time >> 24) & 0xFF));
+    LogCurrentTime(logger);
 
     if(result == RET_TERMINAL_RESET_LOW)
     {
@@ -1215,7 +1211,7 @@ uint8_t* ReceiveT0CmdData(
   for(i = 0; i < len - 1; i++)
   {
     result = GetByteTerminalParity(
-        inverse_convention, &(cmdData[i]), MAX_WAIT_TERMINAL);
+        inverse_convention, &(cmdData[i]), MAX_WAIT_TERMINAL_CMD);
     if(result != 0)
       goto enderror;
     if(logger)
@@ -1225,7 +1221,7 @@ uint8_t* ReceiveT0CmdData(
 
   // Do not add a delay after the last byte
   result = GetByteTerminalParity(
-      inverse_convention, &(cmdData[i]), MAX_WAIT_TERMINAL);
+      inverse_convention, &(cmdData[i]), MAX_WAIT_TERMINAL_CMD);
   if(result != 0)
     goto enderror;
   if(logger)
@@ -1481,21 +1477,10 @@ uint8_t SendT0Command(
     log_struct_t *logger)
 {
   uint8_t tdelay, tmp, tmp2, i;	
-  uint32_t time;
 
   if(cmd == NULL) return RET_ERROR;
   tdelay = 1 + TC1;
-  if(logger)
-  {
-    time = GetCounter();
-    LogByte4(
-        logger,
-        LOG_TIME_DATA_TO_ICC,
-        (time & 0xFF),
-        ((time >> 8) & 0xFF),
-        ((time >> 16) & 0xFF),
-        ((time >> 24) & 0xFF));
-  }
+  LogCurrentTime(logger);
 
   tmp = GetCommandCase(cmd->cmdHeader->cla, cmd->cmdHeader->ins);	
   if(tmp == 0)
@@ -1733,21 +1718,25 @@ RAPDU* ReceiveT0Response(
     EMVCommandHeader *cmdHeader,
     log_struct_t *logger)
 {
-  uint8_t tmp, i;
+  uint8_t tmp, i, result;
   RAPDU* rapdu;
 
   if(cmdHeader == NULL) return NULL;
 
   rapdu = (RAPDU*)malloc(sizeof(RAPDU));
-  if(rapdu == NULL) return 0;
+  if(rapdu == NULL)
+  {
+    result = RET_ERR_MEMORY;
+    goto enderror;
+  }
   rapdu->repStatus = NULL;
   rapdu->repData = NULL;
   rapdu->lenData = 0;
-  tmp = GetCommandCase(cmdHeader->cla, cmdHeader->ins);		
-  if(tmp == 0)
+  result = GetCommandCase(cmdHeader->cla, cmdHeader->ins);		
+  if(result == 0)
   {
-    free(rapdu);
-    return NULL;
+    result = RET_ERROR;
+    goto enderror;
   }
 
 
@@ -1757,38 +1746,26 @@ RAPDU* ReceiveT0Response(
     rapdu->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
     if(rapdu->repStatus == NULL)
     {
-      free(rapdu);
-      return NULL;
+      result = RET_ERR_MEMORY;
+      goto enderror;
     }
 
-    if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw1)))
-    {
-      free(rapdu->repStatus);
-      rapdu->repStatus = NULL;
-      free(rapdu);
-      return NULL;
-    }
+    result = GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw1));
+    if(result != 0)
+      goto enderror;
     if(logger)
       LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw1);
 
     if(rapdu->repStatus->sw1 == 0x60)
     {
       // requested more time, recall
-      free(rapdu->repStatus);
-      rapdu->repStatus = NULL;
-      free(rapdu);
-
+      FreeRAPDU(rapdu);
       return ReceiveT0Response(inverse_convention, cmdHeader, logger);
-
     }
 
-    if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2)))
-    {
-      free(rapdu->repStatus);
-      rapdu->repStatus = NULL;
-      free(rapdu);
-      return NULL;
-    }
+    result = GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2));
+    if(result != 0)
+      goto enderror;
     if(logger)
       LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw2);
 
@@ -1796,19 +1773,16 @@ RAPDU* ReceiveT0Response(
   }
 
   // for case 2 and 4, we might get data based on first byte of response	
-  if(GetByteICCParity(inverse_convention, &tmp))
-  {
-    free(rapdu);
-    return NULL;
-  }
+  result = GetByteICCParity(inverse_convention, &tmp);
+  if(result != 0)
+    goto enderror;
   if(logger)
     LogByte1(logger, LOG_BYTE_FROM_ICC, tmp);
 
   if(tmp == 0x60)
   {
     // requested more time, recall
-    free(rapdu);
-
+    FreeRAPDU(rapdu);
     return ReceiveT0Response(inverse_convention, cmdHeader, logger);
   }
 
@@ -1822,23 +1796,15 @@ RAPDU* ReceiveT0Response(
     rapdu->repData = (uint8_t*)malloc(rapdu->lenData*sizeof(uint8_t));
     if(rapdu->repData == NULL)
     {
-#if DEBUG
-      fprintf(stderr, "Failed  MALLOC\n");
-      _delay_ms(1000);
-#endif
-      free(rapdu);
-      return NULL;
+      result = RET_ERR_MEMORY;
+      goto enderror;
     }
 
     for(i = 0; i < rapdu->lenData; i++)
     {
-      if(GetByteICCParity(inverse_convention, &(rapdu->repData[i])))
-      {
-        free(rapdu->repData);
-        rapdu->repData = NULL;
-        free(rapdu);
-        return NULL;
-      }
+      result = GetByteICCParity(inverse_convention, &(rapdu->repData[i]));
+      if(result != 0)
+        goto enderror;
       if(logger)
         LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repData[i]);
     }		
@@ -1846,33 +1812,19 @@ RAPDU* ReceiveT0Response(
     rapdu->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
     if(rapdu->repStatus == NULL)
     {
-      free(rapdu->repData);
-      rapdu->repData = NULL;
-      free(rapdu);
-      return NULL;
+      result = RET_ERR_MEMORY;
+      goto enderror;
     }
 
-    if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw1)))
-    {
-      free(rapdu->repData);
-      rapdu->repData = NULL;
-      free(rapdu->repStatus);
-      rapdu->repStatus = NULL;
-      free(rapdu);
-      return NULL;
-    }
+    result = GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw1));
+    if(result != 0)
+      goto enderror;
     if(logger)
       LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw1);
 
-    if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2)))
-    {
-      free(rapdu->repData);
-      rapdu->repData = NULL;
-      free(rapdu->repStatus);
-      rapdu->repStatus = NULL;
-      free(rapdu);
-      return NULL;
-    }
+    result = GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2));
+    if(result != 0)
+      goto enderror;
     if(logger)
       LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw2);
 
@@ -1882,23 +1834,36 @@ RAPDU* ReceiveT0Response(
     rapdu->repStatus = (EMVStatus*)malloc(sizeof(EMVStatus));
     if(rapdu->repStatus == NULL)
     {			
-      free(rapdu);
-      return NULL;
+      result = RET_ERR_MEMORY;
+      goto enderror;
     }
 
     rapdu->repStatus->sw1 = tmp;
-    if(GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2)))
-    {
-      free(rapdu->repStatus);
-      rapdu->repStatus = NULL;
-      free(rapdu);
-      return NULL;
-    }
+    result = GetByteICCParity(inverse_convention, &(rapdu->repStatus->sw2));
+    if(result != 0)
+      goto enderror;
     if(logger)
       LogByte1(logger, LOG_BYTE_FROM_ICC, rapdu->repStatus->sw2);
   }
 
   return rapdu;
+
+enderror:
+  FreeRAPDU(rapdu);
+  if(logger)
+  {
+    LogCurrentTime(logger);
+
+    if(result == RET_ERR_MEMORY)
+    {
+      LogByte1(logger, LOG_ERROR_MEMORY, 0);
+    }
+    else if(result == RET_ERROR)
+    {
+      LogByte1(logger, LOG_ICC_ERROR_RECEIVE, 0);
+    }
+  }
+  return NULL;
 }
 
 
@@ -1920,41 +1885,77 @@ uint8_t SendT0Response(
     log_struct_t *logger)
 {
   uint8_t i;	
+  uint8_t result;
 
-  if(cmdHeader == NULL || response == NULL) return RET_ERROR;	
+  if(cmdHeader == NULL || response == NULL || response->repStatus == NULL)
+    return RET_ERR_PARAM;	
 
   if(response->lenData > 0 && response->repData != NULL)
   {
-    if(SendByteTerminalParity(cmdHeader->ins, inverse_convention))
-      return RET_ERROR;
+    result = SendByteTerminalParity(cmdHeader->ins, inverse_convention);
+    if(result != 0)
+    {
+      if(logger)
+      {
+        LogCurrentTime(logger);
+        LogByte1(logger, LOG_TERMINAL_ERROR_SEND, cmdHeader->ins);
+      }
+      goto enderror;
+    }
     if(logger)
       LogByte1(logger, LOG_BYTE_TO_TERMINAL, cmdHeader->ins);
     LoopTerminalETU(2);
 
     for(i = 0; i < response->lenData; i++)
     {			
-      if(SendByteTerminalParity(response->repData[i], inverse_convention))
-        return RET_ERROR;
+      result = SendByteTerminalParity(response->repData[i], inverse_convention);
+      if(result != 0)
+      {
+        if(logger)
+        {
+          LogCurrentTime(logger);
+          LogByte1(logger, LOG_TERMINAL_ERROR_SEND, response->repData[i]);
+        }
+        goto enderror;
+      }
       if(logger)
         LogByte1(logger, LOG_BYTE_TO_TERMINAL, response->repData[i]);
       LoopTerminalETU(2);
     }
   }
 
-  if(response->repStatus == NULL) return RET_ERROR;
-
-  if(SendByteTerminalParity(response->repStatus->sw1, inverse_convention))
-    return RET_ERROR;
+  result = SendByteTerminalParity(response->repStatus->sw1, inverse_convention);
+  if(result != 0)
+  {
+    if(logger)
+    {
+      LogCurrentTime(logger);
+      LogByte1(logger, LOG_TERMINAL_ERROR_SEND, response->repStatus->sw1);
+    }
+    goto enderror;
+  }
   if(logger)
     LogByte1(logger, LOG_BYTE_TO_TERMINAL, response->repStatus->sw1);
   LoopTerminalETU(2);
-  if(SendByteTerminalParity(response->repStatus->sw2, inverse_convention))
-    return RET_ERROR;	
+
+  result = SendByteTerminalParity(response->repStatus->sw2, inverse_convention);
+  if(result != 0)
+  {
+    if(logger)
+    {
+      LogCurrentTime(logger);
+      LogByte1(logger, LOG_TERMINAL_ERROR_SEND, response->repStatus->sw2);
+    }
+    goto enderror;
+  }
   if(logger)
     LogByte1(logger, LOG_BYTE_TO_TERMINAL, response->repStatus->sw2);
   LoopTerminalETU(2);
 
   return 0;
+
+enderror:
+  return RET_ERROR;
 }
 
 /**
@@ -1980,13 +1981,15 @@ RAPDU* ForwardResponse(
   RAPDU* response;
   uint8_t err;
 
-  if(cmdHeader == NULL) return NULL;
+  if(cmdHeader == NULL)
+    return NULL;
 
   if((log_dir & LOG_DIR_ICC) > 0)
     response = ReceiveT0Response(cInverse, cmdHeader, logger);
   else
     response = ReceiveT0Response(cInverse, cmdHeader, NULL);
-  if(response == NULL) return NULL;
+  if(response == NULL)
+    return NULL;
 
   if((log_dir & LOG_DIR_TERMINAL) > 0)
     err = SendT0Response(tInverse, cmdHeader, response, logger);
