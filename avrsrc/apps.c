@@ -385,11 +385,15 @@ uint8_t Terminal(log_struct_t *logger)
   DisableICCInsertInterrupt();
 
   // Expect the card to be inserted first and then start
-  fprintf(stderr, "%s\n", strInsertCard);
+  if(lcdAvailable)
+    fprintf(stderr, "%s\n", strInsertCard);
   while(IsICCInserted() == 0);
-  fprintf(stderr, "%s\n", strCardInserted);
+  if(lcdAvailable)
+    fprintf(stderr, "%s\n", strCardInserted);
   if(logger)
     LogByte1(logger, LOG_ICC_INSERTED, 0);
+  if(lcdAvailable)
+    fprintf(stderr, "Working ...\n");
 
   EnableWDT(4000);
 
@@ -927,7 +931,7 @@ uint8_t DummyPIN(log_struct_t *logger)
   {
     InitLCD();
     fprintf(stderr, "\n");
-    fprintf(stderr, "Dummy   PIN\n");
+    fprintf(stderr, "Dummy    PIN\n");
     _delay_ms(1000);
   }
 
@@ -1067,10 +1071,12 @@ enderror:
  * from terminal to ICC and back until the terminal sends
  * a reset signal. 
  * 
- * When a reset signal is received the SCD restarts. The reset
- * signal can be used to copy the log data into EEPROM
- * as in the current implementation. The EEPROM data can then
- * be retrieved using any programmer.
+ * This method can handle several consecutive terminal resets and they will be
+ * all logged as part of the same transaction as long as the delay between them
+ * is not too large.
+ *
+ * The log will be stored in EEPROM and can be retrieved using any programmer,
+ * but I recommend using the Python tools.
  *
  * @param logger the log structure or NULL if log is not desired
  * @return 0 if successful, non-zero otherwise. See scd_values.h for details.

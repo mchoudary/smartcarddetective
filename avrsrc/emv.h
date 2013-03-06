@@ -163,6 +163,9 @@ CAPDU* MakeCommandP(const EMVCommandHeader *cmdHdr, const uint8_t cmdData[],
 CAPDU* MakeCommandC(EMV_CMD command, const uint8_t cmdData[],
         uint8_t lenData);
 
+/// Initiates the communication with terminal
+uint8_t InitEMVTerminal(log_struct_t *logger);
+
 /// Initiates the communication with both the ICC and terminal for T=0
 uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1, 
         uint8_t *inverse_convention, uint8_t *proto, uint8_t *TC1, 

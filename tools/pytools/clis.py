@@ -113,7 +113,7 @@ def serial_terminal(port, fid = sys.stdin):
       ser.write(AT_CMD.AT_CCEND)
       ser.flush()
       line = ser.readline()
-      ser.flush()
+      print 'Response: ', line
       ser.close();
       if line.find('AT OK') >= 0:
         return True
@@ -152,8 +152,9 @@ def serial_card(port, fid = sys.stdin):
     line = fid.readline()
     if line.find('0000000000') == 0:
       fid.close()
-      ser.write(AT_CMD.AT_CCEND)
-      ser.flush()
+      print 'Waiting for final result'
+      #ser.write(AT_CMD.AT_CCEND)
+      #ser.flush()
       line = ser.readline()
       ser.close();
       if line.find('AT OK') >= 0:
@@ -167,6 +168,10 @@ def serial_card(port, fid = sys.stdin):
       ser.flush()
       line = ser.readline()
       print 'Data from Terminal: ', line
+      if line.find('AT OK') >= 0:
+        return True
+      elif line.find('AT BAD') >= 0:
+        return False
 
 
 def visualise_scd_eeprom(port, filename):
@@ -229,7 +234,8 @@ def main():
       default = False, metavar = 'filename',
       help='Requests the SCD to act as a card and send the commands (ATR and RAPDUs) from the given filename (default stdin).\
           The RAPDUs must be complete responses (status + data) with no spaces in between; one per line.\n\
-          The file must start with the ATR, then a sequence of commands and should end with the string "0000000000".\n\
+          The file must start with the ATR without TS (i.e. without the first byte of the ATR),\n\
+          then a sequence of commands and should end with the string "0000000000".\n\
           Example:                         \n\
           3B6500002063CB6600  (ATR) \n\
           611B  (More data available)\n\
@@ -298,7 +304,7 @@ def main():
       raise
   elif args.usercard != False:
     try:
-      print "Starting user card...\n"
+      print "Starting user card, follow SCD screen..."
       result = serial_card(args.port, args.usercard)
       if result == True:
         print "All done"

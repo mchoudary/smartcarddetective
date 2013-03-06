@@ -71,6 +71,7 @@ static const char strAT_CCEND[] = "AT+CCEND";
 static const char strAT_CTWAIT[] = "AT+CTWAIT";
 static const char strAT_RBAD[] = "AT BAD\r\n";
 static const char strAT_ROK[] = "AT OK\r\n";
+static const char strAT_RTRESET[] = "AT TRESET\r\n";
 
 
 /**
@@ -394,14 +395,13 @@ void BytesToHexChars(char* dest, uint8_t *data, uint32_t len)
   }*/
 
 /**
- * This method implements communication between USB and Terminal
+ * This method implements communication between USB and Terminal, which can be
+ * used to emulate a card with data from a host PC.
  *
  * The SCD receives instructions from the Virtual Serial host and communicates
- * with the Terminal. This can be used to forward the data from the terminal
+ * with a Terminal. This can be used to forward the data from the terminal
  * over a host and then getting back RAPDUs that are sent to the terminal.
  * This method should be called upon reciving the AT+CCINIT serial command.
- *
- * This function never returns, after completion it will restart the SCD.
  *
  * @param logger the log structure or NULL if a log is not desired
  * @return zero if success, non-zero otherwise
@@ -410,8 +410,9 @@ uint8_t TerminalUSB(log_struct_t *logger)
 {
   //uint8_t convention, proto, TC1, TA3, TB3;
   uint8_t t_inverse = 0, t_TC1 = 0;
-  uint8_t tmp, i, lparams, ldata, error, done;
-  char *buf, *atparams = NULL;
+  uint8_t tmp, i, lparams, error;
+  char *buf = NULL;
+  char *atparams = NULL;
   char reply[USB_BUF_SIZE];
   uint8_t *data;
   uint32_t len;
@@ -419,92 +420,45 @@ uint8_t TerminalUSB(log_struct_t *logger)
   RAPDU *response = NULL;
   CAPDU *command = NULL;
 
-  // Send OK to host to get ATR
+  // Send OK to host to get first ATR
   SendHostData(strAT_ROK);
 
-  // Get the ATR from host
-  buf = GetHostData(USB_BUF_SIZE);
-  if(buf == NULL)
-  {
-    error = RET_ERROR;
-    goto enderror;
-  }
-
-  tmp = ParseATCommand(buf, &atcmd, &atparams);
-  lparams = strlen(atparams);
-  if(atcmd != AT_UDATA)
-  {
-    error = RET_ERROR;
-    goto enderror;
-  }
-
-  // Now we have the ATR, wait for start of transaction from Terminal
+  // Now wait for start of transaction from Terminal
   if(lcdAvailable)
     fprintf(stderr, "Connect terminal\n");
   if(logger)
     LogByte1(logger, LOG_BYTE_ATR_FROM_USB, 0);
   while(GetTerminalResetLine() != 0);
-  StartCounterTerminal();	
-
-  // wait for terminal CLK
-  error = WaitTerminalClock(MAX_WAIT_TERMINAL_CLK);
-  if(error)
-  {
-    if(logger)
-      LogByte1(logger, LOG_TERMINAL_NO_CLOCK, 0);
-    goto enderror;
-  }
-
   if(logger)
-  {
-    LogCurrentTime(logger);
-    LogByte1(logger, LOG_TERMINAL_RST_HIGH, 0);
-  }
+    LogByte1(logger, LOG_TERMINAL_RST_LOW, 0);
+  StartCounterTerminal();	
+  if(lcdAvailable)
+    fprintf(stderr, "Working...\n");
 
-  //Wait for terminal reset to go high within 45000 terminal clocks
-  tmp = (uint8_t)(45400 / 372);
-  error = LoopTerminalETU(tmp);
-  if(error)
-    goto enderror;
-
-  // Check terminal reset line
-  if(GetTerminalResetLine() == 0)
+  // Loop until there is no clock from terminal or a timeout occurs.
+  // This allows to cope with transactions where the reader might reset the
+  // communication several times (e.g. warm reset).
+  while(1) // external loop
   {
-    error = RET_ERROR;
-    goto enderror;
-  }
-
-  // Send the ATR to the terminal
-  for(i = 0; i < lparams/2; i++)
-  {
-    tmp = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
-    SendByteTerminalNoParity(tmp, t_inverse);
-    if(logger)
-      LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, tmp);
-    LoopTerminalETU(2);
-  }
-  free(buf);
-
-  // Keep receiving terminal commands and replies from the USB host
-  while(1)
-  {
-    // receive/send command to terminal
-    command = ReceiveT0Command(t_inverse, t_TC1, logger);
-    if(command == NULL)
-    {
-      error = RET_ERROR;
+    error = InitEMVTerminal(logger);
+    if(error)
       goto enderror;
-    }
-    data = SerializeCommand(command, &len);
-    FreeCAPDU(command);
-    BytesToHexChars(reply, data, len);
-    reply[2*len] = '\r';
-    reply[2*len + 1] = '\n';
-    reply[2*len + 2] = 0;
-    SendHostData(reply);
 
-askhost:
-    // receive/send reply to card
+    // Send the TS byte now
+    if(t_inverse)
+    {
+      SendByteTerminalNoParity(0x3F, t_inverse);
+      if(logger)
+        LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3F);
+    }
+    else
+    {
+      SendByteTerminalNoParity(0x3B, t_inverse);
+      if(logger)
+        LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, 0x3B);
+    }
+
+    // Get the next ATR from host
     buf = GetHostData(USB_BUF_SIZE);
     if(buf == NULL)
     {
@@ -512,42 +466,133 @@ askhost:
       goto enderror;
     }
 
-    tmp = ParseATCommand(buf, &atcmd, &atparams);
-    lparams = strlen(atparams);
-    if(atcmd == AT_CCEND)
-    {
-      if(logger)
-        LogByte1(logger, LOG_BYTE_CCEND_FROM_USB, tmp);
-      error = 0;
+    error = ParseATCommand(buf, &atcmd, &atparams);
+    if(error != 0)
       goto enderror;
-    }
-    else if(atcmd == AT_CTWAIT)
-    {
-      SendByteTerminalNoParity(0x60, t_inverse);
-      if(logger)
-        LogByte1(logger, LOG_TERMINAL_MORE_TIME, 0x00);
-      goto askhost;
-    }
-    else if(atcmd != AT_UDATA)
+    len = strlen(atparams);
+    if(atcmd != AT_UDATA)
     {
       error = RET_ERROR;
       goto enderror;
     }
-    for(i = 0; i < lparams/2; i++)
+
+    // Send the rest of ATR to the terminal
+    for(i = 0; i < len/2; i++)
     {
       tmp = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
       SendByteTerminalNoParity(tmp, t_inverse);
       if(logger)
-        LogByte1(logger, LOG_BYTE_TO_TERMINAL, tmp);
+        LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, tmp);
       LoopTerminalETU(2);
     }
     free(buf);
-  }
 
+    // update transaction counter
+    nCounter++;
+
+    // Continually exchange commands until a terminal reset or timeout or until
+    // the USB host decides to stop
+    while(1) // internal while
+    {
+      // receive command from terminal
+      command = ReceiveT0Command(t_inverse, t_TC1, logger);
+      if(command == NULL)
+      {
+        // we assume a timeout due to restart, and signal this to USB host, who
+        // should be sending back a new ATR
+        SendHostData(strAT_RTRESET);
+
+        // restart external loop
+        break;
+      }
+
+      // send command to USB host
+      data = SerializeCommand(command, &len);
+      FreeCAPDU(command);
+      if(data == NULL)
+        break;
+      BytesToHexChars(reply, data, len);
+      free(data);
+      reply[2*len] = '\r';
+      reply[2*len + 1] = '\n';
+      reply[2*len + 2] = 0;
+      SendHostData(reply);
+
+askhost:
+      // receive response from USB
+      buf = GetHostData(USB_BUF_SIZE);
+      if(buf == NULL)
+      {
+        error = RET_USB_ERR_RECEIVE;
+        if(logger)
+        {
+          LogCurrentTime(logger);
+          LogByte1(logger, LOG_USB_ERROR_RECEIVE, 0);
+        }
+        goto enderror;
+      }
+
+      error = ParseATCommand(buf, &atcmd, &atparams);
+      if(error)
+        goto enderror;
+      lparams = strlen(atparams);
+      if(atcmd == AT_CCEND)
+      {
+        if(logger)
+          LogByte1(logger, LOG_BYTE_CCEND_FROM_USB, 0);
+        goto endgood;
+      }
+      else if(atcmd == AT_CTWAIT)
+      {
+        SendByteTerminalNoParity(0x60, t_inverse);
+        if(logger)
+          LogByte1(logger, LOG_TERMINAL_MORE_TIME, 0x60);
+        free(buf);
+        goto askhost;
+      }
+      else if(atcmd != AT_UDATA)
+      {
+        error = RET_ERROR;
+        goto enderror;
+      }
+
+      // Send response to terminal
+      for(i = 0; i < lparams/2; i++)
+      {
+        tmp = hexCharsToByte(atparams[2*i], atparams[2*i + 1]);
+        error = SendByteTerminalParity(tmp, t_inverse);
+        if(error)
+        {
+          if(logger)
+          {
+            LogCurrentTime(logger);
+            LogByte1(logger, LOG_TERMINAL_ERROR_SEND, response->repData[i]);
+          }
+          goto enderror;
+        }
+        if(logger)
+          LogByte1(logger, LOG_BYTE_TO_TERMINAL, tmp);
+        LoopTerminalETU(2);
+      }
+      free(buf);
+    } // end internal loop
+  } // end external loop
+
+endgood:
+  error = 0;
 
 enderror:
+  DeactivateICC();
+  if(buf != NULL)
+    free(buf);
+  if((error == RET_TERMINAL_TIME_OUT) || (error == RET_TERMINAL_NO_CLOCK))
+  {
+    // these errors are logged and used as a signal to stop
+    error = 0;
+  }
   if(logger)
   {
+    LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
     if(lcdAvailable)
       fprintf(stderr, "Writing Log\n");
     WriteLogEEPROM(logger);

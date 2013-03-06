@@ -69,15 +69,21 @@ typedef enum {
  * These are defined next.
  */
 typedef enum {
-    // EMV/ISO-7816/USB data bytes
+    // EMV/ISO-7816 data bytes
     LOG_BYTE_ATR_FROM_ICC = (0x00 << 2 | 0x00),             // 0x00
     LOG_BYTE_ATR_TO_TERMINAL = (0x01 << 2 | 0x00),          // 0x04
     LOG_BYTE_TO_TERMINAL = (0x02 << 2 | 0x00),              // 0x08
     LOG_BYTE_FROM_TERMINAL = (0x03 << 2 | 0x00),            // 0x0C
     LOG_BYTE_TO_ICC = (0x04 << 2 | 0x00),                   // 0x10
     LOG_BYTE_FROM_ICC = (0x05 << 2 | 0x00),                 // 0x14
-    LOG_BYTE_ATR_FROM_USB = (0x06 << 2 | 0x00),             // 0x18
-    LOG_BYTE_CCEND_FROM_USB = (0x07 << 2 | 0x00),           // 0x1C
+
+    // USB events
+    LOG_BYTE_ATR_FROM_USB = (0x08 << 2 | 0x00),             // 0x20
+    LOG_BYTE_CCEND_FROM_USB = (0x09 << 2 | 0x00),           // 0x24
+    LOG_BYTE_FROM_USB = (0x0A << 2 | 0x00),                 // 0x28
+    LOG_BYTE_TO_USB = (0x0B << 2 | 0x00),                   // 0x2C
+    LOG_USB_ERROR_RECEIVE = (0x0C << 2 | 0x00),             // 0x30
+    LOG_USB_ERROR_SEND = (0x0D << 2 | 0x00),                // 0x34
 
     // Terminal events
     LOG_TERMINAL_RST_HIGH = (0x10 << 2 | 0x00),             // 0x40

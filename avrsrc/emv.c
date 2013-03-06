@@ -766,55 +766,15 @@ CAPDU* MakeCommandC(EMV_CMD command, const uint8_t cmdData[],
 }
 
 /**
- * This function is used to establish the communication between
- * the terminal and the SCD and between the SCD and the ICC at
- * the same time.
+ * This function initializes the communication with an EMV terminal, following
+ * as much as possible the standard activation sequence.
  *
- * The ATR from the card is replicated to the terminal, with the exception
- * of the first byte (TS) which is dependent on the given parameter (t_inverse),
- * since this will be sent before retrieving the corresponding ICC value.
- *
- * If the function returs 0 (success) then both the terminal
- * and the ICC should be in a good state, where the terminal
- * is about to send the first command and the ICC is waiting
- * for a command
- *
- * This function assumes that the ICC was placed in the ICC
- * holder before being called and it will loop until the
- * terminal provides clock
- *
- * @param t_inverse specifies if direct(0) or inverse(non-zero)
- * convention should be used in the communication with the terminal.
- * Only direct convention should be used as specified in the standard.
- * @param t_TC1 specifies the TC1 byte of the ATR sent to the terminal.
- * This should be as small as possible in order to limit the latency
- * of communication or large if a specific timeout between bytes is desired.
- * @param inverse_convention direct (0) or inverse convention (1) is
- * used by the ICC, as returned in the ATR
- * @param proto protocol (T=0 or T=1) as returned by the ICC in the ATR
- * @param TC1 as returned by the ICC in the ATR
- * @param TA3 as returned by the ICC in the ATR
- * @param TB3 as returned by the ICC in the ATR
  * @param logger the log structure or NULL if no log is desired
  * @return 0 if success, non-zero otherwise.
- * @sa GetATRICC
  */
-uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1, 
-    uint8_t *inverse_convention, uint8_t *proto, uint8_t *TC1, 
-    uint8_t *TA3, uint8_t *TB3, log_struct_t *logger)
+uint8_t InitEMVTerminal(log_struct_t *logger)
 {
-  uint8_t tmp;
-  int8_t tmpi;
-  uint16_t atr_selection;
-  uint8_t atr_bytes[32];
-  uint8_t atr_tck;
-  uint8_t icc_T0, icc_TS;
   uint8_t error;
-  uint8_t index;
-  uint8_t history;
-  uint8_t done = 0;
-  uint32_t i;
-
 
   // start timer for terminal
   StartCounterTerminal();	
@@ -868,6 +828,65 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
     LogCurrentTime(logger);
     LogByte1(logger, LOG_TERMINAL_RST_HIGH, 0);
   }
+
+  // Loop 2 Terminal ETUs (approx 700 terminal clocks) so that we do not reply
+  // before 400 clock cycles
+  LoopTerminalETU(2);
+
+enderror:
+  return error;
+}
+
+/**
+ * This function is used to establish the communication between
+ * the terminal and the SCD and between the SCD and the ICC at
+ * the same time.
+ *
+ * The ATR from the card is replicated to the terminal, with the exception
+ * of the first byte (TS) which is dependent on the given parameter (t_inverse),
+ * since this will be sent before retrieving the corresponding ICC value.
+ *
+ * If the function returs 0 (success) then both the terminal
+ * and the ICC should be in a good state, where the terminal
+ * is about to send the first command and the ICC is waiting
+ * for a command
+ *
+ * This function assumes that the ICC was placed in the ICC
+ * holder before being called and it will loop until the
+ * terminal provides clock
+ *
+ * @param t_inverse specifies if direct(0) or inverse(non-zero)
+ * convention should be used in the communication with the terminal.
+ * Only direct convention should be used as specified in the standard.
+ * @param t_TC1 specifies the TC1 byte of the ATR sent to the terminal.
+ * This should be as small as possible in order to limit the latency
+ * of communication or large if a specific timeout between bytes is desired.
+ * @param inverse_convention direct (0) or inverse convention (1) is
+ * used by the ICC, as returned in the ATR
+ * @param proto protocol (T=0 or T=1) as returned by the ICC in the ATR
+ * @param TC1 as returned by the ICC in the ATR
+ * @param TA3 as returned by the ICC in the ATR
+ * @param TB3 as returned by the ICC in the ATR
+ * @param logger the log structure or NULL if no log is desired
+ * @return 0 if success, non-zero otherwise.
+ * @sa GetATRICC
+ */
+uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1, 
+    uint8_t *inverse_convention, uint8_t *proto, uint8_t *TC1, 
+    uint8_t *TA3, uint8_t *TB3, log_struct_t *logger)
+{
+  uint16_t atr_selection;
+  uint8_t atr_bytes[32];
+  uint8_t atr_tck;
+  uint8_t icc_T0, icc_TS;
+  uint8_t error;
+  uint8_t index;
+  uint8_t history;
+
+  // Initialize communication with Terminal
+  error = InitEMVTerminal(logger);
+  if(error)
+    goto enderror;
 
   // Send the TS byte now
   if(t_inverse)

@@ -76,6 +76,10 @@ typedef enum retstat{
     RET_EMV_DDA =                        0x34,
     RET_EMV_PIN_TRY_EXCEEDED =           0x35,
     RET_EMV_GENERATE_AC =                0x35,
+
+    // USB errors
+    RET_USB_ERR_RECEIVE =                0x40,
+    RET_USB_ERR_SEND =                   0x41,
 } RETURN_CODE;
 
 #endif // _SCD_VALUES_H_
