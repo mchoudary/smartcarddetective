@@ -58,11 +58,13 @@
 #define APP_FILTER_GENERATEAC 0x03
 /// Terminal application
 #define APP_TERMINAL 0x04
+/// Dummy PIN
+#define APP_DUMMY_PIN 0x05
 /// Erase EEPROM
-#define APP_ERASE_EEPROM 0x05
+#define APP_ERASE_EEPROM 0x06
 
 /// Number of existing applications
-#define APPLICATION_COUNT 5
+#define APPLICATION_COUNT 6
 
 /// Application strings shown in the user menu
 // These should be in the order of their IDs
@@ -71,6 +73,7 @@ static char* appStrings[] = {
     "Forward and Log", 
     "Filter  amount",
     "Terminal",
+    "Dummy PIN",
     "Erase   EEPROM",
 };
 
@@ -103,17 +106,11 @@ void RunBootloader();
 /// Forward commands between terminal and ICC through the ICC
 uint8_t ForwardData(log_struct_t *logger);
 
-/// Forward commands and responses but log only from Generate AC onwards
-uint8_t ForwardDataLogAC(log_struct_t *logger);
-
 /// Filter Generate AC command until user accepts or denies the transaction
 uint8_t FilterGenerateAC(log_struct_t *logger);
 
-/// Stores the PIN data from VERIFY command to EEPROM
-uint8_t StorePIN(log_struct_t *logger);
-
-/// Forward commands and modify VERIFY command with EEPROM PIN data
-uint8_t ForwardAndChangePIN(log_struct_t *logger);
+/// Forward commands and modify VERIFY command with a dummy PIN
+uint8_t DummyPIN(log_struct_t *logger);
 
 /// Run the terminal application
 uint8_t Terminal(log_struct_t *logger);

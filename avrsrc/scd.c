@@ -172,6 +172,10 @@ int main(void)
         Terminal(&scd_logger);
         break;
 
+      case APP_DUMMY_PIN:
+        DummyPIN(&scd_logger);
+        break;
+
       default:
         selected = APP_VIRTUAL_SERIAL_PORT;
         eeprom_write_byte((uint8_t*)EEPROM_APPLICATION, selected);

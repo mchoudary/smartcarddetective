@@ -828,9 +828,6 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
   error = WaitTerminalClock(MAX_WAIT_TERMINAL_CLK);
   if(error)
   {
-#if DEBUG
-    LogByte1(logger, LOG_DEBUG_TEST1, 0);
-#endif
     if(logger)
     {
       LogCurrentTime(logger);
@@ -845,9 +842,6 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
   error = WaitTerminalResetHigh(MAX_WAIT_TERMINAL_RESET);
   if(error)
   {
-#if DEBUG
-    LogByte1(logger, LOG_DEBUG_TEST2, 0);
-#endif
     if(logger)
     {
       LogCurrentTime(logger);
@@ -860,9 +854,6 @@ uint8_t InitSCDTransaction(uint8_t t_inverse, uint8_t t_TC1,
   // SCD pull-ups and physically disconnected terminal.
   if(IsTerminalClock() == 0)
   {
-#if DEBUG
-    LogByte1(logger, LOG_DEBUG_TEST3, 0);
-#endif
     if(logger)
     {
       LogCurrentTime(logger);

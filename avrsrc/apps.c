@@ -906,147 +906,28 @@ enderror:
 }
 
 /**
- * This function forwards commands between the terminal and ICC much like
- * the ForwardData method, but when it receives the Verify command
- * it stores the PIN entered by the user in the EEPROM. This is useful
- * in order to store the PIN once and then use it in further transactions
- * so that the original PIN is never revealed.
- *
- * This method returns immediately after receiving the verify command.
- * Thus PIN entry should be done for example using a CAP reader, where
- * the completion of this transaction is not essential.
- *
- * The PIN is stored in the EEPROM at the address mentioned by the
- * parameter EEPROM_PIN
- *
- * @param logger the log structure or NULL if log is not desired
- * @return This method returns zero (success) if the verify command
- * is sent with plaintext PIN. The method returns non-zero otherwise.
- */
-uint8_t StorePIN(log_struct_t *logger)
-{
-  uint8_t t_inverse = 0, t_TC1 = 0;
-  uint8_t cInverse, cProto, cTC1, cTA3, cTB3;
-  uint8_t tmp, len, error;
-  CRP *crp;		
-
-  if(lcdAvailable)
-  {
-    InitLCD();
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Store   PIN\n");
-    _delay_ms(1000);
-  }
-
-  DisableWDT();
-  DisableTerminalResetInterrupt();
-  DisableICCInsertInterrupt();
-
-  // Expect the card to be inserted first and then wait a for terminal reset
-  if(lcdAvailable)
-    fprintf(stderr, "%s\n", strInsertCard);
-  while(IsICCInserted() == 0);
-  if(lcdAvailable)
-    fprintf(stderr, "%s\n", strCardInserted);
-  if(logger)
-    LogByte1(logger, LOG_ICC_INSERTED, 0);
-  while(GetTerminalResetLine() != 0);
-  if(lcdAvailable)
-    fprintf(stderr, "%s\n", strTerminalReset);
-  if(logger)
-    LogByte1(logger, LOG_TERMINAL_RST_LOW, 0);
-
-  error = InitSCDTransaction(t_inverse, t_TC1, &cInverse, 
-      &cProto, &cTC1, &cTA3, &cTB3, logger);
-  if(error)
-    goto enderror;
-
-  while(1)
-  {
-    crp = ExchangeCompleteData(t_inverse, cInverse, t_TC1, cTC1, LOG_DIR_TERMINAL, logger);
-    if(crp == NULL)
-    {
-      break;
-    }
-
-    // check for verify command
-    if(crp->cmd->cmdHeader->cla == 0x00 &&
-        crp->cmd->cmdHeader->ins == 0x20)
-    {
-      // if PIN is not plaintext PIN then we abort
-      if(crp->cmd->cmdHeader->p2 != 0x80 || 
-          crp->cmd->cmdData == NULL)
-      {				
-        error = RET_TERMINAL_ENCRYPTED_PIN;
-        if(lcdAvailable)
-          fprintf(stderr, "Error:  %d\n", error);
-        goto enderror;
-      }
-
-      tmp = crp->cmd->cmdData[0];
-      len = crp->cmd->cmdHeader->p3;
-      if((tmp & 0xF0) != 0x20 || len != crp->cmd->lenData)
-      {
-        error = RET_ERROR;
-        if(lcdAvailable)
-          fprintf(stderr, "Error:  %d\n", error);
-        error = RET_ERROR;
-        goto enderror;
-      }
-
-      // Write PIN command data to EEPROM
-      cli();
-      eeprom_write_byte((uint8_t*)EEPROM_PIN, len);
-      eeprom_write_block(crp->cmd->cmdData, (void*)(EEPROM_PIN + 1), len);
-
-      // All done
-      if(lcdAvailable)
-        fprintf(stderr, "PIN stored\n");
-    }
-
-    FreeCRP(crp);
-  } // while(1)
-
-  error = 0;
-
-enderror:
-  DeactivateICC();
-  if(logger)
-  {
-    LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
-    if(lcdAvailable)
-      fprintf(stderr, "%s\n", strLog);
-    WriteLogEEPROM(logger);
-    ResetLogger(logger);
-  }
-
-  return error;
-}
-
-/**
  * This function is similar to ForwardData but it modifies the VERIFY
  * command. The command data of the VERIFY command is replaced with
- * stored data in EEPROM when the command is sent to the ICC. 
+ * a dummy PIN when the command is sent to the ICC. 
  * 
  * @param logger the log structure or NULL if log is not desired
  * @return 0 if successful, non-zero otherwise
  * @sa ForwardData
  */
-uint8_t ForwardAndChangePIN(log_struct_t *logger)
+uint8_t DummyPIN(log_struct_t *logger)
 {
   uint8_t t_inverse = 0, t_TC1 = 0, tdelay;
   uint8_t cInverse, cProto, cTC1, cTA3, cTB3;	
   CAPDU *cmd, *tcmd = NULL;
   RAPDU *response;	
-  uint8_t sreg, len;
-  uint8_t *pin;
+  ByteArray *pin = NULL;
   uint8_t error;
 
   if(lcdAvailable)
   {
     InitLCD();
     fprintf(stderr, "\n");
-    fprintf(stderr, "Change  PIN\n");
+    fprintf(stderr, "Dummy   PIN\n");
     _delay_ms(1000);
   }
 
@@ -1059,116 +940,115 @@ uint8_t ForwardAndChangePIN(log_struct_t *logger)
     fprintf(stderr, "%s\n", strInsertCard);
   while(IsICCInserted() == 0);
   if(lcdAvailable)
-    fprintf(stderr, "%s\n", strCardInserted);
+    fprintf(stderr, "Connect terminal\n");
   if(logger)
     LogByte1(logger, LOG_ICC_INSERTED, 0);
   while(GetTerminalResetLine() != 0);
   if(lcdAvailable)
-    fprintf(stderr, "%s\n", strTerminalReset);
+    fprintf(stderr, "Working ...\n");
   if(logger)
     LogByte1(logger, LOG_TERMINAL_RST_LOW, 0);
 
-  // read EEPROM PIN data
-  sreg = SREG;
-  cli();
-  len = eeprom_read_byte((uint8_t*)EEPROM_PIN);
-  SREG = sreg;
-  pin = (uint8_t*)malloc(len * sizeof(uint8_t));
+  // Create PIN array
+  pin = MakeByteArrayV(8, 0x24, 0x12, 0x34, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
   if(pin == NULL)
   {
-    error = RET_ERROR;	
-    goto enderror;
-  }
-  eeprom_read_block(pin, (void*)(EEPROM_PIN + 1), len);
-
-  error = InitSCDTransaction(t_inverse, t_TC1, &cInverse, 
-      &cProto, &cTC1, &cTA3, &cTB3, logger);
-  if(error)
-  {
-    if(lcdAvailable)
-    {
-      fprintf(stderr, "Error:  %d\n", error);
-      _delay_ms(1000);
-    }
+    error = RET_ERR_MEMORY;
     goto enderror;
   }
 
-  // forward commands and change VERIFY
-  while(1)
+  // Loop until there is no clock from terminal or a timeout occurs.
+  // This allows to log transactions where the reader might reset the
+  // communication several times (e.g. warm reset).
+  while(1) // external while
   {
-    cmd = ReceiveT0Command(t_inverse, t_TC1, logger);
-    if(cmd == NULL)
-    {
-      error = RET_ERROR;
+    error = InitSCDTransaction(t_inverse, t_TC1, &cInverse, 
+        &cProto, &cTC1, &cTA3, &cTB3, logger);
+    if(error)
       goto enderror;
-    }
 
-    // if PIN is plaintext then modify VERIFY command
-    if(cmd->cmdHeader->cla == 0 && 
-        cmd->cmdHeader->ins == 0x20 &&
-        cmd->cmdHeader->p2 == 0x80 &&
-        cmd->cmdData != NULL)
-    {	
-      // send modified VERIFY command
-      tdelay = 1 + cTC1;
-      tcmd = (CAPDU*)malloc(sizeof(CAPDU));
-      tcmd->cmdHeader = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
-      tcmd->cmdData = pin;
-      tcmd->lenData = len;
-      tcmd->cmdHeader->cla = cmd->cmdHeader->cla;
-      tcmd->cmdHeader->ins = cmd->cmdHeader->ins;
-      tcmd->cmdHeader->p1 = cmd->cmdHeader->p1;
-      tcmd->cmdHeader->p2 = cmd->cmdHeader->p2;
-      tcmd->cmdHeader->p3 = len;
+    // update transaction counter
+    nCounter++;
 
-
-      if(SendT0Command(cInverse, cTC1, tcmd, logger))
-      {
-        error = RET_ICC_SEND_CMD;
-        FreeCAPDU(cmd);
-        goto enderror;
-      }		
-
-      response = ForwardResponse(t_inverse, cInverse, tcmd->cmdHeader, LOG_DIR_BOTH, logger);
-      if(response == NULL)
-      {
-        error = RET_ERROR;
-        FreeCAPDU(cmd);			
-        FreeCAPDU(tcmd);
-        goto enderror;
-      }	
-
-      FreeCAPDU(cmd);	
-      FreeCAPDU(tcmd);		
-      FreeRAPDU(response);			
-    }
-    else  		
+    // forward commands and change VERIFY
+    while(1) // internal while
     {
-      if(SendT0Command(cInverse, cTC1, cmd, logger))
+      cmd = ReceiveT0Command(t_inverse, t_TC1, logger);
+      if(cmd == NULL)
+        break;
+
+      // if PIN is plaintext then modify VERIFY command
+      if(cmd->cmdHeader->cla == 0 && 
+          cmd->cmdHeader->ins == 0x20 &&
+          cmd->cmdHeader->p2 == 0x80 &&
+          cmd->cmdData != NULL)
       {	
-        error = RET_ICC_SEND_CMD;
-        FreeCAPDU(cmd);
-        goto enderror;
-      }
+        // send modified VERIFY command
+        tdelay = 1 + cTC1;
+        tcmd = (CAPDU*)malloc(sizeof(CAPDU));
+        tcmd->cmdHeader = (EMVCommandHeader*)malloc(sizeof(EMVCommandHeader));
+        tcmd->cmdData = pin->bytes;
+        tcmd->lenData = pin->len;
+        tcmd->cmdHeader->cla = cmd->cmdHeader->cla;
+        tcmd->cmdHeader->ins = cmd->cmdHeader->ins;
+        tcmd->cmdHeader->p1 = cmd->cmdHeader->p1;
+        tcmd->cmdHeader->p2 = cmd->cmdHeader->p2;
+        tcmd->cmdHeader->p3 = pin->len;
 
-      response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, LOG_DIR_BOTH, logger);
-      if(response == NULL)
+        if(SendT0Command(cInverse, cTC1, tcmd, logger))
+        {
+          error = RET_ICC_SEND_CMD;
+          FreeCAPDU(cmd);
+          goto enderror;
+        }		
+
+        response = ForwardResponse(t_inverse, cInverse, tcmd->cmdHeader, LOG_DIR_TERMINAL, logger);
+        if(response == NULL)
+        {
+          error = RET_ERROR;
+          FreeCAPDU(cmd);			
+          FreeCAPDU(tcmd);
+          goto enderror;
+        }	
+
+        FreeCAPDU(cmd);	
+        FreeCAPDU(tcmd);		
+        FreeRAPDU(response);			
+      }
+      else  		
       {
-        error = RET_ERROR;
-        FreeCAPDU(cmd);							
-        goto enderror;
+        if(SendT0Command(cInverse, cTC1, cmd, NULL))
+        {	
+          error = RET_ICC_SEND_CMD;
+          FreeCAPDU(cmd);
+          goto enderror;
+        }
+
+        response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, LOG_DIR_TERMINAL, logger);
+        if(response == NULL)
+        {
+          error = RET_ERROR;
+          FreeCAPDU(cmd);							
+          goto enderror;
+        }
+
+        FreeCAPDU(cmd);			
+        FreeRAPDU(response);
       }
 
-      FreeCAPDU(cmd);			
-      FreeRAPDU(response);
-    }					
-
-  } //end while(1)
+    }//end internal while
+  } // end external while
 
   error = 0;
 
 enderror:
+  FreeByteArray(pin);
   DeactivateICC();
+  if((error == RET_TERMINAL_TIME_OUT) || (error == RET_TERMINAL_NO_CLOCK))
+  {
+    // these errors are logged and used as a signal to stop
+    error = 0;
+  }
   if(logger)
   {
     LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
@@ -1237,7 +1117,8 @@ uint8_t ForwardData(log_struct_t *logger)
   // Loop until there is no clock from terminal or a timeout occurs.
   // This allows to log transactions where the reader might reset the
   // communication several times (e.g. warm reset).
-  while(1) {
+  while(1) // external while
+  {
     error = InitSCDTransaction(t_inverse, t_TC1, &cInverse,
         &cProto, &cTC1, &cTA3, &cTB3, logger);
     if(error)
@@ -1247,15 +1128,15 @@ uint8_t ForwardData(log_struct_t *logger)
     nCounter++;
 
     // Continually exchange commands until a terminal reset or timeout
-    while(1)
+    while(1) // internal while
     {
       crp = ExchangeCompleteData(
           t_inverse, cInverse, t_TC1, cTC1, LOG_DIR_TERMINAL, logger);
       if(crp == NULL)
         break;
       FreeCRP(crp);
-    }
-  }
+    } // end internal while
+  } // end external while
   error = 0;
 
 enderror:
@@ -1265,136 +1146,6 @@ enderror:
     // these errors are logged and used as a signal to stop
     error = 0;
   }
-  if(logger)
-  {
-    LogByte1(logger, LOG_ICC_DEACTIVATED, 0);
-    if(lcdAvailable)
-      fprintf(stderr, "%s\n", strLog);
-    WriteLogEEPROM(logger);
-    ResetLogger(logger);
-  }
-
-  return error;
-}
-
-/**
- * This function passively monitors a transaction,
- * similarly to ForwardData, but it only logs the
- * messages starting from the first Generate AC command in
- * order to save space in EEPROM.
- *
- * @param logger the log structure or NULL if log is not desired
- * @return 0 if successful, non-zero otherwise
- * @sa ForwardData
- */
-uint8_t ForwardDataLogAC(log_struct_t *logger)
-{
-  uint8_t t_inverse = 0, t_TC1 = 0;
-  uint8_t cInverse, cProto, cTC1, cTA3, cTB3;
-  uint8_t gotAC = 0, error = 0;
-  CAPDU *cmd;
-  RAPDU *response;	
-  CRP *crp;
-
-  if(lcdAvailable)
-  {
-    InitLCD();
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Forward Data2\n");
-    _delay_ms(1000);
-  }
-
-  DisableWDT();
-  DisableTerminalResetInterrupt();
-  DisableICCInsertInterrupt();
-
-  // Expect the card to be inserted first and then wait a for terminal reset
-  if(lcdAvailable)
-    fprintf(stderr, "%s\n", strInsertCard);
-  while(IsICCInserted() == 0);
-  if(lcdAvailable)
-    fprintf(stderr, "%s\n", strCardInserted);
-  if(logger)
-    LogByte1(logger, LOG_ICC_INSERTED, 0);
-  while(GetTerminalResetLine() != 0);
-  if(lcdAvailable)
-    fprintf(stderr, "%s\n", strTerminalReset);
-  if(logger)
-    LogByte1(logger, LOG_TERMINAL_RST_LOW, 0);
-
-
-  error = InitSCDTransaction(t_inverse, t_TC1, &cInverse,
-      &cProto, &cTC1, &cTA3, &cTB3, logger);
-  if(error)
-  {
-    if(lcdAvailable)
-    {
-      fprintf(stderr, "Error:  %d\n", error);
-      _delay_ms(1000);
-    }
-    goto enderror;
-  }
-
-  // update transaction counter
-  nCounter++;
-
-  // forward data but don't log until we receive the generate AC
-  while(gotAC == 0)
-  {
-    cmd = ReceiveT0Command(t_inverse, t_TC1, NULL);
-    if(cmd == NULL)
-    {
-      error = RET_TERMINAL_GET_CMD;
-      goto enderror;
-    }
-
-    if((cmd->cmdHeader->cla & 0xF0) == 0x80 &&
-        cmd->cmdHeader->ins == 0xAE)
-    {						
-      // Generate AC command
-      gotAC = 1;
-    }
-
-    if(gotAC)
-      error = SendT0Command(cInverse, cTC1, cmd, logger);
-    else
-      error = SendT0Command(cInverse, cTC1, cmd, NULL);
-    if(error)
-    {	
-      error = RET_ICC_SEND_CMD;
-      FreeCAPDU(cmd);
-      goto enderror;
-    }
-
-    if(gotAC)
-      response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, LOG_DIR_TERMINAL, logger);
-    else
-      response = ForwardResponse(t_inverse, cInverse, cmd->cmdHeader, LOG_DIR_TERMINAL, NULL);
-    if(response == NULL)
-    {
-      error = RET_ERROR;
-      FreeCAPDU(cmd);
-      goto enderror;
-    }
-
-    FreeCAPDU(cmd);
-    FreeRAPDU(response);
-  } //end while(gotAC == 0)
-
-  // continue rest of transaction until we see a terminal reset
-  while(1)
-  {
-    crp = ExchangeCompleteData(
-        t_inverse, cInverse, t_TC1, cTC1, LOG_DIR_TERMINAL, logger);
-    if(crp == NULL)
-      break;
-    FreeCRP(crp);	
-  }	
-
-  error = 0;
-
-enderror:
-  DeactivateICC();
   if(logger)
   {
     LogByte1(logger, LOG_ICC_DEACTIVATED, 0);

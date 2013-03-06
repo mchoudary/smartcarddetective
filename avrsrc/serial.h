@@ -57,6 +57,7 @@ typedef enum {
     AT_CTWAIT,      // Request more time from Terminal
     AT_CTUSB,       // Start the USB to terminal application
     AT_CLET,        // Log an EMV transaction
+    AT_CDPIN,       // Log an EMV transaction with dummy PIN
     AT_CGEE,        // Get EEPROM contents
     AT_CEEE,        // Erase EEPROM contents
     AT_CGBM,        // Go into bootloader mode

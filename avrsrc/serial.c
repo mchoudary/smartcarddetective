@@ -60,6 +60,7 @@ static const char strAT_CRST[] = "AT+CRST";
 static const char strAT_CTERM[] = "AT+CTERM";
 static const char strAT_CTUSB[] = "AT+CTUSB";
 static const char strAT_CLET[] = "AT+CLET";
+static const char strAT_CDPIN[] = "AT+CDPIN";
 static const char strAT_CGEE[] = "AT+CGEE";
 static const char strAT_CEEE[] = "AT+CEEE";
 static const char strAT_CGBM[] = "AT+CGBM";
@@ -125,6 +126,14 @@ char* ProcessSerialData(const char* data, log_struct_t *logger)
   else if(atcmd == AT_CLET)
   {
     result = ForwardData(logger);
+    if (result == 0)
+      str_ret = strdup(strAT_ROK);
+    else
+      str_ret = strdup(strAT_RBAD);
+  }
+  else if(atcmd == AT_CDPIN)
+  {
+    result = DummyPIN(logger);
     if (result == 0)
       str_ret = strdup(strAT_ROK);
     else
@@ -208,6 +217,11 @@ uint8_t ParseATCommand(const char *data, AT_CMD *atcmd, char **atparams)
     else if(strstr(data, strAT_CLET) == data)
     {
       *atcmd = AT_CLET;
+      return 0;
+    }
+    else if(strstr(data, strAT_CDPIN) == data)
+    {
+      *atcmd = AT_CDPIN;
       return 0;
     }
     else if(strstr(data, strAT_CGEE) == data)

@@ -6,6 +6,7 @@ class AT_CMD:
     AT_CTERM = 'AT+CTERM\r\n'
     AT_CTUSB = 'AT+CTUSB\r\n'
     AT_CLET = 'AT+CLET\r\n'
+    AT_CDPIN = 'AT+CDPIN\r\n'
     AT_CGEE = 'AT+CGEE\r\n'
     AT_CEEE = 'AT+CEEE\r\n'
     AT_CGBM = 'AT+CGBM\r\n'

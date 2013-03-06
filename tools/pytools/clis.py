@@ -201,9 +201,12 @@ def main():
   parser.add_argument(
       '--logt',
       action = 'store_true',
-      help= 'log a card-reader transaction. You might need to\
-          run this command twice if the reader resets the\
-          card at the beginning of the transaction.')
+      help= 'log a card-reader transaction.')
+  parser.add_argument(
+      '--dummypin',
+      action = 'store_true',
+      help= 'log a card-reader transaction with dummy PIN (i.e. the real PIN sent to the card,\
+          when using offline plain text PIN, will be modified with a dummy value like 1234).')
   parser.add_argument(
       '--userterminal',
       nargs = '?',
@@ -308,6 +311,16 @@ def main():
     try:
       print "Preparing to log transaction, follow SCD screen..."
       result = serial_command(args.port, AT_CMD.AT_CLET, True)
+      if result == True:
+        print "All done"
+      else:
+        print "Some error ocurred during communication, check log"
+    except:
+      print "Error sending command"
+  elif args.dummypin == True:
+    try:
+      print "Preparing to log transaction with dummy PIN, follow SCD screen..."
+      result = serial_command(args.port, AT_CMD.AT_CDPIN, True)
       if result == True:
         print "All done"
       else:
