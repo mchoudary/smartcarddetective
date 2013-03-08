@@ -279,16 +279,6 @@ uint16_t IsTerminalClock()
       "nop\n\t"
       "nop\n\t"
       "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
-      "nop\n\t"
       ::);
   time = TCNT3;	
   if(time > 2)
