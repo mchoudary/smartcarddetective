@@ -485,7 +485,7 @@ uint8_t TerminalUSB(log_struct_t *logger)
         LogByte1(logger, LOG_BYTE_ATR_TO_TERMINAL, tmp);
       LoopTerminalETU(2);
     }
-    free(buf);
+    free(buf); buf = NULL;
 
     // update transaction counter
     nCounter++;
@@ -512,7 +512,7 @@ uint8_t TerminalUSB(log_struct_t *logger)
       if(data == NULL)
         break;
       BytesToHexChars(reply, data, len);
-      free(data);
+      free(data); data = NULL;
       reply[2*len] = '\r';
       reply[2*len + 1] = '\n';
       reply[2*len + 2] = 0;
@@ -547,7 +547,7 @@ askhost:
         SendByteTerminalNoParity(0x60, t_inverse);
         if(logger)
           LogByte1(logger, LOG_TERMINAL_MORE_TIME, 0x60);
-        free(buf);
+        free(buf); buf = NULL;
         goto askhost;
       }
       else if(atcmd != AT_UDATA)
@@ -574,7 +574,7 @@ askhost:
           LogByte1(logger, LOG_BYTE_TO_TERMINAL, tmp);
         LoopTerminalETU(2);
       }
-      free(buf);
+      free(buf); buf = NULL;
     } // end internal loop
   } // end external loop
 
@@ -583,8 +583,7 @@ endgood:
 
 enderror:
   DeactivateICC();
-  if(buf != NULL)
-    free(buf);
+  free(buf); buf = NULL;
   if((error == RET_TERMINAL_TIME_OUT) || (error == RET_TERMINAL_NO_CLOCK))
   {
     // these errors are logged and used as a signal to stop

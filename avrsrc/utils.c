@@ -167,4 +167,3 @@ uint8_t LogCurrentTime(log_struct_t *logger)
 }
 
 
-
