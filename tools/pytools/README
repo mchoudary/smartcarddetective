@@ -36,8 +36,24 @@ TOOLS AND USAGE
         To capture a card-reader transaction:
         "python clis.py --logt /dev/ttyACM0"
 
+        To emulate a card over serial-USB, with data in file card.txt:
+        "python clis.py --usercard card.txt /dev/ttyACM0"
+
         where /dev/ttyACM0 is the serial port where the SCD is connected.
 
+        Note: the "--usercard" script is a very simplistic method which reads
+        full responses (header + data) from the given file
+        (see the exmaple "card.txt" with only one response)
+        and simply forwards them to the reader as part of the transaction,
+        without parsing the commands from the reader. For a more versatile
+        card emulation you need to write your own program.
+        This method can already be used as it is by first logging the data
+        from one transaction (using the "logt" script mentioned above) and
+        then writing into a file the responses from the card, starting with
+        the ATR (full ATR without TS byte).
+        The responses must contain the entire response
+        status and data in one line. The intermediary states (such as
+        asking for more data, etc. are handled automatically).
 
         USAGE Virtual Serial
         Connect the SCD using the the USB cable to the host (PC), select the Virtual Serial
@@ -73,7 +89,7 @@ TOOLS AND USAGE
 
     Note 2: some readers perform two consecutive transactions. First they
     retrieve only the ATR from the card and then perform a reset before
-    commencing the transaction. In these cases it is necessary to execute
+    commencing the transaction. In these cases it might be necessary to execute
     the "logt" command twice:
     python clis.py --logt /dev/ttyACM0 (first)
     ... (wait for ATR, you should see an "All done" message

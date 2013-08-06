@@ -9,7 +9,7 @@ http://www.opensource.org/licenses/bsd-license.php
 
 VERSION
 Current version of the software is 2.5.0
-Last updated: February 2013.
+Last updated: August 2013.
 
 See the CHANGELOG file for comments on what's new.
 See the ISSUES file for comments on some current known issues.
@@ -29,7 +29,11 @@ http://www.atmel.com/tools/ATMELAVRTOOLCHAINFORWINDOWS.aspx
 On Windows you can try using AVR Studio:
 http://www.atmel.com/tools/ATMELSTUDIO.aspx
 
-However most of the testing is done under Linux, so I recommend it.
+On Mac OS X I have used the CrossPack successfully:
+http://www.obdev.at/products/crosspack/index.html
+
+The tools have been tested succesfully on both linux and Mac so I recommend these
+environments over Windows.
 
 
 BUILD

@@ -12,6 +12,8 @@ CHANGES from 2.4.2:
 - Updated the Descriptors file in LUFA to avoid errors from newer compilers.
 - Modified the InitSCDTransaction method to allow a more robust check of the terminal reset line.
 - Added functionality to act as a card and reply to a Terminal from a host connected via USB.
+  See the method TerminalUSB() in avrsrc/serial.c.
+  Note that unfortunately I did not test this method too much so you might encounter problems.
 
 ******************************************
 CHANGES from 2.4.0:

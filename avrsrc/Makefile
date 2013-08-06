@@ -63,7 +63,9 @@ CFLAGS += -gdwarf-2
 CFLAGS += -MD -MP -MT $(*F).o -MF $(DEPFOLDER)/$(@F).d 
 CFLAGS += $(LUFA_DEFS)
 
-## The following line should be uncommented IFF the smartcard reader has inverted card detector
+## The following line should be uncommented IF the smartcard reader has inverted card detector.
+## That is for the SCD from Smart Architects, v.4 onwards leave the following line uncomented.
+## For previous or different versions comment the line.
 CFLAGS += -D INVERT_ICC_SWITCH
 
 ## Assembly specific flags

@@ -153,8 +153,8 @@ def serial_card(port, fid = sys.stdin):
     if line.find('0000000000') == 0:
       fid.close()
       print 'Waiting for final result'
-      #ser.write(AT_CMD.AT_CCEND)
-      #ser.flush()
+      ser.write(AT_CMD.AT_CCEND)
+      ser.flush()
       line = ser.readline()
       ser.close();
       if line.find('AT OK') >= 0:
