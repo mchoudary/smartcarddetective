@@ -283,10 +283,12 @@ char* GetHostData(uint16_t len)
     uint8_t retval;
     char* buf;
 
-    buf = (char*)malloc(len * sizeof(char));
-
-    if (buf == NULL || USB_DeviceState != DEVICE_STATE_Configured)
+    if (USB_DeviceState != DEVICE_STATE_Configured)
         return NULL;
+
+    buf = (char*)malloc(len * sizeof(char));
+    if (buf == NULL)
+      return NULL;
 
     memset(buf, 0, len);
 
